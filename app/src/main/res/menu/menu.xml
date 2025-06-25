@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/navCallCycle"
+        android:icon="@drawable/callcycles"
+        android:title="Call Cycle"
+        />
+    <item
+        android:id="@+id/navCamera"
+        android:icon="@drawable/newcamera"
+        android:title="Camera"
+        />
+
+    <item
+        android:id="@+id/navHomeDriver"
+        android:icon="@drawable/vector_home"
+        android:title="Home"
+        />
+
+    <item
+        android:id="@+id/navCatalogue"
+        android:icon="@drawable/catalogue"
+        android:title="Catalogue"
+        />
+
+    <item
+        android:id="@+id/navAnnouncementsDriver"
+        android:icon="@drawable/empannouncements"
+        android:title="Announcements"
+        />
+</menu>
