@@ -1,0 +1,203 @@
+
+    <?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/antyellow"
+    tools:context=".RegisterActivity">
+
+    <ImageView
+        android:id="@+id/logoImage"
+        android:layout_width="350dp"
+        android:layout_height="100dp"
+        android:layout_marginTop="20dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/bestnutlogo"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/registerTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Register"
+        android:textColor="@color/navyblue"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:fontFamily="@font/maitree_bold"
+        android:layout_marginTop="20dp"
+        android:paddingTop="15dp"
+        app:layout_constraintTop_toBottomOf="@id/logoImage"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <ScrollView
+        android:id="@+id/svRegistrationInfo"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="20dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toBottomOf="@id/registerTitle"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="40dp">
+
+            <TextView
+                android:id="@+id/namelabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="30dp"
+                android:layout_marginStart="40dp"
+                android:paddingBottom="10dp"
+                android:text="First Name:"
+                android:textColor="@color/navyblue"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/maitree_bold" />
+
+            <EditText
+                android:id="@+id/regFName"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginStart="30dp"
+                android:layout_marginEnd="30dp"
+                android:layout_marginBottom="12dp"
+                android:hint="Enter your name..."
+                android:background="@drawable/blueroundtextbox"
+                android:backgroundTint="@color/navyblue"
+                android:textColor="@android:color/white"
+                android:textColorHint="@color/white"
+                android:paddingHorizontal="16dp"
+                android:inputType="textEmailAddress"/>
+
+            <TextView
+                android:id="@+id/lastname"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_marginStart="40dp"
+                android:layout_marginBottom="5dp"
+                android:paddingBottom="10dp"
+                android:text="Last Name:"
+                android:textColor="@color/navyblue"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/maitree_bold" />
+
+            <EditText
+                android:id="@+id/regLastName"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginStart="30dp"
+                android:layout_marginEnd="30dp"
+                android:hint="Enter your surname..."
+                android:inputType="text"
+                android:background="@drawable/blueroundtextbox"
+                android:textColor="@android:color/white"
+                android:textColorHint="@color/white"
+                android:paddingHorizontal="16dp" />
+            <TextView
+                android:id="@+id/phoneNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="30dp"
+                android:layout_marginStart="40dp"
+                android:paddingBottom="10dp"
+                android:text="Contact Number:"
+                android:textColor="@color/navyblue"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/maitree_bold" />
+
+            <EditText
+                android:id="@+id/regPhoneNumber"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginStart="30dp"
+                android:layout_marginEnd="30dp"
+                android:hint="Enter your phone number..."
+                android:inputType="text"
+                android:background="@drawable/blueroundtextbox"
+                android:textColor="@android:color/white"
+                android:textColorHint="@color/white"
+                android:paddingHorizontal="16dp" />
+
+            <TextView
+                android:id="@+id/usernameLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="30dp"
+                android:layout_marginStart="40dp"
+                android:paddingBottom="10dp"
+                android:text="Email Address:"
+                android:textColor="@color/navyblue"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/maitree_bold" />
+
+            <EditText
+                android:id="@+id/regEmail"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginStart="30dp"
+                android:layout_marginEnd="30dp"
+                android:layout_marginBottom="12dp"
+                android:hint="Enter your email..."
+                android:background="@drawable/blueroundtextbox"
+                android:backgroundTint="@color/navyblue"
+                android:textColor="@android:color/white"
+                android:textColorHint="@color/white"
+                android:paddingHorizontal="16dp"
+                android:inputType="textEmailAddress"/>
+
+            <TextView
+                android:id="@+id/passwordLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_marginStart="40dp"
+                android:layout_marginBottom="5dp"
+                android:paddingBottom="10dp"
+                android:text="Create Your Password:"
+                android:textColor="@color/navyblue"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/maitree_bold" />
+
+            <EditText
+                android:id="@+id/regPassword"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginStart="30dp"
+                android:layout_marginEnd="30dp"
+                android:hint="Enter your password..."
+                android:inputType="textPassword"
+                android:background="@drawable/blueroundtextbox"
+                android:textColor="@android:color/white"
+                android:textColorHint="@color/white"
+                android:paddingHorizontal="16dp" />
+
+            <Button
+                android:id="@+id/registerButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="30dp"
+                android:backgroundTint="@color/navyblue"
+                android:text="Register"
+                android:textColor="@android:color/white"
+                android:fontFamily="@font/maitree_bold" />
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

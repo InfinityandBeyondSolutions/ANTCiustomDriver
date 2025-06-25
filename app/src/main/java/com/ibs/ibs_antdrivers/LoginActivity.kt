@@ -39,7 +39,7 @@ class Login : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
 
         register.setOnClickListener {
-            val intent = Intent(this@Login, Register::class.java)
+            val intent = Intent(this@Login, RegisterActivity::class.java)
             startActivity(intent)
             finish()
         }

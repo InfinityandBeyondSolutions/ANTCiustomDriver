@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    android:layout_marginHorizontal="4dp"
+    android:elevation="4dp"
+    android:padding="12dp"
+    android:clickable="true"
+    android:focusable="true"
+
+    android:id="@+id/announcementCard">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/navyblue"
+        android:orientation="vertical">
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/announcementTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Announcement Title"
+            android:textStyle="bold"
+            android:background="@color/antyellow"
+            android:textSize="24sp"
+            android:textColor="#000000"
+            android:textAlignment="center"
+            android:paddingBottom="8dp" />
+
+        <!-- Info Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:paddingTop="12sp"
+            android:paddingBottom="12sp"
+            android:layout_marginLeft="5sp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/adminName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Admin Name"
+                    android:textColor="@color/white" />
+
+                <TextView
+                    android:id="@+id/announcementDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="24 Jun 2025"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/announcementTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15:42"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Right: Preview -->
+            <TextView
+                android:id="@+id/messagePreview"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Sneak peek of the announcement..."
+                android:textColor="@color/white"
+                android:textAlignment="textStart"
+                android:maxLines="3"
+                android:layout_marginRight="2dp"
+                android:ellipsize="end"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
