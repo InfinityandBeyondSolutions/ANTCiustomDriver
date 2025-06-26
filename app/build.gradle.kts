@@ -8,6 +8,10 @@ android {
     namespace = "com.ibs.ibs_antdrivers"
     compileSdk = 35
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.ibs.ibs_antdrivers"
         minSdk = 27
@@ -16,6 +20,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "EMPLOYEE", "\"E2M7P0L3O2Y0E2E5#\"")
     }
 
     buildTypes {

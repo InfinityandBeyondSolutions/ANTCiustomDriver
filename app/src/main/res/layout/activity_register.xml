@@ -1,5 +1,4 @@
-
-    <?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -7,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/antyellow"
-    tools:context=".RegisterActivity">
+    tools:context="com.ibs.ibs_antdrivers.Register">
 
     <ImageView
         android:id="@+id/logoImage"
@@ -68,17 +67,17 @@
             <EditText
                 android:id="@+id/regFName"
                 android:layout_width="match_parent"
-                android:layout_height="45dp"
+                android:layout_height="48dp"
                 android:layout_marginStart="30dp"
                 android:layout_marginEnd="30dp"
                 android:layout_marginBottom="12dp"
-                android:hint="Enter your name..."
                 android:background="@drawable/blueroundtextbox"
                 android:backgroundTint="@color/navyblue"
-                android:textColor="@android:color/white"
-                android:textColorHint="@color/white"
+                android:hint="Enter your name..."
+                android:inputType="textEmailAddress"
                 android:paddingHorizontal="16dp"
-                android:inputType="textEmailAddress"/>
+                android:textColor="@android:color/white"
+                android:textColorHint="@color/white" />
 
             <TextView
                 android:id="@+id/lastname"
@@ -97,15 +96,15 @@
             <EditText
                 android:id="@+id/regLastName"
                 android:layout_width="match_parent"
-                android:layout_height="45dp"
+                android:layout_height="48dp"
                 android:layout_marginStart="30dp"
                 android:layout_marginEnd="30dp"
+                android:background="@drawable/blueroundtextbox"
                 android:hint="Enter your surname..."
                 android:inputType="text"
-                android:background="@drawable/blueroundtextbox"
+                android:paddingHorizontal="16dp"
                 android:textColor="@android:color/white"
-                android:textColorHint="@color/white"
-                android:paddingHorizontal="16dp" />
+                android:textColorHint="@color/white" />
             <TextView
                 android:id="@+id/phoneNumber"
                 android:layout_width="wrap_content"
@@ -122,15 +121,15 @@
             <EditText
                 android:id="@+id/regPhoneNumber"
                 android:layout_width="match_parent"
-                android:layout_height="45dp"
+                android:layout_height="48dp"
                 android:layout_marginStart="30dp"
                 android:layout_marginEnd="30dp"
+                android:background="@drawable/blueroundtextbox"
                 android:hint="Enter your phone number..."
                 android:inputType="text"
-                android:background="@drawable/blueroundtextbox"
+                android:paddingHorizontal="16dp"
                 android:textColor="@android:color/white"
-                android:textColorHint="@color/white"
-                android:paddingHorizontal="16dp" />
+                android:textColorHint="@color/white" />
 
             <TextView
                 android:id="@+id/usernameLabel"
@@ -148,17 +147,17 @@
             <EditText
                 android:id="@+id/regEmail"
                 android:layout_width="match_parent"
-                android:layout_height="45dp"
+                android:layout_height="48dp"
                 android:layout_marginStart="30dp"
                 android:layout_marginEnd="30dp"
                 android:layout_marginBottom="12dp"
-                android:hint="Enter your email..."
                 android:background="@drawable/blueroundtextbox"
                 android:backgroundTint="@color/navyblue"
-                android:textColor="@android:color/white"
-                android:textColorHint="@color/white"
+                android:hint="Enter your email..."
+                android:inputType="textEmailAddress"
                 android:paddingHorizontal="16dp"
-                android:inputType="textEmailAddress"/>
+                android:textColor="@android:color/white"
+                android:textColorHint="@color/white" />
 
             <TextView
                 android:id="@+id/passwordLabel"

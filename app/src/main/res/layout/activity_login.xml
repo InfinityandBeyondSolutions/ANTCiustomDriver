@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/antyellow"
-    tools:context=".LoginActivity">
+    tools:context="com.ibs.ibs_antdrivers.Login">
 
     <ImageView
         android:id="@+id/logoImage"
@@ -52,10 +52,9 @@
     <EditText
         android:id="@+id/loginUsername"
         android:layout_width="0dp"
-        android:layout_height="45dp"
+        android:layout_height="48dp"
         android:layout_marginStart="30dp"
         android:layout_marginEnd="30dp"
-        android:layout_marginBottom="12dp"
         android:background="@drawable/blueroundtextbox"
         android:backgroundTint="@color/navyblue"
         android:hint="Enter username..."
@@ -85,7 +84,7 @@
     <EditText
         android:id="@+id/loginPassword"
         android:layout_width="0dp"
-        android:layout_height="45dp"
+        android:layout_height="48dp"
         android:layout_marginStart="30dp"
         android:layout_marginEnd="30dp"
         android:background="@drawable/blueroundtextbox"

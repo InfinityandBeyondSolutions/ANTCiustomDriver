@@ -15,7 +15,7 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 
 
-class RegisterActivity : AppCompatActivity() {
+class Register : AppCompatActivity() {
 
     private lateinit var database: DatabaseReference
     private lateinit var firstName: EditText
@@ -26,12 +26,8 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var regButton: Button
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseDatabase
-
-    /*val adminPrefix = BuildConfig.ADMIN_PREFIX
-    val employeePrefix = BuildConfig.EMPLOYEE_PREFIX*/
-
-    val adminPrefix: String = BuildConfig.ADMIN_PREFIX
-    val employeePrefix: String = BuildConfig.EMPLOYEE_PREFIX
+    
+    val employee: String = BuildConfig.EMPLOYEE
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,14 +62,11 @@ class RegisterActivity : AppCompatActivity() {
             val actualPassword: String
 
             when {
-                fullPassword.startsWith(adminPrefix) -> {
-                    role = "admin"
-                    actualPassword = fullPassword.removePrefix(adminPrefix)
-                }
 
-                fullPassword.startsWith(employeePrefix) -> {
+
+                fullPassword.startsWith(employee) -> {
                     role = "employee"
-                    actualPassword = fullPassword.removePrefix(employeePrefix)
+                    actualPassword = fullPassword.removePrefix(employee)
                 }
 
                 else -> {

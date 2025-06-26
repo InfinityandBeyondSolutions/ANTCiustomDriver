@@ -1,9 +1,26 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.ANTCustomAppDrivers" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
-    </style>
+<resources>
+<!-- Your main app theme -->
+<style name="Theme.ANTCustomAppDrivers" parent="Theme.Material3.DayNight.NoActionBar">
+    <!-- Customize your app theme here -->
+    <item name="android:windowBackground">@color/white</item>
+</style>
 
-    <style name="Theme.ANTCustomAppDrivers" parent="Base.Theme.ANTCustomAppDrivers" />
+<!-- SplashScreen theme (for Android 12+) -->
+<style name="Theme.ANTCustomAppDrivers.Splash" parent="Theme.SplashScreen">
+    <!-- Set the background color -->
+    <item name="windowSplashScreenBackground">@color/white</item>
+
+    <!-- Remove the title bar -->
+    <item name="android:windowNoTitle">true</item>
+    <item name="android:windowFullscreen">true</item>
+
+    <!-- Set the splash screen icon -->
+    <item name="windowSplashScreenAnimatedIcon">@drawable/avd_acenutlogo</item>
+
+    <!-- Optional: duration of animation -->
+    <item name="windowSplashScreenAnimationDuration">3500</item>
+
+    <!-- Set the theme that takes over after splash -->
+    <item name="postSplashScreenTheme">@style/Theme.ANTCustomAppDrivers</item>
+</style>
 </resources>

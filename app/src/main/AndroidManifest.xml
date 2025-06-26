@@ -13,20 +13,28 @@
         android:theme="@style/Theme.ANTCustomAppDrivers"
         tools:targetApi="31">
         <activity
-            android:name=".RegisterActivity"
+            android:name="com.ibs.ibs_antdrivers.Register"
             android:exported="false" />
         <activity
-            android:name=".LoginActivity"
+            android:name="com.ibs.ibs_antdrivers.SplashscreenTwo"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
-            android:exported="true">
+            android:name="com.ibs.ibs_antdrivers.Login"
+            android:exported="false" /> <!-- Splash screen is the ONLY launcher -->
+        <activity
+            android:name="com.ibs.ibs_antdrivers.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.ANTCustomAppDrivers.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.ibs.ibs_antdrivers.MainActivity"
+            android:exported="true" />
+
     </application>
 
 </manifest>
