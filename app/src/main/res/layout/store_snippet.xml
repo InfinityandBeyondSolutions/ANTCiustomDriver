@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="10dp"
+    android:background="@drawable/store_cards"
+    android:layout_marginBottom="10dp"
+    android:elevation="4dp">
+
+    <!-- Header with Red Background -->
+    <TextView
+        android:id="@+id/tvCustomerName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/storenamecorners"
+        android:text="Store Name "
+        android:textColor="#FFFFFF"
+        android:padding="12dp"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"/>
+
+    <!-- Store ID -->
+    <TextView
+        android:id="@+id/tvStoreID"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Store ID : GN56785"
+        android:padding="8dp"
+        android:textSize="16sp"
+        android:textColor="#000000" />
+
+    <!-- Address -->
+    <TextView
+        android:id="@+id/tvStoreAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Address: 123 Street, City, Country"
+        android:padding="8dp"
+        android:textSize="16sp"
+        android:textColor="#000000" />
+
+    <!-- Manager -->
+    <TextView
+        android:id="@+id/tvStoreManager"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Manager: James Matthews"
+        android:padding="8dp"
+        android:textSize="16sp"
+        android:textColor="#000000" />
+
+    <!-- Franchise -->
+    <TextView
+        android:id="@+id/tvStoreFranchise"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Franchise: PnP, Spar, Engen..."
+        android:padding="8dp"
+        android:textSize="16sp"
+        android:textColor="#000000" />
+
+
+</LinearLayout>

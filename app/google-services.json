@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "424646441551",
+    "firebase_url": "https://acenuttracker-b4e78-default-rtdb.firebaseio.com",
+    "project_id": "acenuttracker-b4e78",
+    "storage_bucket": "acenuttracker-b4e78.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:424646441551:android:9276f63a73ed61a09fc83a",
+        "android_client_info": {
+          "package_name": "com.ibs.ibs_antdrivers"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIMs990Vljp5jTH_TGclq5RT12ocsqP_k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
