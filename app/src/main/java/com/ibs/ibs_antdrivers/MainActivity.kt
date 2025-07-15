@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 R.id.navCatalogue -> {
 
-                    // replaceFragment(MyProfileFragment())  UNCOMMENT AND ADD CORRECT CLASS WHEN IT IS CREATED
+                     replaceFragment(CatalogueFragment())
                     true
                 }
                 R.id.navAnnouncementsDriver -> {
