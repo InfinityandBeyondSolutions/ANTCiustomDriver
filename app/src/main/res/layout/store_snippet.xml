@@ -6,11 +6,14 @@
     android:padding="10dp"
     android:background="@drawable/store_cards"
     android:layout_marginBottom="10dp"
+    android:layout_marginTop="10dp"
+    android:layout_marginLeft="10dp"
+    android:layout_marginRight="10dp"
     android:elevation="4dp">
 
     <!-- Header with Red Background -->
     <TextView
-        android:id="@+id/tvCustomerName"
+        android:id="@+id/tvStoreName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/storenamecorners"
@@ -43,7 +46,7 @@
 
     <!-- Manager -->
     <TextView
-        android:id="@+id/tvStoreManager"
+        android:id="@+id/tvStoreContactPerson"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Manager: James Matthews"
@@ -51,15 +54,31 @@
         android:textSize="16sp"
         android:textColor="#000000" />
 
-    <!-- Franchise -->
-    <TextView
-        android:id="@+id/tvStoreFranchise"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Franchise: PnP, Spar, Engen..."
-        android:padding="8dp"
-        android:textSize="16sp"
-        android:textColor="#000000" />
+        android:orientation="horizontal"
+        android:gravity="center_horizontal"
+        android:layout_marginTop="10dp">
+
+        <ImageView
+            android:id="@+id/btnViewGallery"
+            android:layout_width="58dp"
+            android:layout_height="50dp"
+            android:background="@drawable/gallery"
+            android:text="View Gallery"
+            android:textSize="14sp"
+            android:layout_marginEnd="100dp"/>
+
+        <ImageView
+            android:id="@+id/btnCaptureStore"
+            android:layout_width="58dp"
+            android:layout_height="50dp"
+            android:background="@drawable/camera"
+            android:text="Capture Store"
+            android:textSize="14sp" />
+
+    </LinearLayout>
 
 
 </LinearLayout>

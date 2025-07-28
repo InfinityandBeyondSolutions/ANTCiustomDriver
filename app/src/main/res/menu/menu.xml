@@ -6,9 +6,9 @@
         android:title="Call Cycle"
         />
     <item
-        android:id="@+id/navCamera"
-        android:icon="@drawable/newcamera"
-        android:title="Camera"
+        android:id="@+id/navStore"
+        android:icon="@drawable/store"
+        android:title="Stores"
         />
 
     <item

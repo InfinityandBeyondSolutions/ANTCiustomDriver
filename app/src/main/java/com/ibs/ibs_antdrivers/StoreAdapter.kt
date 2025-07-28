@@ -21,8 +21,7 @@ class StoreAdapter(private var storeList: List<StoreData>,
         val storeName: TextView = itemView.findViewById(R.id.tvStoreName)
         val storeID: TextView = itemView.findViewById(R.id.tvStoreID)
         val storeAddress: TextView = itemView.findViewById(R.id.tvStoreAddress)
-        val storeManager: TextView = itemView.findViewById(R.id.tvStoreManager)
-        val storeFranchise: TextView = itemView.findViewById(R.id.tvStoreFranchise)
+        val contactPerson: TextView = itemView.findViewById(R.id.tvStoreContactPerson)
 
         init {
             itemView.setOnClickListener {
@@ -44,8 +43,7 @@ class StoreAdapter(private var storeList: List<StoreData>,
         holder.storeName.text = "${currentStore.StoreName}"
         holder.storeID.text = "Store ID: ${currentStore.StoreID}"
         holder.storeAddress.text = "Address: ${currentStore.StoreAddress}"
-        holder.storeFranchise.text = "Address: ${currentStore.StoreFranchise}"
-        holder.storeManager.text = "Address: ${currentStore.StoreManager}"
+        holder.contactPerson.text = "Manager: ${currentStore.ContactPerson}"
     }
 
     // Get the number of items in the list

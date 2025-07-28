@@ -13,8 +13,9 @@ data class StoreData(
     var StoreName: String ="",
     var StoreRegion: String ="",
     var StoreFranchise : String = "",
-    var StoreOwner : String = "",
-    var StoreManager : String = "",
-    var StoreContactNum : String = "",
+    var StoreContactNum: String = "",
+    var RepName : String = "",
+    var ContactPerson : String = "",
+    var StoreEmail: String = "",
     var StoreAddress: String = ""
 )

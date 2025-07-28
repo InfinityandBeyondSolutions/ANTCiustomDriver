@@ -32,9 +32,9 @@ class MainActivity : AppCompatActivity() {
                     replaceFragment(HomeFragment())
                     true
                 }
-                R.id.navCamera -> {
+                R.id.navStore -> {
 
-                    // replaceFragment(MealPlanFragment()) UNCOMMENT AND ADD CORRECT CLASS WHEN IT IS CREATED
+                    replaceFragment(DriverStoreSearch())
                     true
                 }
                 R.id.navCallCycle -> {
