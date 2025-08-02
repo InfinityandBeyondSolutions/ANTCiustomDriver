@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/navHomeDriver">
+
+    <!-- Home Fragment -->
+    <fragment
+        android:id="@+id/navHomeDriver"
+        android:name="com.ibs.ibs_antdrivers.DriverHomeFragment"
+        android:label="Driver Home" />
+
+    <!-- Store Fragment -->
+    <fragment
+        android:id="@+id/navStore"
+        android:name="com.ibs.ibs_antdrivers.DriverStoreSearch"
+        android:label="Stores">
+        <action
+            android:id="@+id/action_driverStoreSearch_to_driverCaptureProductImages"
+            app:destination="@id/driverCaptureProductImages"
+            app:enterAnim="@anim/fragment_slide_in_right"
+            app:exitAnim="@anim/fragment_slide_out_left"
+            app:popEnterAnim="@anim/fragment_slide_in_left"
+            app:popExitAnim="@anim/fragment_slide_out_right" />
+    </fragment>
+
+    <!-- Capture Images Fragment -->
+    <fragment
+        android:id="@+id/driverCaptureProductImages"
+        android:name="com.ibs.ibs_antdrivers.DriverCaptureProductImages"
+        android:label="Capture Product Images">
+        <argument
+            android:name="storeId"
+            app:argType="string" />
+        <argument
+            android:name="driverName"
+            app:argType="string" />
+        <argument
+            android:name="storeName"
+            app:argType="string"
+            android:defaultValue="Unknown Store" />
+    </fragment>
+
+    <!-- Call Cycle Fragment -->
+    <fragment
+        android:id="@+id/navCallCycle"
+        android:name="com.ibs.ibs_antdrivers.CallCycleFragment"
+        android:label="Call Cycle" />
+
+    <!-- Catalogue Fragment -->
+    <fragment
+        android:id="@+id/navCatalogue"
+        android:name="com.ibs.ibs_antdrivers.CatalogueFragment"
+        android:label="Catalogue" />
+
+    <!-- Announcements Fragment -->
+    <fragment
+        android:id="@+id/navAnnouncementsDriver"
+        android:name="com.ibs.ibs_antdrivers.AnnouncementsFragment"
+        android:label="Announcements" />
+</navigation>

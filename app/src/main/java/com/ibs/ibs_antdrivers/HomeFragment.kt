@@ -1,30 +1,50 @@
 package com.ibs.ibs_antdrivers
 
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.view.*
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-
+import android.widget.Toast
 
 class HomeFragment : Fragment() {
 
+    private val PERMISSION_REQUEST_CODE = 100
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-
-        }
-    }
+    private val requiredPermissions = arrayOf(
+        android.Manifest.permission.CAMERA,
+        android.Manifest.permission.READ_EXTERNAL_STORAGE,
+        android.Manifest.permission.INTERNET,
+        android.Manifest.permission.ACCESS_NETWORK_STATE
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
+    ): View {
         return inflater.inflate(R.layout.fragment_home, container, false)
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        checkAndRequestPermissions()
+    }
 
+    private fun checkAndRequestPermissions() {
+        val context = requireContext()
+        val activity = requireActivity()
 
+        val missingPermissions = requiredPermissions.filter {
+            ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (missingPermissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(
+                activity,
+                missingPermissions.toTypedArray(),
+                PERMISSION_REQUEST_CODE
+            )
+        }
+    }
 }

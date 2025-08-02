@@ -71,7 +71,7 @@
             android:layout_marginEnd="100dp"/>
 
         <ImageView
-            android:id="@+id/btnCaptureStore"
+            android:id="@+id/ivCameraButton"
             android:layout_width="58dp"
             android:layout_height="50dp"
             android:background="@drawable/camera"

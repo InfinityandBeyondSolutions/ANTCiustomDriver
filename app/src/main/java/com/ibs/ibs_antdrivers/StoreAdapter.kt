@@ -3,68 +3,64 @@ package com.ibs.ibs_antdrivers
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Filter
-import android.widget.Filterable
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import java.util.ArrayList
+import android.widget.Filter
+import android.widget.Filterable
 
-class StoreAdapter(private var storeList: List<StoreData>,
-                      private val onItemClick: (StoreData) -> Unit // Callback for item clicks
+class StoreAdapter(
+    private var storeList: List<StoreData>,
+    private val onCameraCapture: (StoreData) -> Unit,
+    private val onItemClick: (StoreData) -> Unit
 ) : RecyclerView.Adapter<StoreAdapter.StoreViewHolder>(), Filterable {
 
-    // Original full list of customers for filtering
     private var storeListFull: List<StoreData> = ArrayList(storeList)
 
-    // ViewHolder for Store items
     inner class StoreViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val storeName: TextView = itemView.findViewById(R.id.tvStoreName)
         val storeID: TextView = itemView.findViewById(R.id.tvStoreID)
         val storeAddress: TextView = itemView.findViewById(R.id.tvStoreAddress)
         val contactPerson: TextView = itemView.findViewById(R.id.tvStoreContactPerson)
+        val cameraButton: ImageView = itemView.findViewById(R.id.ivCameraButton)
 
         init {
             itemView.setOnClickListener {
-                onItemClick(storeList[adapterPosition]) // Pass selected customer to callback
+                onItemClick(storeList[adapterPosition])
+            }
+
+            cameraButton.setOnClickListener {
+                onCameraCapture(storeList[adapterPosition])
             }
         }
     }
 
-    // Creating the ViewHolder
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StoreViewHolder {
-        val itemView = LayoutInflater.from(parent.context)
+        val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.store_snippet, parent, false)
-        return StoreViewHolder(itemView)
+        return StoreViewHolder(view)
     }
 
-    // Binding customer data to the ViewHolder
     override fun onBindViewHolder(holder: StoreViewHolder, position: Int) {
         val currentStore = storeList[position]
-        holder.storeName.text = "${currentStore.StoreName}"
+        holder.storeName.text = currentStore.StoreName
         holder.storeID.text = "Store ID: ${currentStore.StoreID}"
         holder.storeAddress.text = "Address: ${currentStore.StoreAddress}"
         holder.contactPerson.text = "Manager: ${currentStore.ContactPerson}"
     }
 
-    // Get the number of items in the list
-    override fun getItemCount(): Int {
-        return storeList.size
-    }
+    override fun getItemCount(): Int = storeList.size
 
-    // Providing the filter implementation
-    override fun getFilter(): Filter {
-        return storeFilter
-    }
+    override fun getFilter(): Filter = storeFilter
 
     private val storeFilter = object : Filter() {
         override fun performFiltering(constraint: CharSequence?): FilterResults {
             val filteredList = ArrayList<StoreData>()
+            val filterPattern = constraint?.toString()?.lowercase()?.trim() ?: ""
 
-            if (constraint == null || constraint.isEmpty()) {
+            if (filterPattern.isEmpty()) {
                 filteredList.addAll(storeListFull)
             } else {
-                val filterPattern = constraint.toString().lowercase().trim()
-
                 for (store in storeListFull) {
                     if (store.StoreName.lowercase().contains(filterPattern)) {
                         filteredList.add(store)
@@ -75,12 +71,15 @@ class StoreAdapter(private var storeList: List<StoreData>,
             return FilterResults().apply { values = filteredList }
         }
 
-        @Suppress("UNCHECKED_CAST")
         override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
             storeList = results?.values as List<StoreData>
             notifyDataSetChanged()
         }
     }
 
-
+    fun updateList(newList: List<StoreData>) {
+        storeList = newList
+        storeListFull = ArrayList(newList)
+        notifyDataSetChanged()
+    }
 }

@@ -1,42 +1,30 @@
 package com.ibs.ibs_antdrivers
 
 import android.os.Bundle
+import android.view.*
+import android.widget.*
 import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.ImageView
-import android.widget.SearchView
-import android.widget.Spinner
-import android.widget.Toast
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
-import com.ibs.ibs_antdrivers.R
-import android.widget.*
 import com.google.firebase.database.*
 
 class DriverStoreSearch : Fragment() {
 
     private lateinit var btnBack: ImageView
     private lateinit var recyclerView: RecyclerView
-    private lateinit var database: DatabaseReference
-    private lateinit var storeList: ArrayList<StoreData>
-    private lateinit var storeAdapter: StoreAdapter
     private lateinit var searchStores: SearchView
     private lateinit var spinnerFranchise: Spinner
     private lateinit var spinnerRegion: Spinner
+    private lateinit var storeAdapter: StoreAdapter
+    private lateinit var database: DatabaseReference
+
+    private val storeList = ArrayList<StoreData>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val view = inflater.inflate(R.layout.fragment_driver_store_search, container, false)
 
         btnBack = view.findViewById(R.id.ivBackButton)
@@ -45,42 +33,64 @@ class DriverStoreSearch : Fragment() {
         spinnerFranchise = view.findViewById(R.id.spinnerFranchise)
         spinnerRegion = view.findViewById(R.id.spinnerRegion)
 
+        btnBack.setOnClickListener {
+            findNavController().popBackStack(R.id.navHomeDriver, false)
+        }
+
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        storeList = ArrayList()
-        storeAdapter = StoreAdapter(storeList) {}
+
+        storeAdapter = StoreAdapter(
+            storeList,
+            onCameraCapture = { store ->
+                val bundle = Bundle().apply {
+                    putString("storeId", store.StoreID)
+                    putString("driverName", currentUserID ?: "Test Driver")
+                    putString("storeName", store.StoreName)
+                }
+                findNavController().navigate(
+                    R.id.action_driverStoreSearch_to_driverCaptureProductImages,
+                    bundle
+                )
+            },
+            onItemClick = { store -> Toast.makeText(requireContext(), "Store: ${store.StoreName}", Toast.LENGTH_SHORT).show() }
+        )
+
         recyclerView.adapter = storeAdapter
 
         fetchStoresFromFirebase()
-        setupSearchView()
         setupSpinners()
 
         return view
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        // Delay SearchView setup until spinners are initialized
+        setupSearchView()
     }
 
     private fun fetchStoresFromFirebase() {
         database = FirebaseDatabase.getInstance().getReference("Stores")
         database.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                storeList.clear()
-                val franchiseSet = mutableSetOf<String>()
-                val regionSet = mutableSetOf<String>()
+                if (!isAdded) return  // Prevents crash
 
+                val franchises = mutableSetOf<String>()
+                val regions = mutableSetOf<String>()
+
+                storeList.clear()
                 for (storeSnap in snapshot.children) {
                     val store = storeSnap.getValue(StoreData::class.java)
                     if (store != null) {
                         storeList.add(store)
-                        franchiseSet.add(store.StoreFranchise)
-                        regionSet.add(store.StoreRegion)
+                        franchises.add(store.StoreFranchise)
+                        regions.add(store.StoreRegion)
                     }
                 }
 
-                storeAdapter = StoreAdapter(storeList) {}
-                recyclerView.adapter = storeAdapter
-                storeAdapter.notifyDataSetChanged()
-
-                // Set spinner values
-                setupSpinnerData(spinnerFranchise, franchiseSet)
-                setupSpinnerData(spinnerRegion, regionSet)
+                storeAdapter.updateList(storeList)
+                setupSpinnerData(spinnerFranchise, franchises)
+                setupSpinnerData(spinnerRegion, regions)
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -90,17 +100,33 @@ class DriverStoreSearch : Fragment() {
     }
 
     private fun setupSpinnerData(spinner: Spinner, data: Set<String>) {
-        val list = ArrayList<String>()
-        list.add("All")
-        list.addAll(data.sorted())
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, list)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinner.adapter = adapter
+        context?.let {
+            val items = listOf("All") + data.sorted()
+            val adapter = ArrayAdapter(it, android.R.layout.simple_spinner_item, items)
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            spinner.adapter = adapter
+        }
+    }
+
+    private fun setupSpinners() {
+        val listener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
+                filterStores()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {
+                // Set default selection to "All" if nothing selected
+                parent.setSelection(0)
+            }
+        }
+
+        spinnerFranchise.onItemSelectedListener = listener
+        spinnerRegion.onItemSelectedListener = listener
     }
 
     private fun setupSearchView() {
         searchStores.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean = false
+            override fun onQueryTextSubmit(query: String?) = false
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 filterStores()
@@ -109,43 +135,18 @@ class DriverStoreSearch : Fragment() {
         })
     }
 
-    private fun setupSpinners() {
-        spinnerFranchise.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                filterStores()
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
-
-        spinnerRegion.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                filterStores()
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
-    }
-
     private fun filterStores() {
-        val query = searchStores.query.toString().lowercase()
-        val selectedFranchise = spinnerFranchise.selectedItem.toString()
-        val selectedRegion = spinnerRegion.selectedItem.toString()
+        val query = searchStores.query?.toString()?.lowercase() ?: ""
+        val selectedFranchise = spinnerFranchise.selectedItem?.toString() ?: "All"
+        val selectedRegion = spinnerRegion.selectedItem?.toString() ?: "All"
 
-        val filteredList = storeList.filter { store ->
-            val matchName = store.StoreName.lowercase().contains(query)
-            val matchFranchise = selectedFranchise == "All" || store.StoreFranchise == selectedFranchise
-            val matchRegion = selectedRegion == "All" || store.StoreRegion == selectedRegion
-            matchName && matchFranchise && matchRegion
+        val filtered = storeList.filter { store ->
+            val nameMatch = store.StoreName.lowercase().contains(query)
+            val franchiseMatch = selectedFranchise == "All" || store.StoreFranchise == selectedFranchise
+            val regionMatch = selectedRegion == "All" || store.StoreRegion == selectedRegion
+            nameMatch && franchiseMatch && regionMatch
         }
 
-        storeAdapter = StoreAdapter(filteredList) {}
-        recyclerView.adapter = storeAdapter
+        storeAdapter.updateList(filtered)
     }
 }
-
-
-
-
-
-

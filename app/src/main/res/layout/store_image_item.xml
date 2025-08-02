@@ -7,7 +7,7 @@
 
     <!-- ImageView to display the selected image -->
     <ImageView
-        android:id="@+id/imgVehicle"
+        android:id="@+id/imgStore"
         android:layout_width="240dp"
         android:layout_height="220dp"
         android:scaleType="centerCrop"
@@ -23,8 +23,8 @@
         android:layout_height="50dp"
         android:layout_margin="8dp"
         android:src="@drawable/ic_remove"
-        app:layout_constraintEnd_toEndOf="@id/imgVehicle"
-        app:layout_constraintTop_toTopOf="@id/imgVehicle"
+        app:layout_constraintEnd_toEndOf="@id/imgStore"
+        app:layout_constraintTop_toTopOf="@id/imgStore"
         android:background="@drawable/circle_background"
         android:padding="4dp"/>
 

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- This allows access to images saved in getExternalFilesDir(Environment.DIRECTORY_PICTURES) -->
+    <external-files-path
+        name="images"
+        path="Pictures" />
+    <!-- ADD THIS: Allows access to getCacheDir() -->
+    <cache-path
+        name="cache"
+        path="." />
+</paths>
+
