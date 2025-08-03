@@ -43,7 +43,7 @@
 
     <!-- RecyclerView for Images -->
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvFrontSideImages"
+        android:id="@+id/rvStoreImages"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:scrollbars="vertical"

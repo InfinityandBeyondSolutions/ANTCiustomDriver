@@ -6,15 +6,15 @@
         android:name="android.hardware.camera"
         android:required="false" />
 
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"
+        tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -29,27 +29,27 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ANTCustomAppDrivers"
         tools:targetApi="31">
+
         <activity
-            android:name="com.ibs.ibs_antdrivers.Register"
+            android:name=".Register"
             android:exported="false" />
         <activity
-            android:name="com.ibs.ibs_antdrivers.SplashscreenTwo"
+            android:name=".SplashscreenTwo"
             android:exported="false" />
         <activity
-            android:name="com.ibs.ibs_antdrivers.Login"
-            android:exported="false" /> <!-- Splash screen is the ONLY launcher -->
+            android:name=".Login"
+            android:exported="false" />
         <activity
-            android:name="com.ibs.ibs_antdrivers.SplashActivity"
+            android:name=".SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.ANTCustomAppDrivers.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
-            android:name="com.ibs.ibs_antdrivers.MainActivity"
+            android:name=".MainActivity"
             android:exported="true" />
 
         <provider

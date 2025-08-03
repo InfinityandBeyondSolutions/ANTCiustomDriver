@@ -22,6 +22,13 @@
             app:exitAnim="@anim/fragment_slide_out_left"
             app:popEnterAnim="@anim/fragment_slide_in_left"
             app:popExitAnim="@anim/fragment_slide_out_right" />
+        <action
+            android:id="@+id/action_driverStoreSearch_to_storeGallery"
+            app:destination="@id/storeGallery"
+            app:enterAnim="@anim/fragment_slide_in_right"
+            app:exitAnim="@anim/fragment_slide_out_left"
+            app:popEnterAnim="@anim/fragment_slide_in_left"
+            app:popExitAnim="@anim/fragment_slide_out_right" />
     </fragment>
 
     <!-- Capture Images Fragment -->
@@ -34,6 +41,20 @@
             app:argType="string" />
         <argument
             android:name="driverName"
+            app:argType="string" />
+        <argument
+            android:name="storeName"
+            app:argType="string"
+            android:defaultValue="Unknown Store" />
+    </fragment>
+
+    <!-- Store Gallery Fragment -->
+    <fragment
+        android:id="@+id/storeGallery"
+        android:name="com.ibs.ibs_antdrivers.StoreGallery"
+        android:label="Store Gallery">
+        <argument
+            android:name="storeId"
             app:argType="string" />
         <argument
             android:name="storeName"

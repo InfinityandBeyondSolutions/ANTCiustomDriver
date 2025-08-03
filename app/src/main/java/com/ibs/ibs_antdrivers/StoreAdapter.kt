@@ -1,10 +1,12 @@
 package com.ibs.ibs_antdrivers
 
+import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import android.widget.Filter
 import android.widget.Filterable
@@ -23,6 +25,7 @@ class StoreAdapter(
         val storeAddress: TextView = itemView.findViewById(R.id.tvStoreAddress)
         val contactPerson: TextView = itemView.findViewById(R.id.tvStoreContactPerson)
         val cameraButton: ImageView = itemView.findViewById(R.id.ivCameraButton)
+        val galleryButton: ImageView = itemView.findViewById(R.id.ivViewGallery)
 
         init {
             itemView.setOnClickListener {
@@ -31,6 +34,18 @@ class StoreAdapter(
 
             cameraButton.setOnClickListener {
                 onCameraCapture(storeList[adapterPosition])
+            }
+
+            galleryButton.setOnClickListener {
+                val store = storeList[adapterPosition]
+                val bundle = Bundle().apply {
+                    putString("storeId", store.StoreID)
+                    putString("storeName", store.StoreName)
+                }
+                itemView.findNavController().navigate(
+                    R.id.action_driverStoreSearch_to_storeGallery,
+                    bundle
+                )
             }
         }
     }

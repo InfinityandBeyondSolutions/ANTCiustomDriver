@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,15 +20,20 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class DriverCaptureProductImages : Fragment() {
 
-    private lateinit var rvFrontSideImages: RecyclerView
+    private lateinit var rvStoreImages: RecyclerView
     private lateinit var btnAddImage: Button
     private lateinit var btnCaptureImage: Button
     private lateinit var btnUploadImages: Button
@@ -73,10 +79,9 @@ class DriverCaptureProductImages : Fragment() {
         val view = inflater.inflate(R.layout.fragment_driver_capture_product_images, container, false)
 
         storeId = arguments?.getString("storeId") ?: ""
-        driverName = arguments?.getString("driverName") ?: ""
         storeName = arguments?.getString("storeName") ?: "Unknown Store"
 
-        rvFrontSideImages = view.findViewById(R.id.rvFrontSideImages)
+        rvStoreImages = view.findViewById(R.id.rvStoreImages)
         btnAddImage = view.findViewById(R.id.btnAddImage)
         btnCaptureImage = view.findViewById(R.id.btnCaptureImage)
         btnUploadImages = view.findViewById(R.id.btnUploadImages)
@@ -89,12 +94,12 @@ class DriverCaptureProductImages : Fragment() {
             findNavController().popBackStack(R.id.navStore, false)
         }
 
-        rvFrontSideImages.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
+        rvStoreImages.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
         imageAdapter = ImageAdapter(imageList) { position ->
             imageList.removeAt(position)
             imageAdapter.notifyDataSetChanged()
         }
-        rvFrontSideImages.adapter = imageAdapter
+        rvStoreImages.adapter = imageAdapter
 
         btnAddImage.setOnClickListener {
             val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
@@ -106,6 +111,10 @@ class DriverCaptureProductImages : Fragment() {
         }
 
         btnUploadImages.setOnClickListener {
+            if (FirebaseAuth.getInstance().currentUser == null) {
+                Toast.makeText(requireContext(), "Please log in to upload images", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
             uploadImagesToFirebase()
         }
 
@@ -140,7 +149,28 @@ class DriverCaptureProductImages : Fragment() {
         val inputStream = context.contentResolver.openInputStream(uri)
         val sizeInBytes = inputStream?.available() ?: 0
         inputStream?.close()
-        return sizeInBytes <= 2 * 1024 * 1024 // 2MB
+        return sizeInBytes <= 5 * 1024 * 1024 // 5MB
+    }
+
+    private suspend fun getDriverFullName(): String = suspendCoroutine { continuation ->
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId == null) {
+            continuation.resume("Unknown_Driver")
+            return@suspendCoroutine
+        }
+
+        FirebaseDatabase.getInstance().getReference("users/$userId")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val firstName = snapshot.child("firstName").getValue(String::class.java) ?: ""
+                val lastName = snapshot.child("lastName").getValue(String::class.java) ?: ""
+                val fullName = "$firstName $lastName".trim().ifEmpty { "Unknown_Driver" }
+                continuation.resume(fullName.replace(" ", "_"))
+            }
+            .addOnFailureListener {
+                Log.e("DriverCapture", "Failed to fetch driver name: ${it.message}")
+                continuation.resume("Unknown_Driver")
+            }
     }
 
     private fun uploadImagesToFirebase() {
@@ -149,29 +179,62 @@ class DriverCaptureProductImages : Fragment() {
             return
         }
 
-        val storageRef = FirebaseStorage.getInstance().reference.child("store_images/$storeId")
-        val formatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-        var uploadCount = 0
+        btnUploadImages.isEnabled = false // Disable button to prevent multiple clicks
+        Toast.makeText(requireContext(), "Uploading images...", Toast.LENGTH_SHORT).show()
 
-        for (uri in imageList) {
-            val timestamp = formatter.format(Date())
-            val fileName = "${timestamp}_${driverName.replace(" ", "_")}.jpg"
-            val fileRef = storageRef.child(fileName)
+        // Launch coroutine to get driver name and upload images
+        requireActivity().runOnUiThread {
+            kotlinx.coroutines.MainScope().launch {
+                val driverFullName = getDriverFullName()
+                val storageRef = FirebaseStorage.getInstance().reference.child("store_images/$storeId")
+                val dateFormatter = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
+                val timeFormatter = SimpleDateFormat("HHmmssSSS", Locale.getDefault()) // Include milliseconds for uniqueness
+                var uploadCount = 0
+                var failureCount = 0
 
-            fileRef.putFile(uri)
-                .addOnSuccessListener {
-                    uploadCount++
-                    Toast.makeText(requireContext(), "Uploaded: $fileName", Toast.LENGTH_SHORT).show()
-                    if (uploadCount == imageList.size) {
-                        imageList.clear()
-                        imageAdapter.notifyDataSetChanged()
-                        Toast.makeText(requireContext(), "All images uploaded successfully", Toast.LENGTH_LONG).show()
-                        findNavController().popBackStack(R.id.navStore, false)
-                    }
+                imageList.forEachIndexed { index, uri ->
+                    val date = dateFormatter.format(Date())
+                    val time = timeFormatter.format(Date(System.currentTimeMillis() + index)) // Ensure unique timestamp
+                    val fileName = "${date}_${time}_${driverFullName}.jpg"
+                    val fileRef = storageRef.child(fileName)
+
+                    Log.d("DriverCapture", "Uploading: store_images/$storeId/$fileName")
+
+                    fileRef.putFile(uri)
+                        .addOnSuccessListener {
+                            uploadCount++
+                            Toast.makeText(requireContext(), "Uploaded: $fileName", Toast.LENGTH_SHORT).show()
+                            if (uploadCount + failureCount == imageList.size) {
+                                finalizeUpload(uploadCount, failureCount)
+                            }
+                        }
+                        .addOnFailureListener { exception ->
+                            failureCount++
+                            Log.e("DriverCapture", "Failed to upload $fileName: ${exception.message}")
+                            Toast.makeText(requireContext(), "Failed: $fileName - ${exception.message}", Toast.LENGTH_SHORT).show()
+                            if (uploadCount + failureCount == imageList.size) {
+                                finalizeUpload(uploadCount, failureCount)
+                            }
+                        }
                 }
-                .addOnFailureListener {
-                    Toast.makeText(requireContext(), "Failed: $fileName", Toast.LENGTH_SHORT).show()
-                }
+            }
+        }
+    }
+
+    private fun finalizeUpload(uploadCount: Int, failureCount: Int) {
+        btnUploadImages.isEnabled = true
+        imageList.clear()
+        imageAdapter.notifyDataSetChanged()
+
+        if (failureCount == 0) {
+            Toast.makeText(requireContext(), "All $uploadCount images uploaded successfully", Toast.LENGTH_LONG).show()
+            findNavController().popBackStack(R.id.navStore, false)
+        } else {
+            Toast.makeText(
+                requireContext(),
+                "$uploadCount images uploaded, $failureCount failed",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 }
