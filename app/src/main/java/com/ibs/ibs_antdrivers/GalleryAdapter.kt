@@ -37,6 +37,8 @@ class GalleryImageAdapter(
         Glide.with(holder.itemView.context)
             .load(imageUrl)
             .centerCrop()
+            .placeholder(R.drawable.placeholder_image) // Add a placeholder drawable
+            .error(R.drawable.error_image) // Add an error drawable
             .into(holder.imgStore)
         holder.tvImageName.text = imageName
     }

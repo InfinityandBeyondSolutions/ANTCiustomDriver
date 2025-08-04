@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,25 +19,30 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.ListResult
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class StoreGallery : Fragment() {
 
     private lateinit var tvStoreGalleryName: TextView
     private lateinit var rvStoreGalleryImages: RecyclerView
+    private lateinit var progressBar: ProgressBar
     private lateinit var btnBack: ImageView
     private lateinit var storeId: String
     private lateinit var storeName: String
     private lateinit var galleryImageAdapter: GalleryImageAdapter
     private val imageUrls = mutableListOf<String>()
     private val imageNames = mutableListOf<String>()
+    private var nextPageToken: String? = null
+    private var isLoading = false
 
-    private val storagePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+    private val storagePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted: Boolean ->
         if (granted) {
             Toast.makeText(requireContext(), "Storage permission granted", Toast.LENGTH_SHORT).show()
         } else {
@@ -55,6 +61,7 @@ class StoreGallery : Fragment() {
 
         tvStoreGalleryName = view.findViewById(R.id.tvStoreGalleryName)
         rvStoreGalleryImages = view.findViewById(R.id.rvStoreGalleryImages)
+        progressBar = view.findViewById(R.id.progressBar)
         btnBack = view.findViewById(R.id.ivBackButton)
 
         tvStoreGalleryName.text = storeName
@@ -69,34 +76,70 @@ class StoreGallery : Fragment() {
         }
         rvStoreGalleryImages.adapter = galleryImageAdapter
 
+        // Add scroll listener for pagination
+        rvStoreGalleryImages.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+                val totalItemCount = layoutManager.itemCount
+                val lastVisibleItem = layoutManager.findLastVisibleItemPosition()
+                if (!isLoading && totalItemCount <= (lastVisibleItem + 5) && nextPageToken != null) {
+                    fetchImagesFromFirebase()
+                }
+            }
+        })
+
         fetchImagesFromFirebase()
 
         return view
     }
 
     private fun fetchImagesFromFirebase() {
-        val storageRef = FirebaseStorage.getInstance().reference.child("store_images/$storeId")
-        storageRef.listAll()
-            .addOnSuccessListener { result ->
-                imageUrls.clear()
-                imageNames.clear()
-                result.items.forEach { item ->
-                    item.downloadUrl.addOnSuccessListener { uri ->
-                        imageUrls.add(uri.toString())
-                        imageNames.add(item.name)
-                        galleryImageAdapter.notifyDataSetChanged()
-                    }.addOnFailureListener { exception ->
-                        Log.e("StoreGallery", "Failed to get download URL for ${item.name}: ${exception.message}")
+        if (isLoading) return
+        isLoading = true
+        progressBar.visibility = View.VISIBLE
+
+        MainScope().launch {
+            try {
+                val storageRef = FirebaseStorage.getInstance().reference.child("store_images/$storeId")
+                val maxResults = 10 // Fetch 10 images at a time
+                // Capture nextPageToken to avoid smart cast issue
+                val currentPageToken = nextPageToken
+                val listResult: ListResult = if (currentPageToken == null) {
+                    storageRef.list(maxResults).await()
+                } else {
+                    storageRef.list(maxResults, currentPageToken).await()
+                }
+
+                val tempUrls = mutableListOf<String>()
+                val tempNames = mutableListOf<String>()
+
+                for (item in listResult.items) {
+                    try {
+                        val uri = item.downloadUrl.await()
+                        tempUrls.add(uri.toString())
+                        tempNames.add(item.name)
+                    } catch (e: Exception) {
+                        Log.e("StoreGallery", "Failed to get download URL for ${item.name}: ${e.message}")
                     }
                 }
-                if (result.items.isEmpty()) {
+
+                imageUrls.addAll(tempUrls)
+                imageNames.addAll(tempNames)
+                galleryImageAdapter.notifyDataSetChanged()
+
+                nextPageToken = listResult.pageToken
+                if (listResult.items.isEmpty() && imageUrls.isEmpty()) {
                     Toast.makeText(requireContext(), "No images found for this store", Toast.LENGTH_SHORT).show()
                 }
+            } catch (e: Exception) {
+                Log.e("StoreGallery", "Failed to list images: ${e.message}")
+                Toast.makeText(requireContext(), "Failed to load images: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                isLoading = false
+                progressBar.visibility = View.GONE
             }
-            .addOnFailureListener { exception ->
-                Log.e("StoreGallery", "Failed to list images: ${exception.message}")
-                Toast.makeText(requireContext(), "Failed to load images: ${exception.message}", Toast.LENGTH_SHORT).show()
-            }
+        }
     }
 
     private fun downloadImage(imageUrl: String, imageName: String) {
