@@ -23,6 +23,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "EMPLOYEE", "\"E2M7P0L3O2Y0E2E5#\"")
+
+        // Add Mapbox token configuration - Kotlin DSL syntax
+        manifestPlaceholders["MAPBOX_ACCESS_TOKEN"] = project.findProperty("MAPBOX_ACCESS_TOKEN") as String? ?: ""
     }
 
     buildTypes {
@@ -33,7 +36,24 @@ android {
                 "proguard-rules.pro"
             )
         }
+        debug {
+            // Ensure debug builds also have the token
+            manifestPlaceholders["MAPBOX_ACCESS_TOKEN"] = project.findProperty("MAPBOX_ACCESS_TOKEN") as String? ?: ""
+        }
     }
+
+    // Add packaging options to handle potential conflicts
+    packaging {
+        resources {
+            pickFirsts += "**/AndroidManifest.xml"
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/LICENSE"
+            excludes += "META-INF/LICENSE.txt"
+            excludes += "META-INF/NOTICE"
+            excludes += "META-INF/NOTICE.txt"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -44,7 +64,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -53,8 +72,6 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.firebase.database)
     implementation(libs.firebase.storage)
-    //implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
-    //implementation("com.google.firebase:firebase-analytics")
     implementation(libs.androidx.monitor)
     implementation(libs.androidx.junit.ktx)
     implementation(libs.firebase.auth.ktx)
@@ -64,21 +81,22 @@ dependencies {
     implementation(libs.googleid)
     implementation(libs.play.services.maps)
     implementation("com.squareup.picasso:picasso:2.71828")
-    implementation ("com.google.android.gms:play-services-location:21.0.1")
-    implementation ("com.google.firebase:firebase-database-ktx:20.3.0")
-    implementation ("com.google.firebase:firebase-auth-ktx:22.3.0")
-    implementation ("com.google.firebase:firebase-storage:20.1.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.firebase:firebase-database-ktx:20.3.0")
+    implementation("com.google.firebase:firebase-auth-ktx:22.3.0")
+    implementation("com.google.firebase:firebase-storage:20.1.0")
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    implementation ("androidx.vectordrawable:vectordrawable-animated:1.2.0") //was 1.1.0
+    implementation("androidx.vectordrawable:vectordrawable-animated:1.2.0")
     implementation("androidx.core:core-splashscreen:1.0.1")
-    implementation ("com.github.bumptech.glide:glide:4.12.0")
-    //annotationProcessor ("com.github.bumptech.glide:compiler:4.12.0")
+    implementation("com.github.bumptech.glide:glide:4.12.0")
     kapt("com.github.bumptech.glide:compiler:4.12.0")
-    implementation ("androidx.activity:activity-ktx:1.8.0")
-    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
-    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    implementation("androidx.activity:activity-ktx:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    implementation("com.mapbox.maps:android:10.16.0")
+    implementation("com.mapbox.plugin:maps-locationcomponent:10.16.0")
 }
