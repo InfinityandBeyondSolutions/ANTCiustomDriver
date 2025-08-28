@@ -11,6 +11,10 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.navigation.findNavController
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.setupWithNavController
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.ibs.ibs_antdrivers.service.LocationTrackingService
@@ -39,7 +43,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        // Mark permissions as requested
         sharedPreferences.edit().putBoolean("permissions_requested", true).apply()
     }
 
@@ -62,7 +65,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Set a simple layout or create a basic one
+        // Set the layout
         setContentView(R.layout.activity_main)
 
         // Initialize auth and preferences
@@ -75,6 +78,14 @@ class MainActivity : AppCompatActivity() {
             finish()
             return
         }
+
+        // Set up BottomNavigationView
+        val navView: BottomNavigationView = findViewById(R.id.bottom_navigation)
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navController = navHostFragment.navController
+
+        // Link BottomNavigationView with NavController
+        navView.setupWithNavController(navController)
 
         // Setup location services
         checkPermissionsAndStartService()
@@ -103,7 +114,6 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         // Check if user is signed in
         if (auth.currentUser == null) {
-            // Navigate to login
             startActivity(Intent(this, Login::class.java))
             finish()
         }

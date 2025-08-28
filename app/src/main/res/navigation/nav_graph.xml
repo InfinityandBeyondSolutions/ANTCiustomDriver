@@ -8,7 +8,21 @@
     <fragment
         android:id="@+id/navHomeDriver"
         android:name="com.ibs.ibs_antdrivers.DriverHomeFragment"
-        android:label="Driver Home" />
+        android:label="Driver Home">
+        <action
+            android:id="@+id/action_navHomeDriver_to_vehicleTrackingFragment"
+            app:destination="@id/vehicleTrackingFragment"
+            app:enterAnim="@anim/fragment_slide_in_right"
+            app:exitAnim="@anim/fragment_slide_out_left"
+            app:popEnterAnim="@anim/fragment_slide_in_left"
+            app:popExitAnim="@anim/fragment_slide_out_right" />
+    </fragment>
+
+    <!-- Vehicle Tracking Fragment -->
+    <fragment
+        android:id="@+id/vehicleTrackingFragment"
+        android:name="com.ibs.ibs_antdrivers.VehicleTracking"
+        android:label="Vehicle Tracking" />
 
     <!-- Store Fragment -->
     <fragment

@@ -99,4 +99,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     implementation("com.mapbox.maps:android:10.16.0")
     implementation("com.mapbox.plugin:maps-locationcomponent:10.16.0")
+    implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
+    implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
+    implementation("com.google.android.material:material:1.12.0")
 }

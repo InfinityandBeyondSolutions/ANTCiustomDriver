@@ -50,4 +50,17 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginEnd="16dp" />
 
+    <!-- Vehicle Tracking ImageButton Below Welcome Text -->
+    <ImageButton
+        android:id="@+id/vehicleTrackingBtn"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:src="@drawable/vehicletracking"
+        android:contentDescription="Vehicle Tracking"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        app:layout_constraintTop_toBottomOf="@id/welcomeText"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

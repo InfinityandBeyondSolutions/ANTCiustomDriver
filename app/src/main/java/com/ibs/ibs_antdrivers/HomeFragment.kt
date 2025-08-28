@@ -3,6 +3,7 @@ package com.ibs.ibs_antdrivers
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.*
+import android.widget.ImageView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -11,6 +12,8 @@ import android.widget.Toast
 class HomeFragment : Fragment() {
 
     private val PERMISSION_REQUEST_CODE = 100
+    private lateinit var vehicleBtn : ImageView
+    private lateinit var settingsBtn : ImageView
 
     private val requiredPermissions = arrayOf(
         android.Manifest.permission.CAMERA,
