@@ -7,7 +7,7 @@
     <!-- Home Fragment -->
     <fragment
         android:id="@+id/navHomeDriver"
-        android:name="com.ibs.ibs_antdrivers.DriverHomeFragment"
+        android:name="com.ibs.ibs_antdrivers.ui.home.DriverHomeFragment"
         android:label="Driver Home">
         <action
             android:id="@+id/action_navHomeDriver_to_vehicleTrackingFragment"

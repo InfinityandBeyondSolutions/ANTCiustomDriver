@@ -56,10 +56,22 @@ class LocationTrackingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(NOTIFICATION_ID, createNotification())
-        startLocationUpdates()
-        return START_STICKY // Restart if killed
-    }
+            when (intent?.action) {
+                "ACTION_STOP" -> {
+                    stopForeground(true)
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+                "ACTION_START" -> {
+                    startForeground(NOTIFICATION_ID, createNotification())
+                    startLocationUpdates()
+                    return START_STICKY // Restart if killed
+                }
+            }
+            return START_STICKY
+        }
+
+
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -199,6 +211,22 @@ class LocationTrackingService : Service() {
 
                     // Update current state
                     geofenceStateRef.setValue(isCurrentlyInside)
+                    if (isCurrentlyInside) {
+                        // On ENTER: set currentGeofence
+                        database.child("drivers")
+                            .child(userId)
+                            .child("currentGeofence")
+                            .setValue(mapOf(
+                                "geofenceId" to geofenceId,
+                                "enteredAt" to System.currentTimeMillis()
+                            ))
+                    } else {
+                        // On EXIT: remove currentGeofence if it matches
+                        database.child("drivers")
+                            .child(userId)
+                            .child("currentGeofence")
+                            .removeValue()
+                    }
                 }
             }
 
@@ -236,10 +264,17 @@ class LocationTrackingService : Service() {
     }
 
     private fun isMobileDataEnabled(): Boolean {
-        // This is a simplified check - you might need more sophisticated logic
-        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-        val activeNetwork = connectivityManager.activeNetworkInfo
-        return activeNetwork?.isConnected == true
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = cm.activeNetwork ?: return false
+            val caps = cm.getNetworkCapabilities(network) ?: return false
+            return caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR)
+        } else {
+            @Suppress("DEPRECATION")
+            val info = cm.activeNetworkInfo
+            @Suppress("DEPRECATION")
+            return info != null && info.isConnected && info.type == android.net.ConnectivityManager.TYPE_MOBILE
+        }
     }
 
     private fun createNotificationChannel() {
