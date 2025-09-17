@@ -130,7 +130,7 @@ class MainActivity : AppCompatActivity() {
             startTrackingIfEnabledAndAllowed()
         }
 
-        Toast.makeText(this, "Meerkat Tracking Service Ready", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Ace Nut Tracking Service Ready", Toast.LENGTH_SHORT).show()
     }
 
     override fun onResume() {
