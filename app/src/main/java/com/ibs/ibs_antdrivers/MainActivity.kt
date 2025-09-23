@@ -10,9 +10,11 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.NavHostFragment
@@ -35,7 +37,6 @@ class MainActivity : AppCompatActivity() {
     private val dateFmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private fun todayKey(): String = dateFmt.format(Date())
 
-    // Used to continue clock-in flow after permissions are granted
     private var pendingClockIn = false
 
     companion object {
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity() {
         private const val KEY_CLOCK_IN_AT = "clock_in_at"
         private const val KEY_ACTIVE_SHIFT_DATE = "active_shift_date"
         private const val KEY_ACTIVE_SHIFT_SESSION = "active_shift_session"
+        private const val KEY_BATTERY_DIALOG_SHOWN = "battery_dialog_shown"
         private val RETENTION_MS = TimeUnit.DAYS.toMillis(90) // 3 months
     }
 
@@ -56,7 +58,6 @@ class MainActivity : AppCompatActivity() {
         val fine = res[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
         val coarse = res[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
         if (fine || coarse) {
-            // Continue background permission if needed, otherwise continue clock-in if pending
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !hasBackground()) {
                 backgroundLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
             } else if (pendingClockIn) {
@@ -74,8 +75,6 @@ class MainActivity : AppCompatActivity() {
     private val backgroundLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { _ ->
-        // Regardless of granted/denied, continue the clock-in flow;
-        // startTrackingIfEnabledAndAllowed() will enforce actual checks.
         if (pendingClockIn) {
             pendingClockIn = false
             createShiftAndStartTracking()
@@ -84,7 +83,7 @@ class MainActivity : AppCompatActivity() {
 
     private val notificationsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* optional: show a toast */ }
+    ) { /* optional */ }
 
     // --- Lifecycle ---
 
@@ -101,31 +100,27 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // Setup nav
         val navView: BottomNavigationView = findViewById(R.id.bottom_navigation)
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navView.setupWithNavController(navHostFragment.navController)
 
-        // Notification permission (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             notificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        // Stop any alarm sound just in case
         try {
             val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
             val ringtone = RingtoneManager.getRingtone(this, uri)
             if (ringtone?.isPlaying == true) ringtone.stop()
         } catch (_: Exception) {}
 
-        // Ensure DB online at app start (safe-guard if previous run went offline)
         FirebaseDatabase.getInstance().goOnline()
 
         cleanupOldShifts()
+        ensureDriverInfoBase()
 
-        // If tracking was active before process death, we can resume the service
         if (prefs.getBoolean(KEY_TRACKING_ACTIVE, false)) {
             startTrackingIfEnabledAndAllowed()
         }
@@ -138,10 +133,12 @@ class MainActivity : AppCompatActivity() {
         if (auth.currentUser == null) {
             startActivity(Intent(this, Login::class.java))
             finish()
+        } else {
+            updateDriverSessionInfo(isActive = prefs.getBoolean(KEY_TRACKING_ACTIVE, false))
         }
     }
 
-    // --- Public API for DriverHomeFragment ---
+    // --- Public API ---
 
     fun isTrackingActive(): Boolean = prefs.getBoolean(KEY_TRACKING_ACTIVE, false)
     fun getClockInAt(): Long = prefs.getLong(KEY_CLOCK_IN_AT, 0L)
@@ -151,7 +148,6 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Not signed in", Toast.LENGTH_SHORT).show()
             return
         }
-        // Request permissions if needed, then proceed
         if (!hasFineOrCoarse()) {
             pendingClockIn = true
             fineCoarseLauncher.launch(
@@ -175,7 +171,7 @@ class MainActivity : AppCompatActivity() {
         stopTrackingAndCloseShift()
     }
 
-    // --- Permissions & Settings helpers ---
+    // --- Permissions helpers ---
 
     private fun hasFineOrCoarse(): Boolean {
         val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -215,7 +211,6 @@ class MainActivity : AppCompatActivity() {
             return
         }
         startLocationService()
-        // Do NOT toggle online status here; that’s tied to clock-in/out only.
     }
 
     private fun startLocationService() {
@@ -238,12 +233,12 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Location tracking stopped", Toast.LENGTH_SHORT).show()
     }
 
-    // --- Shift management (users/{uid}/shifts/{yyyy-MM-dd}/{sessionId}) ---
+    // --- Shift management ---
 
     private fun createShiftAndStartTracking() {
         val uid = auth.currentUser?.uid ?: return
         val db = FirebaseDatabase.getInstance()
-        db.goOnline() // ensure online for the write
+        db.goOnline()
 
         val dateKey = todayKey()
         val now = System.currentTimeMillis()
@@ -251,7 +246,7 @@ class MainActivity : AppCompatActivity() {
         val sessionRef = db.reference
             .child("users").child(uid)
             .child("shifts").child(dateKey)
-            .push() // unique session under the day
+            .push()
 
         val record = mapOf(
             "clockIn" to now,
@@ -260,7 +255,6 @@ class MainActivity : AppCompatActivity() {
 
         sessionRef.setValue(record)
             .addOnSuccessListener {
-                // Save active session identifiers
                 prefs.edit()
                     .putBoolean(KEY_TRACKING_ACTIVE, true)
                     .putString(KEY_ACTIVE_SHIFT_DATE, dateKey)
@@ -268,11 +262,14 @@ class MainActivity : AppCompatActivity() {
                     .putLong(KEY_CLOCK_IN_AT, now)
                     .apply()
 
-                // Start tracking (keep app open)
                 startTrackingIfEnabledAndAllowed()
+                updateDriverSessionInfo(true)
 
-                // Flip device online flag
-                setDriverOnlineFlag(true)
+                // 🔋 Show battery optimization prompt (only once)
+                if (!prefs.getBoolean(KEY_BATTERY_DIALOG_SHOWN, false)) {
+                    checkAndRequestBatteryOptimization()
+                    prefs.edit().putBoolean(KEY_BATTERY_DIALOG_SHOWN, true).apply()
+                }
 
                 Toast.makeText(this, "Clocked in", Toast.LENGTH_SHORT).show()
             }
@@ -288,18 +285,15 @@ class MainActivity : AppCompatActivity() {
         val sessionId = prefs.getString(KEY_ACTIVE_SHIFT_SESSION, null)
         val now = System.currentTimeMillis()
 
-        // Stop tracking first; keep DB online until write completes
         stopLocationService()
 
         fun finalizeAndGoOffline() {
-            // Clear local state
             prefs.edit()
                 .putBoolean(KEY_TRACKING_ACTIVE, false)
                 .remove(KEY_ACTIVE_SHIFT_DATE)
                 .remove(KEY_ACTIVE_SHIFT_SESSION)
                 .remove(KEY_CLOCK_IN_AT)
                 .apply()
-            // Now it’s safe to go offline
             db.goOffline()
         }
 
@@ -310,14 +304,12 @@ class MainActivity : AppCompatActivity() {
             )
             ref.updateChildren(updates)
                 .addOnSuccessListener {
-                    // Flip device offline
-                    setDriverOnlineFlag(false)
+                    updateDriverSessionInfo(false)
                     finalizeAndGoOffline()
                     Toast.makeText(this, "Clocked out", Toast.LENGTH_SHORT).show()
                 }
                 .addOnFailureListener { e ->
                     Toast.makeText(this, "Failed to clock out: ${e.message}", Toast.LENGTH_LONG).show()
-                    // Stay online so it can retry later
                 }
         }
 
@@ -326,7 +318,6 @@ class MainActivity : AppCompatActivity() {
                 .child("shifts").child(dateKey).child(sessionId)
             closeByRef(ref)
         } else {
-            // Fallback: find latest active session today and close it
             val dayRef = db.reference.child("users").child(uid).child("shifts").child(dateKey)
             dayRef.get().addOnSuccessListener { snap ->
                 var latestKey: String? = null
@@ -342,8 +333,7 @@ class MainActivity : AppCompatActivity() {
                 if (latestKey != null) {
                     closeByRef(dayRef.child(latestKey!!))
                 } else {
-                    // Nothing to close; still flip device offline and clear state
-                    setDriverOnlineFlag(false)
+                    updateDriverSessionInfo(false)
                     finalizeAndGoOffline()
                     Toast.makeText(this, "No active session found; set offline", Toast.LENGTH_SHORT).show()
                 }
@@ -356,61 +346,89 @@ class MainActivity : AppCompatActivity() {
     private fun cleanupOldShifts() {
         val uid = auth.currentUser?.uid ?: return
         val cutoffCal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -90) }
-        val cutoffKey = dateFmt.format(cutoffCal.time) // yyyy-MM-dd
+        val cutoffKey = dateFmt.format(cutoffCal.time)
 
         val ref = FirebaseDatabase.getInstance().reference
             .child("users").child(uid).child("shifts")
 
-        // Keys are yyyy-MM-dd, so lexicographic order matches chronological
         ref.get().addOnSuccessListener { snap ->
             val deletes = hashMapOf<String, Any?>()
             for (child in snap.children) {
                 val dateKey = child.key ?: continue
                 if (dateKey < cutoffKey) {
-                    deletes[dateKey] = null // delete entire day node (and all its sessions)
+                    deletes[dateKey] = null
                 }
             }
             if (deletes.isNotEmpty()) ref.updateChildren(deletes)
         }
     }
 
-    // --- Driver device status toggles (drivers/{uid}/deviceStatus) ---
+    // --- Driver Info Management ---
 
-    private fun setDriverOnlineFlag(online: Boolean) {
+    private fun ensureDriverInfoBase() {
+        val uid = auth.currentUser?.uid ?: return
+        val email = auth.currentUser?.email ?: ""
+        val db = FirebaseDatabase.getInstance().reference
+
+        db.child("users").child(uid).get().addOnSuccessListener { snap ->
+            val firstName = snap.child("firstName").getValue(String::class.java) ?: ""
+            val lastName = snap.child("lastName").getValue(String::class.java) ?: ""
+            val name = listOf(firstName, lastName).filter { it.isNotBlank() }.joinToString(" ")
+
+            val infoBase = mapOf(
+                "email" to email,
+                "userId" to uid,
+                "name" to name
+            )
+
+            db.child("drivers").child(uid).child("info").updateChildren(infoBase)
+        }
+    }
+
+    private fun updateDriverSessionInfo(isActive: Boolean) {
         val uid = auth.currentUser?.uid ?: return
         val now = System.currentTimeMillis()
-        val ref = FirebaseDatabase.getInstance().reference
-            .child("drivers").child(uid).child("deviceStatus")
 
-        val updates = mapOf(
-            "online" to online,
-            "timestamp" to now
+        val sessionInfo = mapOf(
+            "isActive" to isActive,
+            "lastSeen" to now
         )
-        ref.updateChildren(updates)
 
-        // Optional: keep info.lastSeen fresh
         FirebaseDatabase.getInstance().reference
-            .child("drivers").child(uid).child("info").child("lastSeen").setValue(now)
+            .child("drivers").child(uid).child("info")
+            .updateChildren(sessionInfo)
+    }
+
+    // --- Battery Optimization Handling ---
+
+    private fun checkAndRequestBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                showBatteryOptimizationDialog()
+            }
+        }
+    }
+
+    private fun showBatteryOptimizationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Allow Background Tracking")
+            .setMessage("To keep your trips tracked reliably, please allow this app to run without battery optimization. Otherwise, tracking may stop when your phone is idle.")
+            .setPositiveButton("Allow") { _, _ ->
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:$packageName")
+                }
+                startActivity(intent)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     // --- Utilities ---
 
-    private fun getBatteryPct(context: Context): Int {
-        return try {
-            val bm = context.registerReceiver(null, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-            val level = bm?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
-            val scale = bm?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
-            if (level >= 0 && scale > 0) ((level * 100f) / scale).toInt() else -1
-        } catch (_: Exception) {
-            -1
-        }
-    }
-
-    // --- Optional sign out ---
-
     private fun signOut() {
         stopLocationService()
-        setDriverOnlineFlag(false)
+        updateDriverSessionInfo(false)
         auth.signOut()
         startActivity(Intent(this, Login::class.java))
         finish()
