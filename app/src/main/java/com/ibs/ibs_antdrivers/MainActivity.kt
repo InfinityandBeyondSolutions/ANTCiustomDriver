@@ -12,6 +12,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.view.View
+import android.view.WindowInsets
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -90,6 +92,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        hideStatusBar()
 
         auth = FirebaseAuth.getInstance()
         prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
@@ -144,6 +147,16 @@ class MainActivity : AppCompatActivity() {
 
     fun isTrackingActive(): Boolean = prefs.getBoolean(KEY_TRACKING_ACTIVE, false)
     fun getClockInAt(): Long = prefs.getLong(KEY_CLOCK_IN_AT, 0L)
+
+    private fun hideStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.hide(WindowInsets.Type.statusBars())
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
+        }
+        supportActionBar?.hide()
+    }
 
     fun clockIn() {
         if (auth.currentUser == null) {

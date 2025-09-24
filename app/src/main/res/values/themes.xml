@@ -23,4 +23,11 @@
     <!-- Set the theme that takes over after splash -->
     <item name="postSplashScreenTheme">@style/Theme.ANTCustomAppDrivers</item>
 </style>
+
+    <style name="AppTheme.NoActionBar.Fullscreen" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Fullscreen -->
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
 </resources>

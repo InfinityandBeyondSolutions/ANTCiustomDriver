@@ -4,4 +4,11 @@
         <!-- Customize your dark theme here. -->
         <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
     </style>
+
+    <style name="AppTheme.NoActionBar.Fullscreen" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Fullscreen -->
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
 </resources>

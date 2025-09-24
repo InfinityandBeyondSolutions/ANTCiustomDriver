@@ -16,7 +16,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:clipChildren="false"
-        android:clipToPadding="false">
+        android:clipToPadding="false"
+        >
 
     <!-- Front Side -->
     <LinearLayout
@@ -39,7 +40,8 @@
             android:textSize="24sp"
             android:textColor="#000000"
             android:textAlignment="center"
-            android:paddingBottom="8dp" />
+            android:paddingBottom="8dp"
+            />
 
         <!-- Info Row -->
         <LinearLayout
