@@ -16,6 +16,7 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.ProgressBar
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
@@ -26,6 +27,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+
 class HomeFragment : Fragment() {
 
     private var vehicleTrackingBtn: ImageButton? = null
@@ -34,11 +36,15 @@ class HomeFragment : Fragment() {
 
     private lateinit var tvStatus: TextView
     private lateinit var tvTimes: TextView
-    private lateinit var btnClock: Button
+
+    private lateinit var btnClockIn: Button
+    private lateinit var btnClockOut: Button
+
+    private lateinit var progressClockIn: ProgressBar
+    private lateinit var progressClockOut: ProgressBar
+
 
     private val timeFmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-
-    // We capture the initial button background tint to tween back/forth
     private var baseBtnTint: Int? = null
 
     override fun onCreateView(
@@ -54,72 +60,92 @@ class HomeFragment : Fragment() {
 
         tvStatus = view.findViewById(R.id.tvStatus)
         tvTimes = view.findViewById(R.id.tvClockTimes)
-        btnClock = view.findViewById(R.id.btnClock)
+
+        btnClockIn = view.findViewById(R.id.btnClockIn)
+        btnClockOut = view.findViewById(R.id.btnClockOut)
+
         confetti = view.findViewById(R.id.confetti)
 
-        baseBtnTint = btnClock.backgroundTintList?.defaultColor
+        progressClockIn = view.findViewById(R.id.progressClockIn)
+        progressClockOut = view.findViewById(R.id.progressClockOut)
+
+
+        baseBtnTint = btnClockIn.backgroundTintList?.defaultColor
             ?: ContextCompat.getColor(requireContext(), R.color.antyellow)
 
-        // Optional buttons (only wire up if they exist in your layout)
+        // Vehicle tracking quick toggle
         vehicleTrackingBtn = view.findViewById<ImageButton?>(R.id.vehicleTrackingBtn)?.apply {
             setOnClickListener {
                 val act = activity as? MainActivity ?: return@setOnClickListener
-
-                // Spin delight
                 animate().rotationBy(360f).setDuration(400L).start()
 
-                // Toggle tracking
                 val wasActive = act.isTrackingActive()
                 if (wasActive) act.clockOut() else act.clockIn()
 
-                // Immediate optimistic UI, then refresh after activity persists changes
-                animateStateChange(activeAfter = !wasActive)
-                postDelayed({ refreshUi() }, 800L)
+                animateStateChange(!wasActive)
+                refreshUi()
             }
         }
 
-        // If you have a settings icon with id 'settingsIcon', wire it:
+        // Settings shortcut
         settingsBtn = view.findViewById<ImageView?>(R.id.settingsIcon)?.apply {
             setOnClickListener {
-                // Open system Location settings for quick access
                 startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
             }
         }
 
-        btnClock.setOnClickListener { v ->
-            // Haptic + press bounce
+        btnClockIn.setOnClickListener { v ->
             v.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-            v.animate()
-                .scaleX(0.96f).scaleY(0.96f)
-                .setDuration(80L)
-                .withEndAction {
-                    v.animate()
-                        .scaleX(1f).scaleY(1f)
-                        .setDuration(120L)
-                        .setInterpolator(OvershootInterpolator(2f))
-                        .start()
-                }
-                .start()
+            animateButtonPress(v)
 
             val act = activity as? MainActivity ?: return@setOnClickListener
+            if (!act.isTrackingActive()) {
+                // Hide button, show spinner
+                btnClockIn.visibility = View.GONE
+                progressClockIn.visibility = View.VISIBLE
 
-            val wasActive = act.isTrackingActive()
-            if (wasActive) act.clockOut() else act.clockIn()
+                act.clockIn()
+                celebrate()
 
-            // Tiny celebration when clocking in
-            if (!wasActive) celebrate()
+                // Swap UI right away
+                animateStateChange(true)
 
-            // Optimistic animation ahead of data write
-            animateStateChange(activeAfter = !wasActive)
-            v.postDelayed({ refreshUi() }, 800L)
+                // Delay longer (2s to be safe)
+                v.postDelayed({
+                    refreshUi()
+                    progressClockIn.visibility = View.GONE
+                    // Button will be restored by refreshUi()
+                }, 2000L)
+            }
         }
 
-        refreshUi()
-    }
+        btnClockOut.setOnClickListener { v ->
+            v.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+            animateButtonPress(v)
 
-    override fun onResume() {
+            val act = activity as? MainActivity ?: return@setOnClickListener
+            if (act.isTrackingActive()) {
+                // Hide button, show spinner
+                btnClockOut.visibility = View.GONE
+                progressClockOut.visibility = View.VISIBLE
+
+                act.clockOut()
+
+                // Swap UI right away
+                animateStateChange(false)
+
+                // Delay longer (2s to be safe)
+                v.postDelayed({
+                    refreshUi()
+                    progressClockOut.visibility = View.GONE
+                    // Button will be restored by refreshUi()
+                }, 2000L)
+            }
+        }
+
+    }
+        override fun onResume() {
         super.onResume()
-        // Update UI in case permissions/state changed while away
         refreshUi()
     }
 
@@ -128,7 +154,6 @@ class HomeFragment : Fragment() {
         val active = act.isTrackingActive()
 
         tvStatus.setTextWithFade(if (active) "Status: Online / Tracking" else "Status: Offline")
-        btnClock.text = if (active) "Clock Out" else "Clock In"
 
         val clockInAt = act.getClockInAt()
         if (clockInAt > 0) {
@@ -136,32 +161,28 @@ class HomeFragment : Fragment() {
             tvTimes.setTextWithFade("Clocked in at: ${timeFmt.format(Date(clockInAt))}")
         } else {
             tvTimes.setTextWithFade("Not clocked in")
-            tvTimes.visibility = View.VISIBLE // or View.GONE if you prefer to hide when not clocked in
+            tvTimes.visibility = View.VISIBLE
         }
 
-        // Make sure status is visible once we have data
-        if (tvStatus.visibility != View.VISIBLE) tvStatus.visibility = View.VISIBLE
+        // Only one button visible at a time
+        btnClockIn.visibility = if (active) View.GONE else View.VISIBLE
+        btnClockOut.visibility = if (active) View.VISIBLE else View.GONE
 
-        // Keep button tint in sync with state
-        tweenButtonTint(activeAfter = active)
+        tweenButtonTint(active)
     }
 
     private fun animateStateChange(activeAfter: Boolean) {
         tvStatus.setTextWithFade(if (activeAfter) "Status: Online / Tracking" else "Status: Offline")
-
         tvTimes.setTextWithFade(
-            if (activeAfter) {
-                "Clocked in at: ${timeFmt.format(Date(System.currentTimeMillis()))}"
-            } else {
-                "Not clocked in"
-            }
+            if (activeAfter) "Clocked in at: ${timeFmt.format(Date(System.currentTimeMillis()))}"
+            else "Not clocked in"
         )
-        tvStatus.visibility = View.VISIBLE
-        tvTimes.visibility = View.VISIBLE
+
+        btnClockIn.visibility = if (activeAfter) View.GONE else View.VISIBLE
+        btnClockOut.visibility = if (activeAfter) View.VISIBLE else View.GONE
 
         tweenButtonTint(activeAfter)
 
-        // If the quick action is present, add a tiny scale pulse to echo the change
         vehicleTrackingBtn?.animate()
             ?.scaleX(0.96f)?.scaleY(0.96f)
             ?.setDuration(80L)
@@ -175,15 +196,12 @@ class HomeFragment : Fragment() {
     }
 
     private fun tweenButtonTint(activeAfter: Boolean) {
-        val current = btnClock.backgroundTintList?.defaultColor ?: baseBtnTint ?: return
+        val current = btnClockIn.backgroundTintList?.defaultColor ?: baseBtnTint ?: return
         val base = baseBtnTint ?: current
 
-        // When active, lighten the base a bit; when inactive, go back to base
         val target = if (activeAfter) {
             ColorUtils.blendARGB(base, 0xFFFFFFFF.toInt(), 0.22f)
-        } else {
-            base
-        }
+        } else base
 
         if (current == target) return
 
@@ -191,14 +209,17 @@ class HomeFragment : Fragment() {
             duration = 220L
             addUpdateListener { anim ->
                 val c = anim.animatedValue as Int
-                btnClock.backgroundTintList = android.content.res.ColorStateList.valueOf(c)
+                if (btnClockIn.visibility == View.VISIBLE) {
+                    btnClockIn.backgroundTintList = android.content.res.ColorStateList.valueOf(c)
+                } else {
+                    btnClockOut.backgroundTintList = android.content.res.ColorStateList.valueOf(c)
+                }
             }
             start()
         }
     }
 
     private fun celebrate() {
-        // Play confetti if Lottie view is present; otherwise a quick alpha pulse
         val lottie = confetti
         if (lottie != null) {
             lottie.visibility = View.VISIBLE
@@ -213,15 +234,27 @@ class HomeFragment : Fragment() {
             return
         }
 
-        // Fallback: simple alpha pulse on the clock button
-        btnClock.animate()
+        val visibleBtn = if (btnClockIn.visibility == View.VISIBLE) btnClockIn else btnClockOut
+        visibleBtn.animate()
             .alpha(0.0f).setDuration(80L)
             .withEndAction {
-                btnClock.animate().alpha(1f).setDuration(160L).start()
+                visibleBtn.animate().alpha(1f).setDuration(160L).start()
             }.start()
     }
 
-    // ---- Helpers ----
+    private fun animateButtonPress(v: View) {
+        v.animate()
+            .scaleX(0.96f).scaleY(0.96f)
+            .setDuration(80L)
+            .withEndAction {
+                v.animate()
+                    .scaleX(1f).scaleY(1f)
+                    .setDuration(120L)
+                    .setInterpolator(OvershootInterpolator(2f))
+                    .start()
+            }
+            .start()
+    }
 
     private fun TextView.setTextWithFade(newText: String, duration: Long = 180L) {
         if (text.toString() == newText) return

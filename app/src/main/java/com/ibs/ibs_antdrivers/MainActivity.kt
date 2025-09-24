@@ -121,8 +121,10 @@ class MainActivity : AppCompatActivity() {
         cleanupOldShifts()
         ensureDriverInfoBase()
 
+        // ✅ Resume tracking if user was already clocked in
         if (prefs.getBoolean(KEY_TRACKING_ACTIVE, false)) {
             startTrackingIfEnabledAndAllowed()
+            updateDriverSessionInfo(true)
         }
 
         Toast.makeText(this, "Ace Nut Tracking Service Ready", Toast.LENGTH_SHORT).show()
@@ -265,7 +267,6 @@ class MainActivity : AppCompatActivity() {
                 startTrackingIfEnabledAndAllowed()
                 updateDriverSessionInfo(true)
 
-                // 🔋 Show battery optimization prompt (only once)
                 if (!prefs.getBoolean(KEY_BATTERY_DIALOG_SHOWN, false)) {
                     checkAndRequestBatteryOptimization()
                     prefs.edit().putBoolean(KEY_BATTERY_DIALOG_SHOWN, true).apply()
@@ -287,7 +288,28 @@ class MainActivity : AppCompatActivity() {
 
         stopLocationService()
 
-        fun finalizeAndGoOffline() {
+        if (sessionId != null) {
+            val ref = db.reference.child("users").child(uid)
+                .child("shifts").child(dateKey).child(sessionId)
+
+            ref.updateChildren(mapOf("clockOut" to now, "active" to false))
+                .addOnSuccessListener {
+                    prefs.edit()
+                        .putBoolean(KEY_TRACKING_ACTIVE, false)
+                        .remove(KEY_ACTIVE_SHIFT_DATE)
+                        .remove(KEY_ACTIVE_SHIFT_SESSION)
+                        .remove(KEY_CLOCK_IN_AT)
+                        .apply()
+
+                    updateDriverSessionInfo(false)
+                    db.goOffline()
+                    Toast.makeText(this, "Clocked out", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Failed to clock out: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+        } else {
+            updateDriverSessionInfo(false)
             prefs.edit()
                 .putBoolean(KEY_TRACKING_ACTIVE, false)
                 .remove(KEY_ACTIVE_SHIFT_DATE)
@@ -295,51 +317,7 @@ class MainActivity : AppCompatActivity() {
                 .remove(KEY_CLOCK_IN_AT)
                 .apply()
             db.goOffline()
-        }
-
-        fun closeByRef(ref: com.google.firebase.database.DatabaseReference) {
-            val updates = mapOf(
-                "clockOut" to now,
-                "active" to false
-            )
-            ref.updateChildren(updates)
-                .addOnSuccessListener {
-                    updateDriverSessionInfo(false)
-                    finalizeAndGoOffline()
-                    Toast.makeText(this, "Clocked out", Toast.LENGTH_SHORT).show()
-                }
-                .addOnFailureListener { e ->
-                    Toast.makeText(this, "Failed to clock out: ${e.message}", Toast.LENGTH_LONG).show()
-                }
-        }
-
-        if (sessionId != null) {
-            val ref = db.reference.child("users").child(uid)
-                .child("shifts").child(dateKey).child(sessionId)
-            closeByRef(ref)
-        } else {
-            val dayRef = db.reference.child("users").child(uid).child("shifts").child(dateKey)
-            dayRef.get().addOnSuccessListener { snap ->
-                var latestKey: String? = null
-                var latestClockIn = 0L
-                for (child in snap.children) {
-                    val active = child.child("active").getValue(Boolean::class.java) ?: false
-                    val cin = child.child("clockIn").getValue(Long::class.java) ?: 0L
-                    if (active && cin >= latestClockIn) {
-                        latestClockIn = cin
-                        latestKey = child.key
-                    }
-                }
-                if (latestKey != null) {
-                    closeByRef(dayRef.child(latestKey!!))
-                } else {
-                    updateDriverSessionInfo(false)
-                    finalizeAndGoOffline()
-                    Toast.makeText(this, "No active session found; set offline", Toast.LENGTH_SHORT).show()
-                }
-            }.addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to read sessions: ${e.message}", Toast.LENGTH_LONG).show()
-            }
+            Toast.makeText(this, "No active session found; set offline", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -385,19 +363,41 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
     private fun updateDriverSessionInfo(isActive: Boolean) {
         val uid = auth.currentUser?.uid ?: return
         val now = System.currentTimeMillis()
 
+        val db = FirebaseDatabase.getInstance().reference
+
+        // Update driver info
         val sessionInfo = mapOf(
             "isActive" to isActive,
             "lastSeen" to now
         )
+        db.child("drivers").child(uid).child("info").updateChildren(sessionInfo)
 
-        FirebaseDatabase.getInstance().reference
-            .child("drivers").child(uid).child("info")
-            .updateChildren(sessionInfo)
+
+        val deviceStatus = mapOf(
+            "online" to isActive
+        )
+        db.child("drivers").child(uid).child("deviceStatus").updateChildren(deviceStatus)
     }
+
+
+//    private fun updateDriverSessionInfo(isActive: Boolean) {
+//        val uid = auth.currentUser?.uid ?: return
+//        val now = System.currentTimeMillis()
+//
+//        val sessionInfo = mapOf(
+//            "isActive" to isActive,
+//            "lastSeen" to now
+//        )
+//
+//        FirebaseDatabase.getInstance().reference
+//            .child("drivers").child(uid).child("info")
+//            .updateChildren(sessionInfo)
+//    }
 
     // --- Battery Optimization Handling ---
 
