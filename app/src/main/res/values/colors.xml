@@ -6,4 +6,24 @@
     <color name="antyellow">#FACF21</color>
     <color name="navyblue">#2D378B</color>
     <color name="pastelyellow">#F9F9C1</color>
+
+    <!-- webb app colours -->
+    <color name="webgold">#D4AF37</color>
+    <color name="weblightgold">#E8C96F</color>
+    <color name="webdarkgold">#B8941F</color>
+    <color name="webnavy">#0A1F44</color>
+    <color name="weblightnavy">#1A3A6B</color>
+    <color name="webdarknavy">#051229</color>
+    <color name="webblack">#1A1A1A</color>
+
 </resources>
+
+
+<!--    &#45;&#45;gold: #D4AF37;-->
+<!--    &#45;&#45;gold-light: #E8C96F;-->
+<!--    &#45;&#45;gold-dark: #B8941F;-->
+<!--    &#45;&#45;navy: #0A1F44;-->
+<!--    &#45;&#45;navy-light: #1A3A6B;-->
+<!--    &#45;&#45;navy-dark: #051229;-->
+<!--    &#45;&#45;white: #FFFFFF;-->
+<!--    &#45;&#45;black: #1A1A1A;-->

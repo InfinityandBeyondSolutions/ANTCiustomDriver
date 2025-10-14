@@ -7,50 +7,38 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/white"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="16dp"
     tools:context=".HomeFragment">
-
-    <!-- Layout margins as guidelines -->
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/gStart"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_begin="16dp" />
-
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/gEnd"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_end="16dp" />
 
     <!-- Logo -->
     <ImageView
         android:id="@+id/logo"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
         android:adjustViewBounds="true"
         android:contentDescription="Logo"
         android:scaleType="centerInside"
         android:src="@drawable/bestnutlogo"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="@id/gStart"
-        app:layout_constraintEnd_toEndOf="@id/gEnd" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Settings Icon -->
+    <!-- Settings Icon (top-right) -->
     <ImageView
         android:id="@+id/settingsIcon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginTop="12dp"
-        android:padding="12dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:padding="8dp"
         android:contentDescription="Settings"
         android:background="?attr/selectableItemBackgroundBorderless"
         app:tint="@color/navyblue"
         android:src="@drawable/vector_settings"
         app:layout_constraintTop_toBottomOf="@id/logo"
-        app:layout_constraintEnd_toEndOf="@id/gEnd" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp" />
 
     <!-- Welcome text aligned with settings -->
     <TextView
@@ -58,14 +46,14 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Welcome!"
-        android:textSize="20sp"
+        android:textSize="22sp"
         android:textColor="#2A2E83"
         android:textStyle="bold"
+        android:layout_marginEnd="8dp"
         app:layout_constraintTop_toTopOf="@id/settingsIcon"
         app:layout_constraintBottom_toBottomOf="@id/settingsIcon"
-        app:layout_constraintStart_toStartOf="@id/gStart"
-        app:layout_constraintEnd_toStartOf="@id/settingsIcon"
-        android:layout_marginEnd="8dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/settingsIcon" />
 
     <!-- Quick actions row -->
     <LinearLayout
@@ -74,33 +62,37 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
+        android:baselineAligned="false"
+        android:weightSum="3"
         android:layout_marginTop="12dp"
         app:layout_constraintTop_toBottomOf="@id/settingsIcon"
-        app:layout_constraintStart_toStartOf="@id/gStart"
-        app:layout_constraintEnd_toEndOf="@id/gEnd">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Vehicle Tracking (keeps your existing button ID) -->
+        <!-- Vehicle Tracking -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
-            android:layout_height="92dp"
+            android:layout_height="96dp"
+            android:layout_weight="1"
             android:layout_marginEnd="8dp"
             app:cardUseCompatPadding="true"
             app:cardElevation="2dp"
             app:cardCornerRadius="16dp"
-            android:layout_weight="1">
+            app:strokeWidth="1dp"
+            app:strokeColor="#1AFFD13D">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:background="@color/pastelyellow">
+                android:background="@drawable/bg_stat_card">
 
                 <ImageButton
                     android:id="@+id/vehicleTrackingBtn"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="@color/pastelyellow"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@android:color/transparent"
                     android:contentDescription="Vehicle Tracking"
                     android:scaleType="centerInside"
                     android:src="@drawable/vehicletracking" />
@@ -110,6 +102,7 @@
                     android:layout_height="wrap_content"
                     android:text="Tracking"
                     android:textSize="12sp"
+                    android:textColor="@color/navyblue"
                     android:paddingTop="4dp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -118,31 +111,34 @@
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/timesheetsCard"
             android:layout_width="0dp"
-            android:layout_height="92dp"
+            android:layout_height="96dp"
+            android:layout_weight="1"
             android:layout_marginEnd="8dp"
             app:cardUseCompatPadding="true"
             app:cardElevation="2dp"
             app:cardCornerRadius="16dp"
-            android:layout_weight="1">
+            app:strokeWidth="1dp"
+            app:strokeColor="#1AFFD13D">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:background="@color/pastelyellow">
+                android:background="@drawable/bg_stat_card">
 
                 <ImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:contentDescription="Timesheets"/>
-                <!--                    android:src="@drawable/" />-->
+                <!-- android:src="@drawable/..." -->
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Timesheets"
                     android:textSize="12sp"
+                    android:textColor="@color/navyblue"
                     android:paddingTop="4dp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -151,30 +147,33 @@
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/supportCard"
             android:layout_width="0dp"
-            android:layout_height="92dp"
+            android:layout_height="96dp"
+            android:layout_weight="1"
             app:cardUseCompatPadding="true"
             app:cardElevation="2dp"
             app:cardCornerRadius="16dp"
-            android:layout_weight="1">
+            app:strokeWidth="1dp"
+            app:strokeColor="#1AFFD13D">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:background="@color/pastelyellow">
+                android:background="@drawable/bg_stat_card">
 
                 <ImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:contentDescription="Support" />
-                <!--                    android:src="@drawable/ic_round_help_24" />-->
+                <!-- android:src="@drawable/ic_round_help_24" -->
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Support"
                     android:textSize="12sp"
+                    android:textColor="@color/navyblue"
                     android:paddingTop="4dp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -189,18 +188,19 @@
         app:cardUseCompatPadding="true"
         app:cardCornerRadius="20dp"
         app:cardElevation="3dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="#1AFFD13D"
         app:layout_constraintTop_toBottomOf="@id/quickActionsRow"
-        app:layout_constraintStart_toStartOf="@id/gStart"
-        app:layout_constraintEnd_toEndOf="@id/gEnd">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp"
-            android:background="@color/pastelyellow">
+            android:background="@drawable/bg_clock_card">
 
-            <!-- Title (keeps your clockText id) -->
             <TextView
                 android:id="@+id/clockText"
                 android:layout_width="match_parent"
@@ -214,20 +214,20 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnClockIn"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="12dp"
-                android:text="Clock In"
-                android:textAllCaps="false"
-                android:textColor="@color/navyblue"
-                app:cornerRadius="16dp"
-                android:backgroundTint="@color/antyellow"
-                app:iconGravity="textStart"
-                app:iconPadding="12dp"
-                android:textStyle="bold"
-                android:visibility="visible"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnClockIn"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="12dp"
+                    android:text="Clock In"
+                    android:textAllCaps="false"
+                    android:textColor="@color/navyblue"
+                    app:cornerRadius="16dp"
+                    android:backgroundTint="@color/antyellow"
+                    app:iconGravity="textStart"
+                    app:iconPadding="12dp"
+                    android:textStyle="bold"
+                    android:visibility="visible"/>
 
                 <ProgressBar
                     android:id="@+id/progressClockIn"
@@ -243,20 +243,19 @@
                 android:layout_height="wrap_content">
 
                 <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnClockOut"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="12dp"
-                android:text="Clock Out"
-                android:textAllCaps="false"
-                android:textColor="@color/navyblue"
-                app:cornerRadius="16dp"
-                android:backgroundTint="@color/antyellow"
-                app:iconGravity="textStart"
-                app:iconPadding="12dp"
-                android:textStyle="bold"
-                android:visibility="gone"/>
-
+                    android:id="@+id/btnClockOut"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="12dp"
+                    android:text="Clock Out"
+                    android:textAllCaps="false"
+                    android:textColor="@color/navyblue"
+                    app:cornerRadius="16dp"
+                    android:backgroundTint="@color/antyellow"
+                    app:iconGravity="textStart"
+                    app:iconPadding="12dp"
+                    android:textStyle="bold"
+                    android:visibility="gone"/>
 
                 <ProgressBar
                     android:id="@+id/progressClockOut"
@@ -265,30 +264,24 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:visibility="gone" />
-
             </FrameLayout>
-
-
-            <TextView
-                android:id="@+id/tvStatus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="12dp"
-                android:text="Status: Offline"
-                android:textSize="16sp"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/tvClockTimes"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
-                android:text="Not clocked in"
-                android:textSize="14sp"
-                android:visibility="gone" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
+
+    <!-- Confetti overlay -->
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/confetti"
+        android:layout_width="220dp"
+        android:layout_height="220dp"
+        android:visibility="gone"
+        android:translationZ="10dp"
+        app:lottie_rawRes="@raw/confetti"
+        app:lottie_autoPlay="false"
+        app:lottie_loop="false"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <!-- Today stats -->
     <LinearLayout
@@ -296,116 +289,133 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
         android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:weightSum="3"
         app:layout_constraintTop_toBottomOf="@id/clockCard"
-        app:layout_constraintStart_toStartOf="@id/gStart"
-        app:layout_constraintEnd_toEndOf="@id/gEnd"
-        app:layout_constraintBottom_toBottomOf="parent"
-        >
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
 
+        <!-- Status -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
-            android:layout_height="100dp"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:background="@color/pastelyellow">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Deliveries"
-                    android:textSize="12sp"/>
-
-                <TextView
-                    android:id="@+id/tvDeliveriesToday"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textStyle="bold"
-                    android:textSize="22sp"/>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.airbnb.lottie.LottieAnimationView
-            android:id="@+id/confetti"
-            android:layout_width="220dp"
-            android:layout_height="220dp"
-            android:visibility="gone"
-            app:lottie_rawRes="@raw/confetti"
-            app:lottie_autoPlay="false"
-            app:lottie_loop="false"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="0dp"
-            android:layout_height="100dp"
+            android:layout_height="120dp"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
             app:cardCornerRadius="16dp"
-            app:cardElevation="2dp">
+            app:cardElevation="2dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#1AFFD13D">
 
             <LinearLayout
+                android:id="@+id/llstatus"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:gravity="center"
+                android:padding="12dp"
                 android:orientation="vertical"
-                android:background="@color/pastelyellow">
+                android:background="@drawable/bg_stat_card">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="KM Driven"
-                    android:textSize="12sp"/>
+                    android:text="Status"
+                    android:textSize="16sp"
+                    android:textColor="@color/navyblue"/>
 
                 <TextView
-                    android:id="@+id/tvKmToday"
+                    android:id="@+id/tvStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textStyle="bold"
-                    android:textSize="22sp"/>
+                    android:layout_marginTop="8dp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="6dp"
+                    android:text="Offline"
+                    android:textSize="12sp"
+                    android:textColor="@color/navyblue"
+                    android:background="@drawable/bg_chip_status_neutral"
+                    android:visibility="gone"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Time Elapsed -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
-            android:layout_height="100dp"
+            android:layout_height="120dp"
             android:layout_weight="1"
+            android:layout_marginEnd="8dp"
             app:cardCornerRadius="16dp"
-            app:cardElevation="2dp">
+            app:cardElevation="2dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#1AFFD13D">
 
             <LinearLayout
+                android:id="@+id/lltime"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:gravity="center"
+                android:padding="12dp"
                 android:orientation="vertical"
-                android:background="@color/pastelyellow">
+                android:background="@drawable/bg_stat_card">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Hours"
-                    android:textSize="12sp"/>
+                    android:text="Time Elapsed"
+                    android:textSize="16sp"
+                    android:textColor="@color/navyblue"/>
 
                 <TextView
-                    android:id="@+id/tvHoursToday"
+                    android:id="@+id/tvTimeElapsed"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0:00"
-                    android:textStyle="bold"
-                    android:textSize="22sp"/>
+                    android:layout_marginTop="8dp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="6dp"
+                    android:text="0 minutes"
+                    android:textSize="12sp"
+                    android:textColor="@color/navyblue"
+                    android:background="@drawable/bg_blue_chip"
+                    android:visibility="gone"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Date -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="0dp"
+            android:layout_height="120dp"
+            android:layout_weight="1"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#1AFFD13D">
+
+            <LinearLayout
+                android:id="@+id/lldate"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="12dp"
+                android:orientation="vertical"
+                android:background="@drawable/bg_stat_card">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Date"
+                    android:textSize="16sp"
+                    android:textColor="@color/navyblue"/>
+
+                <TextView
+                    android:id="@+id/tvClockTimes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Not clocked in"
+                    android:textSize="12sp"
+                    android:textColor="@color/navyblue"
+                    android:background="@drawable/bg_chip_time"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="6dp"
+                    android:visibility="visible"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

@@ -10,7 +10,6 @@
   >
 
 
-
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/nav_host_fragment"
         android:name="androidx.navigation.fragment.NavHostFragment"
@@ -30,8 +29,8 @@
         android:background="@drawable/bottom_nav_bg"
         app:itemActiveIndicatorStyle="@color/black"
         app:itemIconSize="38dp"
-        app:itemIconTint="@color/antyellow"
-        app:itemTextColor="@color/antyellow"
+        app:itemIconTint="@color/webgold"
+        app:itemTextColor="@color/webgold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"

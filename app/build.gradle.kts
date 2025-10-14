@@ -61,6 +61,13 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
+    configurations.all {
+        resolutionStrategy {
+            force("androidx.biometric:biometric:1.1.0")
+        }
+    }
+
 }
 
 dependencies {
@@ -103,4 +110,6 @@ dependencies {
     implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
     implementation("com.google.android.material:material:1.12.0")
     implementation ("com.airbnb.android:lottie:6.4.0")
+    implementation("androidx.biometric:biometric:1.1.0")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }

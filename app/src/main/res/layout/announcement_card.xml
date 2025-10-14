@@ -1,105 +1,131 @@
 <androidx.cardview.widget.CardView
     android:id="@+id/announcementCard"
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
     android:layout_marginBottom="12dp"
-    android:layout_marginHorizontal="4dp"
-    android:elevation="4dp"
     android:clickable="true"
     android:focusable="true"
-    android:padding="0dp">
+    android:padding="0dp"
+    app:cardUseCompatPadding="true"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="6dp"
+    app:cardPreventCornerOverlap="true"
+    app:cardBackgroundColor="@android:color/transparent">
 
     <FrameLayout
         android:id="@+id/cardContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
         android:clipChildren="false"
         android:clipToPadding="false"
-        >
+        android:foreground="?attr/selectableItemBackground"
+        android:padding="0dp">
 
-    <!-- Front Side -->
-    <LinearLayout
-        android:id="@+id/frontView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/navyblue"
-        android:orientation="vertical"
-        android:padding="12dp"
-       >
-
-        <!-- Title -->
-        <TextView
-            android:id="@+id/announcementTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Announcement Title"
-            android:textStyle="bold"
-            android:background="@color/antyellow"
-            android:textSize="24sp"
-            android:textColor="#000000"
-            android:textAlignment="center"
-            android:paddingBottom="8dp"
-            />
-
-        <!-- Info Row -->
+        <!-- Front Side -->
         <LinearLayout
+            android:id="@+id/frontView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="2"
-            android:paddingTop="12sp"
-            android:paddingBottom="12sp"
-            android:layout_marginLeft="5sp">
+            android:background="@drawable/bg_card_front"
+            android:orientation="vertical"
+            android:padding="14dp">
 
-            <LinearLayout
-                android:layout_width="0dp"
+            <!-- Title (pill) -->
+            <TextView
+                android:id="@+id/announcementTitle"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:background="@drawable/bg_title_chip"
+                android:paddingVertical="10dp"
+                android:paddingHorizontal="14dp"
+                android:text="Announcement Title"
+                android:textAlignment="center"
+                android:textColor="#000000"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.02"
+                android:layout_marginBottom="12dp" />
 
-                <TextView
-                    android:id="@+id/adminName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Admin Name"
-                    android:textColor="@color/white" />
+            <!-- Info Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2"
+                android:paddingTop="8dp"
+                android:paddingBottom="10dp">
 
-                <TextView
-                    android:id="@+id/announcementDate"
-                    android:layout_width="wrap_content"
+                <!-- Left: Meta -->
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="24 Jun 2025"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/adminName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Admin Name"
+                        android:textColor="@color/white"
+                        android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                        android:id="@+id/announcementDate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="24 Jun 2025"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:alpha="0.9"
+                        android:layout_marginTop="2dp" />
+
+                    <TextView
+                        android:id="@+id/announcementTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="15:42"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:alpha="0.9"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+
+                <!-- Divider -->
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginHorizontal="8dp"
+                    android:alpha="0.25"
+                    android:background="@android:color/white" />
+
+                <!-- Right: Preview -->
+                <TextView
+                    android:id="@+id/messagePreview"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Sneak peek of the announcement..."
                     android:textColor="@color/white"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:id="@+id/announcementTime"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="15:42"
-                    android:textColor="@color/white"
-                    android:textSize="12sp" />
+                    android:textAlignment="textStart"
+                    android:maxLines="3"
+                    android:ellipsize="end"
+                    android:textSize="14sp"
+                    android:lineSpacingExtra="2dp"
+                    android:layout_marginLeft="8dp" />
             </LinearLayout>
 
-            <!-- Right: Preview -->
-            <TextView
-                android:id="@+id/messagePreview"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Sneak peek of the announcement..."
-                android:textColor="@color/white"
-                android:textAlignment="textStart"
-                android:maxLines="3"
-                android:layout_marginRight="2dp"
-                android:ellipsize="end"
-                android:textSize="14sp" />
+            <!-- Soft separator -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@drawable/divider_soft"
+                android:layout_marginTop="4dp" />
         </LinearLayout>
-
-    </LinearLayout>
-
 
         <!-- Back Side -->
         <LinearLayout
@@ -107,10 +133,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@color/navyblue"
+            android:background="@drawable/bg_card_back"
             android:padding="16dp"
-            android:visibility="gone"
-           >
+            android:visibility="gone">
 
             <TextView
                 android:id="@+id/fullMessage"
@@ -118,16 +143,20 @@
                 android:layout_height="wrap_content"
                 android:text="Full message goes here"
                 android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:paddingBottom="12dp" />
+                android:textSize="15sp"
+                android:lineSpacingExtra="4dp"
+                android:paddingBottom="14dp" />
 
             <Button
                 android:id="@+id/viewAttachmentButton"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="40dp"
+                android:paddingHorizontal="16dp"
                 android:text="View Attachment"
-                android:backgroundTint="@color/antyellow"
-                android:textColor="@color/navyblue" />
+                android:textAllCaps="false"
+                android:background="@drawable/bg_button_primary"
+                android:textColor="@color/navyblue"
+                android:stateListAnimator="@null" />
         </LinearLayout>
 
     </FrameLayout>
