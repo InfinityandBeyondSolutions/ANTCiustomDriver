@@ -1,4 +1,4 @@
-package com.ibs.ibs_antdrivers.ui.home
+package com.ibs.ibs_antdrivers
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -24,6 +24,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
+import androidx.navigation.findNavController
 import com.airbnb.lottie.LottieAnimationView
 import com.ibs.ibs_antdrivers.MainActivity
 import com.ibs.ibs_antdrivers.R
@@ -35,7 +36,6 @@ import java.util.concurrent.TimeUnit
 class HomeFragment : Fragment() {
 
     private var vehicleTrackingBtn: ImageButton? = null
-    private var settingsBtn: ImageView? = null
     private var confetti: LottieAnimationView? = null
 
     private lateinit var tvStatus: TextView
@@ -51,6 +51,8 @@ class HomeFragment : Fragment() {
     private lateinit var llstatus: LinearLayout
     private lateinit var lldate: LinearLayout
     private lateinit var lltime: LinearLayout
+
+    private lateinit var settingsBtn: ImageView
 
     private val timeFmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
     private var baseBtnTint: Int? = null
@@ -88,6 +90,10 @@ class HomeFragment : Fragment() {
         progressClockIn = view.findViewById(R.id.progressClockIn)
         progressClockOut = view.findViewById(R.id.progressClockOut)
 
+        settingsBtn = view.findViewById(R.id.settingsIcon)
+
+
+
         llstatus = view.findViewById(R.id.llstatus)
         lldate   = view.findViewById(R.id.lldate)
         lltime   = view.findViewById(R.id.lltime)
@@ -116,12 +122,10 @@ class HomeFragment : Fragment() {
             }
         }
 
-        // Settings shortcut
-        settingsBtn = view.findViewById<ImageView?>(R.id.settingsIcon)?.apply {
-            setOnClickListener {
-                startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-            }
+        settingsBtn.setOnClickListener {
+            it.findNavController().navigate(R.id.settingsFragment)
         }
+
 
         btnClockIn.setOnClickListener { v ->
             v.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)

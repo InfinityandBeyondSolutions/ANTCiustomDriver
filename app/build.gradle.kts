@@ -11,6 +11,7 @@ android {
 
     buildFeatures {
         buildConfig = true
+        viewBinding = false
     }
 
     defaultConfig {
@@ -23,6 +24,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "EMPLOYEE", "\"E2M7P0L3O2Y0E2E5#\"")
+
+        buildConfigField("String", "PASSWORD_KEY", "\"8CiSlCroyJPLcD5hFU1JBoN45h8Rk/OL3LsSi/TLV7Y=\"")
 
         // Add Mapbox token configuration - Kotlin DSL syntax
         manifestPlaceholders["MAPBOX_ACCESS_TOKEN"] = project.findProperty("MAPBOX_ACCESS_TOKEN") as String? ?: ""
@@ -112,4 +115,14 @@ dependencies {
     implementation ("com.airbnb.android:lottie:6.4.0")
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    implementation(platform("com.google.firebase:firebase-bom:33.2.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-database")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+
+    implementation("io.coil-kt:coil:2.7.0")
+
 }
