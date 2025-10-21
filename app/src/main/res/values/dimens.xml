@@ -1,0 +1,5 @@
+<resources>
+    <dimen name="screen_pad_h">24dp</dimen>
+    <dimen name="screen_pad_v">16dp</dimen>
+    <dimen name="card_margin_h">12dp</dimen>
+</resources>

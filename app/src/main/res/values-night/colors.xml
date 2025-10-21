@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background">#121212</color>
+    <color name="onBackground">#EDEDED</color>
+    <color name="surface">#1E1E1E</color>
+    <color name="onSurface">#E6E6E6</color>
+    <color name="outline">#33FFFFFF</color>
+    <color name="softDivider">#1AFFFFFF</color>
+
+    <color name="navyblue">#2A2E83</color>
+    <color name="antyellow">#FFD13D</color>
+
+        <!-- flips: yellow in dark -->
+    <color name="welcome_text">@color/antyellow</color>
+        <!-- (optional) icon tint flips too -->
+    <color name="icon_tint">@color/antyellow</color>
+
+
+</resources>

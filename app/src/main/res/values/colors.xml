@@ -17,6 +17,22 @@
     <color name="webdarknavy">#051229</color>
     <color name="webblack">#1A1A1A</color>
 
+        <!-- Semantic tokens (Light) -->
+    <color name="background">#FFFFFFFF</color>
+    <color name="onBackground">#1A1A1A</color>
+
+    <color name="surface">#FFFFFFFF</color>
+    <color name="onSurface">#1A1A1A</color>
+
+        <!-- Optional outlines/dividers that adapt -->
+    <color name="outline">#33000000</color>
+    <color name="softDivider">#1A000000</color>
+
+    <color name="welcome_text">@color/navyblue</color>
+    <!-- (optional) icon tint, etc. -->
+    <color name="icon_tint">@color/navyblue</color>
+
+
 </resources>
 
 

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="screen_pad_h">32dp</dimen>
+    <dimen name="screen_pad_v">20dp</dimen>
+    <dimen name="card_margin_h">16dp</dimen>
+</resources>

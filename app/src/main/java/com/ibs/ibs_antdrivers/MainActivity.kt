@@ -90,6 +90,7 @@ class MainActivity : AppCompatActivity() {
     // --- Lifecycle ---
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeManager.applySavedMode(this)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         hideStatusBar()

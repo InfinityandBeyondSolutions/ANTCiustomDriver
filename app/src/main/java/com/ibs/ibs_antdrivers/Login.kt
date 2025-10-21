@@ -116,6 +116,7 @@ class Login : AppCompatActivity() {
         }
     }
 
+
     private fun signInUser(email: String, password: String, postLoginAskBiometrics: Boolean = false) {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->

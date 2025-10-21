@@ -10,7 +10,11 @@
         android:fitsSystemWindows="true"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="16dp">
+        android:paddingStart="@dimen/screen_pad_h"
+        android:paddingEnd="@dimen/screen_pad_h"
+        android:paddingTop="@dimen/screen_pad_v"
+        android:paddingBottom="@dimen/screen_pad_v"
+        >
 
 
         <LinearLayout
@@ -33,9 +37,22 @@
                     android:padding="8dp"
                     android:clickable="true"
                     android:focusable="true"
-                    android:contentDescription="Back"
+                    android:contentDescription="Back Button"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/vector_backbuttonblack" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Settings"
+                    android:textSize="35dp"
+                    android:textAlignment="center"
+                    android:paddingBottom="10dp"/>
             </LinearLayout>
 
             <!-- Profile header (optional) -->
@@ -59,7 +76,8 @@
                         android:id="@+id/imgAvatar"
                         android:layout_width="56dp"
                         android:layout_height="56dp"
-                        android:src="@drawable/vector_announcements" />
+                        android:src="@drawable/vector_profile"
+                        />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -73,13 +91,14 @@
                             android:textStyle="bold"
                             android:textSize="18sp"
                             android:text="Employee"
+                            android:textColor="@color/black"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
 
                         <TextView
                             android:id="@+id/txtEmail"
                             android:textSize="14sp"
-                            android:textColor="?attr/colorOutline"
+                            android:textColor="@color/black"
                             android:text="email@example.com"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
@@ -107,7 +126,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Use biometrics to unlock app"
-                        android:padding="8dp"/>
+                        android:padding="8dp"
+                        android:textColor="@color/black"/>
 
                     <com.google.android.material.divider.MaterialDivider
                         android:layout_width="match_parent"
@@ -148,14 +168,16 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Dark mode"
-                        android:padding="8dp" />
+                        android:padding="8dp"
+                        android:textColor="@color/black"/>
 
                     <com.google.android.material.materialswitch.MaterialSwitch
                         android:id="@+id/switchNotifications"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Notifications"
-                        android:padding="8dp" />
+                        android:padding="8dp"
+                        android:textColor="@color/black"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

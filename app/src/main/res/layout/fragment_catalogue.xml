@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
+
     tools:context=".CatalogueFragment">
 
     <LinearLayout
@@ -14,15 +14,15 @@
         <TextView
             android:id="@+id/catalogueTitle"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="Catalogue Viewer"
-            android:textSize="20sp"
-            android:textColor="@android:color/white"
+            android:layout_height="87dp"
             android:background="@color/navyblue"
+            android:elevation="4dp"
             android:gravity="center"
             android:paddingHorizontal="16dp"
-            android:textStyle="bold"
-            android:elevation="4dp" />
+            android:text="Catalogue Viewer"
+            android:textColor="@android:color/white"
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
         <!-- PDF Display Card -->
         <FrameLayout

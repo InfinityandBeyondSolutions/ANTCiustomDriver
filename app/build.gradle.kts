@@ -125,4 +125,6 @@ dependencies {
 
     implementation("io.coil-kt:coil:2.7.0")
 
+    implementation ("com.google.android.material:material:1.12.0")
+
 }
