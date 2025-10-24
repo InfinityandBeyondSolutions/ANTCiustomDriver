@@ -16,4 +16,18 @@
     <color name="icon_tint">@color/antyellow</color>
 
 
+
+    <!-- these here are for the chatting page (the heading and the title colour-->
+    <color name ="chattitlebg">#131C20</color>
+    <color name ="chatmaintext">@color/white</color>
+    <color name ="chatbackicon">@color/white</color>
+
+    <!-- these here are for the main group page (the heading + icon-->
+    <color name ="groupname">@color/webgold</color>
+    <color name ="groupiconmenu">@color/webgold</color>
+
+    <!-- black = light, white = dark-->
+    <color name ="textbw">@color/white</color>
+
+
 </resources>

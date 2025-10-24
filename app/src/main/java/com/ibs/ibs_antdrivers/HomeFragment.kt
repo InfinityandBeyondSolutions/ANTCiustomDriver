@@ -28,6 +28,7 @@ import androidx.navigation.findNavController
 import com.airbnb.lottie.LottieAnimationView
 import com.ibs.ibs_antdrivers.MainActivity
 import com.ibs.ibs_antdrivers.R
+import com.ibs.ibs_antdrivers.ui.GroupListFragment
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -37,6 +38,7 @@ class HomeFragment : Fragment() {
 
     private var vehicleTrackingBtn: ImageButton? = null
     private var confetti: LottieAnimationView? = null
+    private lateinit var btnMsg: ImageButton
 
     private lateinit var tvStatus: TextView
     private lateinit var tvTimes: TextView
@@ -84,6 +86,7 @@ class HomeFragment : Fragment() {
 
         btnClockIn = view.findViewById(R.id.btnClockIn)
         btnClockOut = view.findViewById(R.id.btnClockOut)
+        btnMsg = view.findViewById(R.id.ibGoToMsg)
 
         confetti = view.findViewById(R.id.confetti)
 
@@ -123,9 +126,17 @@ class HomeFragment : Fragment() {
         }
 
         settingsBtn.setOnClickListener {
-            it.findNavController().navigate(R.id.settingsFragment)
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.nav_host_fragment, SettingsFragment())
+                .addToBackStack(null)
+                .commit()
+
         }
 
+        //GOING TO CHAT NAVIGATION DOWN HERE
+        btnMsg.setOnClickListener {
+            (activity as? com.ibs.ibs_antdrivers.MainActivity)?.openGroupList()
+        }
 
         btnClockIn.setOnClickListener { v ->
             v.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)

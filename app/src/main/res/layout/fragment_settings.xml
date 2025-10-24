@@ -37,6 +37,7 @@
                     android:padding="8dp"
                     android:clickable="true"
                     android:focusable="true"
+                    app:tint="@color/chatbackicon"
                     android:contentDescription="Back Button"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/vector_backbuttonblack" />

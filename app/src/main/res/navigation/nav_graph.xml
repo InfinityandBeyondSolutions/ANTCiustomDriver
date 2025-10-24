@@ -5,11 +5,12 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/navHomeDriver">
 
-    <!-- Home Fragment -->
     <fragment
         android:id="@+id/navHomeDriver"
         android:name="com.ibs.ibs_antdrivers.HomeFragment"
-        android:label="Driver Home">
+        android:label="Driver Home"
+        tools:layout="@layout/fragment_home">
+
         <action
             android:id="@+id/action_home_to_settings"
             app:destination="@id/settingsFragment"
@@ -17,16 +18,21 @@
             app:exitAnim="@anim/fragment_slide_out_left"
             app:popEnterAnim="@anim/fragment_slide_in_left"
             app:popExitAnim="@anim/fragment_slide_out_right" />
+
+        <action
+            android:id="@+id/action_home_to_store"
+            app:destination="@id/navStore" />
+
+        <action
+            android:id="@+id/action_home_to_vehicleTracking"
+            app:destination="@id/vehicleTrackingFragment" />
     </fragment>
 
-
-    <!-- Vehicle Tracking Fragment -->
     <fragment
         android:id="@+id/vehicleTrackingFragment"
         android:name="com.ibs.ibs_antdrivers.VehicleTracking"
         android:label="Vehicle Tracking" />
 
-    <!-- Store Fragment -->
     <fragment
         android:id="@+id/navStore"
         android:name="com.ibs.ibs_antdrivers.DriverStoreSearch"
@@ -47,70 +53,42 @@
             app:popExitAnim="@anim/fragment_slide_out_right" />
     </fragment>
 
-    <!-- Capture Images Fragment -->
     <fragment
         android:id="@+id/driverCaptureProductImages"
         android:name="com.ibs.ibs_antdrivers.DriverCaptureProductImages"
         android:label="Capture Product Images">
-        <argument
-            android:name="storeId"
-            app:argType="string" />
-        <argument
-            android:name="driverName"
-            app:argType="string" />
-        <argument
-            android:name="storeName"
-            app:argType="string"
-            android:defaultValue="Unknown Store" />
+        <argument android:name="storeId" app:argType="string" />
+        <argument android:name="driverName" app:argType="string" />
+        <argument android:name="storeName" app:argType="string" android:defaultValue="Unknown Store" />
     </fragment>
 
-    <!-- Store Gallery Fragment -->
     <fragment
         android:id="@+id/storeGallery"
         android:name="com.ibs.ibs_antdrivers.StoreGallery"
         android:label="Store Gallery">
-        <argument
-            android:name="storeId"
-            app:argType="string" />
-        <argument
-            android:name="storeName"
-            app:argType="string"
-            android:defaultValue="Unknown Store" />
+        <argument android:name="storeId" app:argType="string" />
+        <argument android:name="storeName" app:argType="string" android:defaultValue="Unknown Store" />
     </fragment>
 
-    <!-- Call Cycle Fragment -->
     <fragment
         android:id="@+id/navCallCycle"
         android:name="com.ibs.ibs_antdrivers.CallCycleFragment"
         android:label="Call Cycle" />
 
-    <!-- Catalogue Fragment -->
     <fragment
         android:id="@+id/navCatalogue"
         android:name="com.ibs.ibs_antdrivers.CatalogueFragment"
         android:label="Catalogue" />
 
-    <!-- Announcements Fragment -->
     <fragment
         android:id="@+id/navAnnouncementsDriver"
         android:name="com.ibs.ibs_antdrivers.AnnouncementsFragment"
         android:label="Announcements" />
 
-    <!-- Settings Fragment -->
+    <!-- Settings destination for action_home_to_settings -->
     <fragment
         android:id="@+id/settingsFragment"
         android:name="com.ibs.ibs_antdrivers.SettingsFragment"
         android:label="Settings"
-        tools:layout="@layout/fragment_settings">
-        <action
-            android:id="@+id/action_settings_to_changePassword"
-            app:destination="@id/changePasswordFragment" />
-    </fragment>
-
-    <!-- Change Password Fragment -->
-    <fragment
-        android:id="@+id/changePasswordFragment"
-        android:name="com.ibs.ibs_antdrivers.ChangePasswordFragment"
-        android:label="Change Password"
-        tools:layout="@layout/fragment_change_password" />
+        tools:layout="@layout/fragment_settings" />
 </navigation>

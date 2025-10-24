@@ -55,9 +55,14 @@ class ChangePasswordFragment : Fragment() {
         val txtStrengthLabel = view.findViewById<TextView>(R.id.txtStrengthLabel)
         val btnSave = view.findViewById<MaterialButton>(R.id.btnSave)
         val progress = view.findViewById<CircularProgressIndicator>(R.id.progress)
+        val btnback = view.findViewById<ImageView>(R.id.btnBackChangePassword)
 
         // Ensure progress goes 0..100
         strengthBar.max = 100
+
+        btnback.setOnClickListener {
+            replaceFragment(SettingsFragment())
+        }
 
         fun scorePassword(pw: String): Pair<Int, String> {
             var score = 0
@@ -68,6 +73,8 @@ class ChangePasswordFragment : Fragment() {
             val label = arrayOf("Very Weak", "Weak", "Okay", "Good", "Strong")[score]
             return score to label
         }
+
+
 
         edtNew.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {}
@@ -136,6 +143,13 @@ class ChangePasswordFragment : Fragment() {
                 }
             }
         }
+    }
+
+    private fun replaceFragment(fragment: Fragment) {
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.nav_host_fragment, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 }
 

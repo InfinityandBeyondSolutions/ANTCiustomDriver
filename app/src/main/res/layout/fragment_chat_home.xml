@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/chattitlebg"
+    tools:context="ui.ChatHomeFragment">
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="34dp" />
+
+    <ImageView
+        android:layout_width="45dp"
+        android:id="@+id/btnBackToGroupPage"
+        android:layout_height="45dp"
+        android:src="@drawable/vector_backbuttonblack"
+        android:layout_marginStart="20dp"
+        app:tint="@color/chatbackicon" />
+
+    <TextView
+        android:id="@+id/title"
+        android:textStyle="bold"
+        android:textSize="26sp"
+        android:padding="12dp"
+        android:textColor="@color/chatmaintext"
+        android:textAlignment="center"
+        android:text="Group Name"
+        android:background="@color/chattitlebg"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler"
+        android:layout_width="match_parent"
+        android:layout_height="920dp"
+        android:layout_weight="1"
+        android:padding="8dp"
+        android:background="@drawable/chat_bg_tile"/>
+
+    <ProgressBar
+        android:id="@+id/progress"
+        android:visibility="gone"
+        android:layout_gravity="center_horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <ImageButton
+            android:id="@+id/btnAttach"
+            android:src="@android:drawable/ic_menu_add"
+
+            android:background="@android:color/transparent"
+            android:contentDescription="Attach"
+            android:layout_width="40dp"
+            android:layout_height="40dp" />
+        <EditText
+            android:id="@+id/input"
+            android:hint="Type a message"
+            android:layout_marginStart="8dp"
+            android:layout_width="0dp"
+            android:textColor="@color/textbw"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            />
+        <Button
+            android:id="@+id/btnSend"
+            android:text="Send"
+            android:textColor="#001529"
+            android:backgroundTint="#FFD700"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp" />
+    </LinearLayout>
+</LinearLayout>

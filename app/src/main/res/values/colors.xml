@@ -3,10 +3,15 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
+    <color name="navy">#0b1a3e</color>
+    <color name="yellow">#ffd54f</color>
+    <color name="bubble">#f5f7fb</color>
+
     <color name="antyellow">#FACF21</color>
     <color name="navyblue">#2D378B</color>
     <color name="pastelyellow">#F9F9C1</color>
     <color name="babyblue">#C2E0FE</color>
+    <color name="lilac">#EFCEFF</color>
 
     <!-- webb app colours -->
     <color name="webgold">#D4AF37</color>
@@ -31,6 +36,17 @@
     <color name="welcome_text">@color/navyblue</color>
     <!-- (optional) icon tint, etc. -->
     <color name="icon_tint">@color/navyblue</color>
+
+    <color name ="chattitlebg">#F2E5C9</color>
+    <color name ="chatmaintext">@color/black</color>
+    <color name ="chatbackicon">@color/black</color>
+
+    <!-- these here are for the main group page (the heading + icon-->
+    <color name ="groupname">@color/webnavy</color>
+    <color name ="groupiconmenu">@color/webnavy</color>
+
+    <!-- black = light, white = dark-->
+    <color name ="textbw">@color/black</color>
 
 
 </resources>

@@ -27,6 +27,7 @@ import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+import com.ibs.ibs_antdrivers.ui.GroupListFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -35,6 +36,7 @@ import kotlinx.coroutines.withContext
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private val auth by lazy { FirebaseAuth.getInstance() }
+
 
     // --- Notification constants (local only; still storing in SharedPreferences) ---
     private val CHANNEL_ID_GENERAL = "general"
@@ -82,7 +84,15 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         val btnBack             = view.findViewById<ImageView>(R.id.btnBackSettings)
         val btnSupport          = view.findViewById<MaterialButton>(R.id.btnSupport)
 
-        btnBack.setOnClickListener { findNavController().navigateUp() }
+
+
+        btnBack.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.nav_host_fragment, HomeFragment())
+                .addToBackStack(null)
+                .commit()
+
+        }
 
         val prefs = requireContext().getSharedPreferences("settings", Context.MODE_PRIVATE)
         val uid = auth.currentUser?.uid
@@ -175,7 +185,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         // ---- Notifications toggle (SharedPreferences ONLY) ----
-        switchNotifications.setOnCheckedChangeListener { _, enabled ->
+        switchNotifications.setOnCheckedChangeListener @androidx.annotation.RequiresPermission(
+            android.Manifest.permission.POST_NOTIFICATIONS
+        ) { _, enabled ->
             if (enabled) {
                 // On Android 13+, we must have POST_NOTIFICATIONS permission
                 if (Build.VERSION.SDK_INT >= 33 && !hasNotifPermission()) {
@@ -212,7 +224,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         // ---- Change password ----
         btnChangePassword.setOnClickListener {
-            findNavController().navigate(R.id.action_settings_to_changePassword)
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.nav_host_fragment, ChangePasswordFragment())
+                .addToBackStack(null)
+                .commit()
+
         }
 
         // ---- Sign out ----

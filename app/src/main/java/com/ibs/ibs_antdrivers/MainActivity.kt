@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.LocationManager
-import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -18,13 +17,20 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationChannelCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.commit
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+import com.ibs.ibs_antdrivers.data.TopicSubscriber
 import com.ibs.ibs_antdrivers.service.LocationTrackingService
+import com.ibs.ibs_antdrivers.ui.ChatHomeFragment
+import com.ibs.ibs_antdrivers.ui.GroupListFragment
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -35,6 +41,15 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var prefs: SharedPreferences
+    private val auth2 by lazy { FirebaseAuth.getInstance() }
+    private lateinit var bottomNavView: BottomNavigationView
+
+    private val askPostNotifications =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (!granted) {
+                Toast.makeText(this, "Notifications disabled", Toast.LENGTH_SHORT).show()
+            }
+        }
 
     private val dateFmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private fun todayKey(): String = dateFmt.format(Date())
@@ -49,10 +64,8 @@ class MainActivity : AppCompatActivity() {
         private const val KEY_ACTIVE_SHIFT_DATE = "active_shift_date"
         private const val KEY_ACTIVE_SHIFT_SESSION = "active_shift_session"
         private const val KEY_BATTERY_DIALOG_SHOWN = "battery_dialog_shown"
-        private val RETENTION_MS = TimeUnit.DAYS.toMillis(90) // 3 months
+        private val RETENTION_MS = TimeUnit.DAYS.toMillis(90)
     }
-
-    // --- Activity Result Launchers ---
 
     private val fineCoarseLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -85,15 +98,73 @@ class MainActivity : AppCompatActivity() {
 
     private val notificationsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* optional */ }
-
-    // --- Lifecycle ---
+    ) { /* nop */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applySavedMode(this)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         hideStatusBar()
+
+        ensureNotificationChannel()
+        requestPostNotificationIfNeeded()
+
+        //code below makes group chats open on the home page
+//        if (savedInstanceState == null) {
+//            // default screen = groups
+//            supportFragmentManager.commit {
+//                replace(R.id.nav_host_fragment, GroupListFragment())
+//            }
+//            handleIntent(intent) // deeplink from FCM
+//        }
+
+
+
+
+        //NAVIGATION THAT IS EASY TO WORK WITH
+        bottomNavView = findViewById(R.id.nav_host_fragment)
+        bottomNavView.selectedItemId = R.id.navHomeDriver //makes home main one selected
+        replaceFragment(HomeFragment()) //making syre to go to home page
+        bottomNavView.setOnItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.navHomeDriver -> {
+
+                    replaceFragment(HomeFragment())
+                    true
+                }
+                R.id.navCallCycle -> {
+
+                    replaceFragment(CallCycleFragment())
+                    true
+                }
+                R.id.navStore -> {
+
+                    replaceFragment(StoreGallery())
+                    true
+                }
+                R.id.navCatalogue -> {
+
+                    replaceFragment(CatalogueFragment())
+                    true
+                }
+                R.id.navAnnouncementsDriver -> {
+
+                    replaceFragment(AnnouncementsFragment())
+                    true
+                }
+                else -> false
+            }
+        }
+
+        // Set default fragment if there's no saved instance state
+        if (savedInstanceState == null) {
+            replaceFragment(HomeFragment())
+        }
+
+
+        //END OF NAVIGATION THANKS FOR COMING
+
+
 
         auth = FirebaseAuth.getInstance()
         prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
@@ -104,28 +175,25 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val navView: BottomNavigationView = findViewById(R.id.bottom_navigation)
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        navView.setupWithNavController(navHostFragment.navController)
+        // If you actually use a NavHost + bottom nav, wire it here (keep if you have the views)
+        val navView: BottomNavigationView? = findViewById(R.id.bottom_navigation)
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as? NavHostFragment
+        if (navView != null && navHostFragment != null) {
+            navView.setupWithNavController(navHostFragment.navController)
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
         ) {
             notificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-
-        try {
-            val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            val ringtone = RingtoneManager.getRingtone(this, uri)
-            if (ringtone?.isPlaying == true) ringtone.stop()
-        } catch (_: Exception) {}
 
         FirebaseDatabase.getInstance().goOnline()
 
         cleanupOldShifts()
         ensureDriverInfoBase()
 
-        // ✅ Resume tracking if user was already clocked in
         if (prefs.getBoolean(KEY_TRACKING_ACTIVE, false)) {
             startTrackingIfEnabledAndAllowed()
             updateDriverSessionInfo(true)
@@ -249,7 +317,74 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Location tracking stopped", Toast.LENGTH_SHORT).show()
     }
 
-    // --- Shift management ---
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        auth.currentUser?.uid?.let { uid ->
+            TopicSubscriber.subscribeToMyGroups(uid)
+        }
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        val deeplink = intent?.getStringExtra("deeplink")
+        val groupIdExtra = intent?.getStringExtra("groupId")
+        val groupId = groupIdExtra ?: extractGroupIdFromUrl(deeplink)
+        if (!groupId.isNullOrBlank()) {
+            openChat(groupId)
+        }
+    }
+
+    private fun extractGroupIdFromUrl(url: String?): String? {
+        if (url.isNullOrBlank()) return null
+        return url.substringAfter("/chat/", missingDelimiterValue = "").takeIf { it.isNotBlank() }
+    }
+
+     fun openChat(groupId: String, groupName: String? = null) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.nav_host_fragment, com.ibs.ibs_antdrivers.ui.ChatHomeFragment.newInstance(groupId, groupName))
+            .addToBackStack("chat")
+            .commit()
+    }
+
+
+
+
+    fun openGroupList() {
+        supportFragmentManager.commit {
+            replace(R.id.nav_host_fragment, com.ibs.ibs_antdrivers.ui.GroupListFragment())
+            addToBackStack("groups")
+        }
+    }
+
+    /* ---------- Notification Channel ---------- */
+
+    private fun ensureNotificationChannel() {
+        val channel = NotificationChannelCompat.Builder(
+            "chat_messages",
+            NotificationManagerCompat.IMPORTANCE_HIGH
+        )
+            .setName("Chat Messages")
+            .setDescription("Group chat notifications")
+            .build()
+        NotificationManagerCompat.from(this).createNotificationChannel(channel)
+    }
+
+    private fun requestPostNotificationIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val ok = ContextCompat.checkSelfPermission(
+                this, Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!ok) askPostNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+
+
+// --- Shift management ---
 
     private fun createShiftAndStartTracking() {
         val uid = auth.currentUser?.uid ?: return
@@ -446,5 +581,12 @@ class MainActivity : AppCompatActivity() {
         auth.signOut()
         startActivity(Intent(this, Login::class.java))
         finish()
+    }
+
+    private fun replaceFragment(fragment: Fragment) {
+
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.nav_host_fragment, fragment)
+            .commit()
     }
 }
