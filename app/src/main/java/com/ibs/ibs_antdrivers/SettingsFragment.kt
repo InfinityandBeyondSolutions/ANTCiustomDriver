@@ -88,7 +88,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         btnBack.setOnClickListener {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.nav_host_fragment, HomeFragment())
+                .replace(R.id.main_container, HomeFragment())
                 .addToBackStack(null)
                 .commit()
 
@@ -225,7 +225,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         // ---- Change password ----
         btnChangePassword.setOnClickListener {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.nav_host_fragment, ChangePasswordFragment())
+                .replace(R.id.main_container, ChangePasswordFragment())
                 .addToBackStack(null)
                 .commit()
 

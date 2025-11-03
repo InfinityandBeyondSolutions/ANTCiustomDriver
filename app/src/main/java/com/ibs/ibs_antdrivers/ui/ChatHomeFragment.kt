@@ -124,7 +124,7 @@ class ChatHomeFragment : Fragment() {
 
         btnBack.setOnClickListener {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.nav_host_fragment, GroupListFragment())
+                .replace(R.id.main_container, GroupListFragment())
                 .addToBackStack(null)
                 .commit()
 

@@ -147,7 +147,7 @@ class ChangePasswordFragment : Fragment() {
 
     private fun replaceFragment(fragment: Fragment) {
         parentFragmentManager.beginTransaction()
-            .replace(R.id.nav_host_fragment, fragment)
+            .replace(R.id.main_container, fragment)
             .addToBackStack(null)
             .commit()
     }

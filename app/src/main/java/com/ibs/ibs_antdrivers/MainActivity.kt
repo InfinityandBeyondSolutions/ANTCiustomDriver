@@ -22,8 +22,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
-import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.ui.setupWithNavController
+//import androidx.navigation.fragment.NavHostFragment
+//import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var prefs: SharedPreferences
+
     private val auth2 by lazy { FirebaseAuth.getInstance() }
     private lateinit var bottomNavView: BottomNavigationView
 
@@ -109,7 +110,7 @@ class MainActivity : AppCompatActivity() {
         ensureNotificationChannel()
         requestPostNotificationIfNeeded()
 
-        //code below makes group chats open on the home page
+        //code below makes group chats open on the home page immediately
 //        if (savedInstanceState == null) {
 //            // default screen = groups
 //            supportFragmentManager.commit {
@@ -122,7 +123,10 @@ class MainActivity : AppCompatActivity() {
 
 
         //NAVIGATION THAT IS EASY TO WORK WITH
-        bottomNavView = findViewById(R.id.nav_host_fragment)
+       // bottomNavView = findViewById(R.id.nav_host_fragment)
+
+        bottomNavView = findViewById(R.id.bottom_navigation)
+
         bottomNavView.selectedItemId = R.id.navHomeDriver //makes home main one selected
         replaceFragment(HomeFragment()) //making syre to go to home page
         bottomNavView.setOnItemSelectedListener { menuItem ->
@@ -158,8 +162,10 @@ class MainActivity : AppCompatActivity() {
 
         // Set default fragment if there's no saved instance state
         if (savedInstanceState == null) {
+            bottomNavView.selectedItemId = R.id.navHomeDriver
             replaceFragment(HomeFragment())
         }
+
 
 
         //END OF NAVIGATION THANKS FOR COMING
@@ -176,11 +182,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         // If you actually use a NavHost + bottom nav, wire it here (keep if you have the views)
-        val navView: BottomNavigationView? = findViewById(R.id.bottom_navigation)
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as? NavHostFragment
-        if (navView != null && navHostFragment != null) {
-            navView.setupWithNavController(navHostFragment.navController)
-        }
+        //val navView: BottomNavigationView? = findViewById(R.id.bottom_navigation)
+    //    val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as? NavHostFragment
+       // if (navView != null && navHostFragment != null) {
+        //    navView.setupWithNavController(navHostFragment.navController)
+       // }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -343,21 +349,20 @@ class MainActivity : AppCompatActivity() {
         return url.substringAfter("/chat/", missingDelimiterValue = "").takeIf { it.isNotBlank() }
     }
 
-     fun openChat(groupId: String, groupName: String? = null) {
+
+
+    fun openChat(groupId: String, groupName: String? = null) {
         supportFragmentManager.beginTransaction()
-            .replace(R.id.nav_host_fragment, com.ibs.ibs_antdrivers.ui.ChatHomeFragment.newInstance(groupId, groupName))
+            .replace(R.id.main_container, ChatHomeFragment.newInstance(groupId, groupName))
             .addToBackStack("chat")
             .commit()
     }
 
-
-
-
     fun openGroupList() {
-        supportFragmentManager.commit {
-            replace(R.id.nav_host_fragment, com.ibs.ibs_antdrivers.ui.GroupListFragment())
-            addToBackStack("groups")
-        }
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.main_container, GroupListFragment())
+            .addToBackStack("groups")
+            .commit()
     }
 
     /* ---------- Notification Channel ---------- */
@@ -584,9 +589,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun replaceFragment(fragment: Fragment) {
-
         supportFragmentManager.beginTransaction()
-            .replace(R.id.nav_host_fragment, fragment)
+            .replace(R.id.main_container, fragment)
             .commit()
     }
 }

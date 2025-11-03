@@ -45,7 +45,7 @@ class GroupListFragment : Fragment() {
 
         btnBack.setOnClickListener {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.nav_host_fragment, HomeFragment())
+                .replace(R.id.main_container, HomeFragment())
                 .addToBackStack(null)
                 .commit()
 

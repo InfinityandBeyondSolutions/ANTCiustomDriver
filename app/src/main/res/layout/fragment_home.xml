@@ -113,7 +113,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Timesheets -->
+        <!-- Messages Block -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/timesheetsCard"
             android:layout_width="0dp"
@@ -165,6 +165,7 @@
             app:strokeWidth="1dp">
 
             <LinearLayout
+
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/bg_stat_card"
@@ -173,15 +174,17 @@
 
                 <ImageView
                     android:layout_width="40dp"
+                    android:id="@+id/btnPhonebook"
                     android:layout_height="40dp"
-                    android:contentDescription="Support" />
-                <!-- android:src="@drawable/ic_round_help_24" -->
+                    android:contentDescription="Phonebook"
+                    android:src="@drawable/vector_phonebook"/>
 
                 <TextView
                     android:layout_width="wrap_content"
+
                     android:layout_height="wrap_content"
                     android:paddingTop="4dp"
-                    android:text="Support"
+                    android:text="Phonebook"
                     android:textColor="@color/navyblue"
                     android:textSize="12sp" />
             </LinearLayout>

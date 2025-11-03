@@ -55,6 +55,7 @@ class HomeFragment : Fragment() {
     private lateinit var lltime: LinearLayout
 
     private lateinit var settingsBtn: ImageView
+    private lateinit var btnPhonebook: ImageView
 
     private val timeFmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
     private var baseBtnTint: Int? = null
@@ -94,6 +95,7 @@ class HomeFragment : Fragment() {
         progressClockOut = view.findViewById(R.id.progressClockOut)
 
         settingsBtn = view.findViewById(R.id.settingsIcon)
+        btnPhonebook= view.findViewById(R.id.btnPhonebook)
 
 
 
@@ -127,11 +129,24 @@ class HomeFragment : Fragment() {
 
         settingsBtn.setOnClickListener {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.nav_host_fragment, SettingsFragment())
+                .replace(R.id.main_container, SettingsFragment())
                 .addToBackStack(null)
                 .commit()
 
         }
+
+        btnPhonebook.setOnClickListener {
+            requireActivity().supportFragmentManager
+                .beginTransaction()
+                .setReorderingAllowed(true)
+                .replace(
+                    R.id.main_container,
+                    com.ibs.ibs_antdrivers.ui.phonebook.AdminPhonebookFragment()
+                )
+                .addToBackStack("phonebook")
+                .commit()
+        }
+
 
         //GOING TO CHAT NAVIGATION DOWN HERE
         btnMsg.setOnClickListener {
