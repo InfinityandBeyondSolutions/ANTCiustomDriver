@@ -20,17 +20,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.commit
-//import androidx.navigation.fragment.NavHostFragment
-//import androidx.navigation.ui.setupWithNavController
+import androidx.navigation.NavController
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.ibs.ibs_antdrivers.data.TopicSubscriber
 import com.ibs.ibs_antdrivers.service.LocationTrackingService
-import com.ibs.ibs_antdrivers.ui.ChatHomeFragment
-import com.ibs.ibs_antdrivers.ui.GroupListFragment
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -42,8 +39,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var prefs: SharedPreferences
 
-    private val auth2 by lazy { FirebaseAuth.getInstance() }
     private lateinit var bottomNavView: BottomNavigationView
+    private lateinit var navController: NavController
 
     private val askPostNotifications =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -104,89 +101,31 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applySavedMode(this)
         super.onCreate(savedInstanceState)
+
+        auth = FirebaseAuth.getInstance()
+        prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+
+        // Enforce sign-in + 7-day cookie.
+        if (!isLoggedInWithValidCookie()) {
+            goToLoginAndFinish()
+            return
+        }
+
         setContentView(R.layout.activity_main)
         hideStatusBar()
 
         ensureNotificationChannel()
         requestPostNotificationIfNeeded()
 
-        //code below makes group chats open on the home page immediately
-//        if (savedInstanceState == null) {
-//            // default screen = groups
-//            supportFragmentManager.commit {
-//                replace(R.id.nav_host_fragment, GroupListFragment())
-//            }
-//            handleIntent(intent) // deeplink from FCM
-//        }
-
-
-
-
-        //NAVIGATION THAT IS EASY TO WORK WITH
-       // bottomNavView = findViewById(R.id.nav_host_fragment)
-
+        // ---- Navigation Component wiring (nav_graph.xml only) ----
         bottomNavView = findViewById(R.id.bottom_navigation)
+        val navHost = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        navController = navHost.navController
+        bottomNavView.setupWithNavController(navController)
 
-        bottomNavView.selectedItemId = R.id.navHomeDriver //makes home main one selected
-        replaceFragment(HomeFragment()) //making syre to go to home page
-        bottomNavView.setOnItemSelectedListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.navHomeDriver -> {
-
-                    replaceFragment(HomeFragment())
-                    true
-                }
-                R.id.navCallCycle -> {
-
-                    replaceFragment(CallCycleFragment())
-                    true
-                }
-                R.id.navStore -> {
-
-                    replaceFragment(StoreGallery())
-                    true
-                }
-                R.id.navCatalogue -> {
-
-                    replaceFragment(CatalogueFragment())
-                    true
-                }
-                R.id.navAnnouncementsDriver -> {
-
-                    replaceFragment(AnnouncementsFragment())
-                    true
-                }
-                else -> false
-            }
-        }
-
-        // Set default fragment if there's no saved instance state
-        if (savedInstanceState == null) {
-            bottomNavView.selectedItemId = R.id.navHomeDriver
-            replaceFragment(HomeFragment())
-        }
-
-
-
-        //END OF NAVIGATION THANKS FOR COMING
-
-
-
-        auth = FirebaseAuth.getInstance()
-        prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
-
-        if (auth.currentUser == null) {
-            startActivity(Intent(this, Login::class.java))
-            finish()
-            return
-        }
-
-        // If you actually use a NavHost + bottom nav, wire it here (keep if you have the views)
-        //val navView: BottomNavigationView? = findViewById(R.id.bottom_navigation)
-    //    val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as? NavHostFragment
-       // if (navView != null && navHostFragment != null) {
-        //    navView.setupWithNavController(navHostFragment.navController)
-       // }
+        // Deep link from FCM
+        handleIntent(intent)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -210,18 +149,36 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (auth.currentUser == null) {
-            startActivity(Intent(this, Login::class.java))
-            finish()
-        } else {
-            updateDriverSessionInfo(isActive = prefs.getBoolean(KEY_TRACKING_ACTIVE, false))
+        if (!isLoggedInWithValidCookie()) {
+            goToLoginAndFinish()
+            return
+        }
+
+        updateDriverSessionInfo(isActive = prefs.getBoolean(KEY_TRACKING_ACTIVE, false))
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        auth.currentUser?.uid?.let { uid ->
+            TopicSubscriber.subscribeToMyGroups(uid)
         }
     }
 
-    // --- Public API ---
+    private fun isLoggedInWithValidCookie(): Boolean {
+        // Must have Firebase user AND an unexpired 7-day cookie.
+        if (auth.currentUser == null) return false
+        return SessionPrefs.validateOrClear(this)
+    }
 
-    fun isTrackingActive(): Boolean = prefs.getBoolean(KEY_TRACKING_ACTIVE, false)
-    fun getClockInAt(): Long = prefs.getLong(KEY_CLOCK_IN_AT, 0L)
+    private fun goToLoginAndFinish() {
+        startActivity(Intent(this, Login::class.java))
+        finish()
+    }
 
     private fun hideStatusBar() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -232,6 +189,11 @@ class MainActivity : AppCompatActivity() {
         }
         supportActionBar?.hide()
     }
+
+    // --- Public API ---
+
+    fun isTrackingActive(): Boolean = prefs.getBoolean(KEY_TRACKING_ACTIVE, false)
+    fun getClockInAt(): Long = prefs.getLong(KEY_CLOCK_IN_AT, 0L)
 
     fun clockIn() {
         if (auth.currentUser == null) {
@@ -323,46 +285,21 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Location tracking stopped", Toast.LENGTH_SHORT).show()
     }
 
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-        handleIntent(intent)
-    }
-
-    override fun onStart() {
-        super.onStart()
-        auth.currentUser?.uid?.let { uid ->
-            TopicSubscriber.subscribeToMyGroups(uid)
-        }
-    }
-
     private fun handleIntent(intent: Intent?) {
         val deeplink = intent?.getStringExtra("deeplink")
         val groupIdExtra = intent?.getStringExtra("groupId")
         val groupId = groupIdExtra ?: extractGroupIdFromUrl(deeplink)
         if (!groupId.isNullOrBlank()) {
-            openChat(groupId)
+            // NOTE: chat screens are currently implemented via manual fragment transactions.
+            // To keep navigation graph-only, those screens should be added as destinations.
+            // For now we route the user back to the Home destination.
+            navController.navigate(R.id.navHomeDriver)
         }
     }
 
     private fun extractGroupIdFromUrl(url: String?): String? {
         if (url.isNullOrBlank()) return null
         return url.substringAfter("/chat/", missingDelimiterValue = "").takeIf { it.isNotBlank() }
-    }
-
-
-
-    fun openChat(groupId: String, groupName: String? = null) {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.main_container, ChatHomeFragment.newInstance(groupId, groupName))
-            .addToBackStack("chat")
-            .commit()
-    }
-
-    fun openGroupList() {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.main_container, GroupListFragment())
-            .addToBackStack("groups")
-            .commit()
     }
 
     /* ---------- Notification Channel ---------- */
@@ -584,13 +521,8 @@ class MainActivity : AppCompatActivity() {
         stopLocationService()
         updateDriverSessionInfo(false)
         auth.signOut()
+        SessionPrefs.clear(this)
         startActivity(Intent(this, Login::class.java))
         finish()
-    }
-
-    private fun replaceFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.main_container, fragment)
-            .commit()
     }
 }

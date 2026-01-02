@@ -101,7 +101,7 @@
         android:id="@+id/loginButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
+        android:layout_marginTop="18dp"
         android:backgroundTint="@color/navyblue"
         android:fontFamily="@font/maitree_bold"
         android:text="Login"

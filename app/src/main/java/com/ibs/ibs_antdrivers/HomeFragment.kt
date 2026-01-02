@@ -4,7 +4,6 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
-import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Handler
@@ -24,7 +23,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
-import androidx.navigation.findNavController
+import androidx.navigation.fragment.findNavController
 import com.airbnb.lottie.LottieAnimationView
 import com.ibs.ibs_antdrivers.MainActivity
 import com.ibs.ibs_antdrivers.R
@@ -128,29 +127,17 @@ class HomeFragment : Fragment() {
         }
 
         settingsBtn.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.main_container, SettingsFragment())
-                .addToBackStack(null)
-                .commit()
-
+            findNavController().navigate(R.id.action_home_to_settings)
         }
 
         btnPhonebook.setOnClickListener {
-            requireActivity().supportFragmentManager
-                .beginTransaction()
-                .setReorderingAllowed(true)
-                .replace(
-                    R.id.main_container,
-                    com.ibs.ibs_antdrivers.ui.phonebook.AdminPhonebookFragment()
-                )
-                .addToBackStack("phonebook")
-                .commit()
+            findNavController().navigate(R.id.action_home_to_adminPhonebook)
         }
 
 
         //GOING TO CHAT NAVIGATION DOWN HERE
         btnMsg.setOnClickListener {
-            (activity as? com.ibs.ibs_antdrivers.MainActivity)?.openGroupList()
+            findNavController().navigate(R.id.action_home_to_groupList)
         }
 
         btnClockIn.setOnClickListener { v ->

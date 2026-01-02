@@ -32,6 +32,15 @@ class Login : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        auth = FirebaseAuth.getInstance()
+
+        // If already logged in and cookie is valid, skip this screen.
+        if (auth.currentUser != null && SessionPrefs.validateOrClear(this)) {
+            goToMain()
+            return
+        }
+
         setContentView(R.layout.activity_login)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -44,7 +53,6 @@ class Login : AppCompatActivity() {
         username = findViewById(R.id.loginUsername)
         password = findViewById(R.id.loginPassword)
         login = findViewById(R.id.loginButton)
-        auth = FirebaseAuth.getInstance()
 
         login.setOnClickListener {
             val email = username.text.toString().trim()
@@ -116,11 +124,18 @@ class Login : AppCompatActivity() {
         }
     }
 
+    private fun applySessionCookieAfterLogin() {
+        // Always remember for 7 days after a successful login.
+        SessionPrefs.setRememberedSession(this)
+    }
 
     private fun signInUser(email: String, password: String, postLoginAskBiometrics: Boolean = false) {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
+                    // Always set 7-day cookie for both password and biometric login.
+                    applySessionCookieAfterLogin()
+
                     if (postLoginAskBiometrics) {
                         maybeOfferToEnableBiometrics(email, password)
                     } else {

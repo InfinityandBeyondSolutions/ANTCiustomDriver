@@ -87,11 +87,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
 
         btnBack.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.main_container, HomeFragment())
-                .addToBackStack(null)
-                .commit()
-
+            findNavController().popBackStack()
         }
 
         val prefs = requireContext().getSharedPreferences("settings", Context.MODE_PRIVATE)
@@ -224,11 +220,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         // ---- Change password ----
         btnChangePassword.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.main_container, ChangePasswordFragment())
-                .addToBackStack(null)
-                .commit()
-
+            findNavController().navigate(R.id.action_settings_to_changePassword)
         }
 
         // ---- Sign out ----
@@ -238,7 +230,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 .setMessage("Are you sure you want to sign out?")
                 .setPositiveButton("Sign out") { _, _ ->
                     auth.signOut()
-                    Snackbar.make(view, "Signed out", Snackbar.LENGTH_SHORT).show()
+                    SessionPrefs.clear(requireContext())
+                    SecurePrefs.clear(requireContext())
+                    startActivity(Intent(requireContext(), Login::class.java))
                     requireActivity().finish()
                 }
                 .setNegativeButton("Cancel", null)

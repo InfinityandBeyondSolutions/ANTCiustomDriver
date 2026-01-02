@@ -13,6 +13,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
@@ -121,13 +122,8 @@ class ChatHomeFragment : Fragment() {
         list.adapter = adapter
 
         btnBack = view.findViewById(R.id.btnBackToGroupPage)
-
         btnBack.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.main_container, GroupListFragment())
-                .addToBackStack(null)
-                .commit()
-
+            findNavController().popBackStack()
         }
 
         send.setOnClickListener {

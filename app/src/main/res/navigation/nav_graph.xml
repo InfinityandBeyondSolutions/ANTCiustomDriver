@@ -26,6 +26,14 @@
         <action
             android:id="@+id/action_home_to_vehicleTracking"
             app:destination="@id/vehicleTrackingFragment" />
+
+        <action
+            android:id="@+id/action_home_to_groupList"
+            app:destination="@id/groupListFragment" />
+
+        <action
+            android:id="@+id/action_home_to_adminPhonebook"
+            app:destination="@id/adminPhonebookFragment" />
     </fragment>
 
     <fragment
@@ -85,10 +93,54 @@
         android:name="com.ibs.ibs_antdrivers.AnnouncementsFragment"
         android:label="Announcements" />
 
-    <!-- Settings destination for action_home_to_settings -->
     <fragment
         android:id="@+id/settingsFragment"
         android:name="com.ibs.ibs_antdrivers.SettingsFragment"
         android:label="Settings"
-        tools:layout="@layout/fragment_settings" />
+        tools:layout="@layout/fragment_settings">
+
+        <action
+            android:id="@+id/action_settings_to_changePassword"
+            app:destination="@id/changePasswordFragment"
+            app:enterAnim="@anim/fragment_slide_in_right"
+            app:exitAnim="@anim/fragment_slide_out_left"
+            app:popEnterAnim="@anim/fragment_slide_in_left"
+            app:popExitAnim="@anim/fragment_slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/changePasswordFragment"
+        android:name="com.ibs.ibs_antdrivers.ChangePasswordFragment"
+        android:label="Change Password" />
+
+    <fragment
+        android:id="@+id/groupListFragment"
+        android:name="com.ibs.ibs_antdrivers.ui.GroupListFragment"
+        android:label="Groups">
+        <action
+            android:id="@+id/action_groupList_to_chatHome"
+            app:destination="@id/chatHomeFragment"
+            app:enterAnim="@anim/fragment_slide_in_right"
+            app:exitAnim="@anim/fragment_slide_out_left"
+            app:popEnterAnim="@anim/fragment_slide_in_left"
+            app:popExitAnim="@anim/fragment_slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/chatHomeFragment"
+        android:name="com.ibs.ibs_antdrivers.ui.ChatHomeFragment"
+        android:label="Chat">
+        <argument
+            android:name="groupId"
+            app:argType="string" />
+        <argument
+            android:name="groupName"
+            app:argType="string"
+            android:defaultValue="" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/adminPhonebookFragment"
+        android:name="com.ibs.ibs_antdrivers.ui.phonebook.AdminPhonebookFragment"
+        android:label="Phonebook" />
 </navigation>

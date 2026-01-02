@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
-class ChangePasswordFragment : Fragment() {
+class ChangePasswordFragment : Fragment(R.layout.fragment_change_password) {
 
     private val auth by lazy { FirebaseAuth.getInstance() }
     private val db by lazy { FirebaseDatabase.getInstance().reference }
@@ -146,10 +146,7 @@ class ChangePasswordFragment : Fragment() {
     }
 
     private fun replaceFragment(fragment: Fragment) {
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.main_container, fragment)
-            .addToBackStack(null)
-            .commit()
+        // No manual fragment transactions; rely on nav graph back stack.
+        findNavController().popBackStack()
     }
 }
-

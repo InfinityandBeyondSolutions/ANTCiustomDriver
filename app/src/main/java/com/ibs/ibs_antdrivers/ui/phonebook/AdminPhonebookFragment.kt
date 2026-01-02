@@ -10,6 +10,7 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.textfield.TextInputEditText
@@ -49,13 +50,7 @@ class AdminPhonebookFragment : Fragment() {
         list.adapter = adapter
 
         btnBack.setOnClickListener {
-            requireActivity().supportFragmentManager
-                .beginTransaction()
-                .setReorderingAllowed(true)
-                .replace(
-                    R.id.main_container, HomeFragment()
-                )
-                .commit()
+            findNavController().popBackStack()
         }
 
         // Sticky header

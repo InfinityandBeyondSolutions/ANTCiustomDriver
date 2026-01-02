@@ -56,8 +56,13 @@ class SplashscreenTwo : AppCompatActivity() {
                     override fun onAnimationStart(animation: Animation?) {}
                     override fun onAnimationRepeat(animation: Animation?) {}
                     override fun onAnimationEnd(animation: Animation?) {
-                        val intent = Intent(this@SplashscreenTwo, Login::class.java)
-                        startActivity(intent)
+                        val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+                        val next = if (auth.currentUser != null && SessionPrefs.validateOrClear(this@SplashscreenTwo)) {
+                            MainActivity::class.java
+                        } else {
+                            Login::class.java
+                        }
+                        startActivity(Intent(this@SplashscreenTwo, next))
                         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                         finish()
                     }

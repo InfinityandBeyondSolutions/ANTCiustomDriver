@@ -7,12 +7,12 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.ibs.ibs_antdrivers.HomeFragment
-import com.ibs.ibs_antdrivers.MainActivity
 import com.ibs.ibs_antdrivers.R
 import com.ibs.ibs_antdrivers.data.FirebaseRepo
 import com.ibs.ibs_antdrivers.data.Group
@@ -37,19 +37,20 @@ class GroupListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         adapter = GroupAdapter(items) { g ->
-            // ✅ pass BOTH id and name so ChatHome can show the name immediately
-            (activity as? MainActivity)?.openChat(g.id, g.name)
+            findNavController().navigate(
+                R.id.action_groupList_to_chatHome,
+                bundleOf(
+                    "groupId" to g.id,
+                    "groupName" to (g.name ?: "")
+                )
+            )
         }
 
         btnBack = view.findViewById(R.id.btnBackSettings)
-
         btnBack.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.main_container, HomeFragment())
-                .addToBackStack(null)
-                .commit()
-
+            findNavController().popBackStack()
         }
+
         list.layoutManager = LinearLayoutManager(requireContext())
         list.adapter = adapter
 
