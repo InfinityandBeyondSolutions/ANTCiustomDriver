@@ -41,9 +41,9 @@
 
     <!-- BottomNavigation style that respects dark/light automatically -->
     <style name="Ant.BottomNavigation" parent="Widget.Material3.BottomNavigationView">
-        <item name="itemIconTint">@color/bottom_nav_icon_tint</item>
-        <item name="itemTextColor">@color/bottom_nav_text_tint</item>
-<!--        <item name="itemActiveIndicatorColor">@color/antyellow</item>-->
+        <item name="itemIconTint">@color/bottom_nav_icon_selector</item>
+        <item name="itemTextColor">@color/bottom_nav_text_selector</item>
+        <item name="itemActiveIndicatorStyle">@null</item>
         <item name="android:background">@drawable/bottom_nav_bg</item>
     </style>
 

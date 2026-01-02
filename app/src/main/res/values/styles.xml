@@ -7,6 +7,31 @@
         <item name="android:color">@color/black</item>
     </style>
 
+    <!-- Modern Bottom Nav Active Indicator - Pill shape behind icon -->
+    <style name="BottomNavActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:width">56dp</item>
+        <item name="android:height">32dp</item>
+        <item name="android:color">#26D4AF37</item>
+        <item name="shapeAppearance">@style/BottomNavIndicatorShape</item>
+    </style>
 
+    <style name="BottomNavIndicatorShape" parent="ShapeAppearance.Material3.Corner.Full">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- Text style for active bottom nav labels - Bold and larger -->
+    <style name="BottomNavTextAppearanceActive" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+
+    <!-- Text style for inactive bottom nav labels - Smaller and normal weight -->
+    <style name="BottomNavTextAppearanceInactive" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:textSize">10sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
 
 </resources>

@@ -3,7 +3,7 @@
     <item
         android:id="@+id/navCallCycle"
         android:icon="@drawable/callcycles"
-        android:title="Call Cycle"
+        android:title="Cycles"
         />
     <item
         android:id="@+id/navStore"
@@ -26,6 +26,6 @@
     <item
         android:id="@+id/navAnnouncementsDriver"
         android:icon="@drawable/empannouncements"
-        android:title="Announcements"
+        android:title="News"
         />
 </menu>

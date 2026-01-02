@@ -124,6 +124,9 @@ class MainActivity : AppCompatActivity() {
         navController = navHost.navController
         bottomNavView.setupWithNavController(navController)
 
+        // Setup bottom navigation animations
+        setupBottomNavAnimations()
+
         // Deep link from FCM
         handleIntent(intent)
 
@@ -188,6 +191,62 @@ class MainActivity : AppCompatActivity() {
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         }
         supportActionBar?.hide()
+    }
+
+    /**
+     * Sets up smooth scale animations for bottom navigation items.
+     * Selected items scale up slightly for emphasis, while deselected items scale back to normal.
+     */
+    private fun setupBottomNavAnimations() {
+        // Scale values for animation
+        val scaleSelected = 1.15f
+        val scaleDefault = 1.0f
+        val animDuration = 200L
+
+        // Apply initial state based on currently selected item
+        bottomNavView.post {
+            animateNavItemSelection(bottomNavView.selectedItemId, scaleSelected, scaleDefault, 0L)
+        }
+
+        // Listen for selection changes
+        bottomNavView.setOnItemSelectedListener { item ->
+            // Animate the selection change
+            animateNavItemSelection(item.itemId, scaleSelected, scaleDefault, animDuration)
+
+            // Let the NavController handle the navigation
+            navController.navigate(item.itemId)
+            true
+        }
+    }
+
+    /**
+     * Animates the scale of nav item icons based on selection state.
+     */
+    private fun animateNavItemSelection(
+        selectedItemId: Int,
+        scaleSelected: Float,
+        scaleDefault: Float,
+        duration: Long
+    ) {
+        val menu = bottomNavView.menu
+        for (i in 0 until menu.size()) {
+            val menuItem = menu.getItem(i)
+            val itemView = bottomNavView.findViewById<View>(menuItem.itemId) ?: continue
+
+            val targetScale = if (menuItem.itemId == selectedItemId) scaleSelected else scaleDefault
+
+            if (duration > 0) {
+                itemView.animate()
+                    .scaleX(targetScale)
+                    .scaleY(targetScale)
+                    .setDuration(duration)
+                    .setInterpolator(android.view.animation.OvershootInterpolator(1.5f))
+                    .start()
+            } else {
+                itemView.scaleX = targetScale
+                itemView.scaleY = targetScale
+            }
+        }
     }
 
     // --- Public API ---

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Selected/Active state - Full gold -->
+    <item android:color="@color/webgold" android:state_checked="true" />
+    <!-- Default/Inactive state - Visible muted gold -->
+    <item android:color="#AAD4AF37" />
+</selector>

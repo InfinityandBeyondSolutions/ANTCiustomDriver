@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Active state - Bright yellow (matching Clock In button) -->
+    <item android:color="@color/antyellow" android:state_checked="true" />
+    <!-- Inactive state - Muted light gray for visual hierarchy -->
+    <item android:color="#7799AABB" />
+</selector>
+
