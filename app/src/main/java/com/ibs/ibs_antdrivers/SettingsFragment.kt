@@ -55,7 +55,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
                 // Optional: show a small test notification to confirm it works
                 ensureNotificationChannel()
-                sendLocalTestNotification()
+                if (Build.VERSION.SDK_INT < 33 || hasNotifPermission()) {
+                    sendLocalTestNotification()
+                }
 
                 Snackbar.make(root, "Notifications enabled", Snackbar.LENGTH_SHORT).show()
             } else {
@@ -196,7 +198,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
                 // Optional: give immediate feedback with a local test notification
                 ensureNotificationChannel()
-                sendLocalTestNotification()
+                if (Build.VERSION.SDK_INT < 33 || hasNotifPermission()) {
+                    sendLocalTestNotification()
+                }
 
                 uid?.let {
                     FirebaseDatabase.getInstance().reference
@@ -259,7 +263,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     if (!url.isNullOrBlank()) {
                         imgAvatar.load(url) { crossfade(true) }
                     } else {
-                        imgAvatar.setImageResource(R.drawable.vector_announcements)
+                        // Fallback avatar should be the profile icon (not announcements)
+                        imgAvatar.setImageResource(R.drawable.vector_profile)
                     }
                 } catch (e: Exception) {
                     Snackbar.make(view, "Failed to load profile: ${e.message}", Snackbar.LENGTH_LONG).show()
