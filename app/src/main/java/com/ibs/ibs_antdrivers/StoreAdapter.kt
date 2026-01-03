@@ -26,6 +26,7 @@ class StoreAdapter(
         val contactPerson: TextView = itemView.findViewById(R.id.tvStoreContactPerson)
         val cameraButton: ImageView = itemView.findViewById(R.id.ivCameraButton)
         val galleryButton: ImageView = itemView.findViewById(R.id.ivViewGallery)
+        val monogram: TextView? = itemView.findViewById(R.id.storeMonogram)
 
         init {
             itemView.setOnClickListener {
@@ -62,6 +63,7 @@ class StoreAdapter(
         holder.storeID.text = "Store ID: ${currentStore.StoreID}"
         holder.storeAddress.text = "Address: ${currentStore.StoreAddress}"
         holder.contactPerson.text = "Manager: ${currentStore.ContactPerson}"
+        holder.monogram?.text = currentStore.StoreName.firstOrNull()?.uppercase() ?: "S"
     }
 
     override fun getItemCount(): Int = storeList.size

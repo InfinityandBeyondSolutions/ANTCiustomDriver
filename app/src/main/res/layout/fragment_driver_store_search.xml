@@ -1,111 +1,167 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background"
     tools:context="com.ibs.ibs_antdrivers.DriverStoreSearch">
 
-         <LinearLayout
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/headerCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@android:color/transparent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_call_cycle_header"
+            android:orientation="vertical"
+            android:padding="18dp">
 
-            <FrameLayout
-                android:id="@+id/frameLayoutHeader"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="70dp"
-                android:background="@color/navyblue">
-
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
                 <ImageView
                     android:id="@+id/ivBackButton"
-                    android:layout_width="55dp"
+                    android:layout_width="40dp"
                     android:layout_height="40dp"
+                    android:contentDescription="Back"
+                    android:padding="8dp"
                     android:src="@drawable/vectorback"
-                    android:layout_gravity="start"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="16dp"
-                    android:elevation="4dp" />
+                    app:tint="@color/white" />
 
                 <TextView
                     android:id="@+id/catalogueTitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:text="Store Search"
-                    android:textSize="25sp"
-                    android:textColor="@android:color/white"
-                    android:background="@color/navyblue"
-                    android:gravity="center_horizontal"
-                    android:layout_gravity="center_vertical"
-                    android:paddingTop="13dp"
-                    android:textStyle="bold">
-                </TextView>
-
-
-            </FrameLayout>
-
-
-            <LinearLayout
-                android:id="@+id/linLayoutBody"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
-
-                <!-- Search View -->
-                <LinearLayout
-                    android:layout_marginTop="10dp"
-                    android:layout_width="match_parent"
-                    android:layout_height="60dp">
-
-                    <SearchView
-                        android:id="@+id/svStoreSearch"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent">
-                    </SearchView>
-
-                </LinearLayout>
-
-                <!-- Filter View -->
-                <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:gravity="center"
-                    android:weightSum="2">
-
-                    <!-- Franchise Spinner -->
-                    <Spinner
-                        android:id="@+id/spinnerFranchise"
-                        android:layout_width="160dp"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/spingradient"
-                        android:padding="10dp"/>
-
-                    <!-- Region Spinner -->
-                    <Spinner
-                        android:id="@+id/spinnerRegion"
-                        android:layout_width="160dp"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/spingradient"
-                        android:padding="10dp"/>
-
-                </LinearLayout>
-
-                <!-- RecyclerView without ScrollView -->
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recyclerViewStores"
-                    android:layout_width="match_parent"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
                     android:layout_weight="1"
-                    android:scrollbars="vertical"
-                    android:paddingLeft="20dp"
-                    android:paddingRight="20dp"/>
+                    android:text="Store Search"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/storeCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge_navy_outline"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="6dp"
+                    android:text=""
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    tools:text="128" />
 
             </LinearLayout>
 
+            <TextView
+                android:id="@+id/subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Search by name or ID. Filter by franchise + region."
+                android:textColor="#E6FFFFFF"
+                android:textSize="13sp" />
+
         </LinearLayout>
 
-    </FrameLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Modern search input (keeps same SearchView id to avoid Kotlin changes) -->
+    <androidx.appcompat.widget.SearchView
+        android:id="@+id/svStoreSearch"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="16dp"
+        android:queryHint="Search stores"
+        android:iconifiedByDefault="false"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/headerCard" />
+
+    <!-- Filter row styled like chips -->
+    <LinearLayout
+        android:id="@+id/filterRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="16dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/svStoreSearch">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:hint="Franchise"
+            app:boxStrokeColor="@color/weblightgold"
+            app:endIconMode="dropdown_menu"
+            app:hintTextColor="#6B7280">
+
+            <Spinner
+                android:id="@+id/spinnerFranchise"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:spinnerMode="dropdown" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <View
+            android:layout_width="12dp"
+            android:layout_height="0dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:hint="Region"
+            app:boxStrokeColor="@color/weblightgold"
+            app:endIconMode="dropdown_menu"
+            app:hintTextColor="#6B7280">
+
+            <Spinner
+                android:id="@+id/spinnerRegion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:spinnerMode="dropdown" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewStores"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:clipToPadding="false"
+        android:paddingTop="6dp"
+        android:paddingBottom="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/filterRow" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

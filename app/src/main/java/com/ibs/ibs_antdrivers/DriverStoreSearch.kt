@@ -3,6 +3,7 @@ package com.ibs.ibs_antdrivers
 import android.os.Bundle
 import android.view.*
 import android.widget.*
+import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,6 +23,7 @@ class DriverStoreSearch : Fragment() {
     private lateinit var spinnerRegion: Spinner
     private lateinit var storeAdapter: StoreAdapter
     private lateinit var database: DatabaseReference
+    private var storeCountView: TextView? = null
 
     private val storeList = ArrayList<StoreData>()
 
@@ -43,6 +45,7 @@ class DriverStoreSearch : Fragment() {
         searchStores = view.findViewById(R.id.svStoreSearch)
         spinnerFranchise = view.findViewById(R.id.spinnerFranchise)
         spinnerRegion = view.findViewById(R.id.spinnerRegion)
+        storeCountView = view.findViewById(R.id.storeCount)
 
         btnBack.setOnClickListener {
             findNavController().popBackStack(R.id.navHomeDriver, false)
@@ -78,6 +81,7 @@ class DriverStoreSearch : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         // Delay SearchView setup until spinners are initialized
         setupSearchView()
+        styleSearchView(searchStores)
 
         // If we were opened from Call Cycle, prefill and trigger a filter.
         pendingPrefillQuery?.let { q ->
@@ -111,6 +115,7 @@ class DriverStoreSearch : Fragment() {
                 }
 
                 storeAdapter.updateList(storeList)
+                storeCountView?.text = storeList.size.toString()
                 setupSpinnerData(spinnerFranchise, franchises)
                 setupSpinnerData(spinnerRegion, regions)
 
@@ -177,6 +182,25 @@ class DriverStoreSearch : Fragment() {
             (idMatch || nameMatch) && franchiseMatch && regionMatch
         }
 
+        storeCountView?.text = filtered.size.toString()
         storeAdapter.updateList(filtered)
+    }
+
+    private fun styleSearchView(searchView: SearchView) {
+        // Minimal styling so it looks cleaner and more modern.
+        // If internal IDs change across appcompat versions, this fails gracefully.
+        try {
+            val txtId = androidx.appcompat.R.id.search_src_text
+            val text = searchView.findViewById<TextView>(txtId)
+            text.setTextColor(resources.getColor(R.color.webnavy, null))
+            text.setHintTextColor(0xFF6B7280.toInt())
+            text.textSize = 14f
+        } catch (_: Throwable) {
+            // ignore
+        }
+
+        searchView.isSubmitButtonEnabled = false
+        searchView.maxWidth = Integer.MAX_VALUE
+        searchView.queryHint = "Search by store name or ID"
     }
 }
