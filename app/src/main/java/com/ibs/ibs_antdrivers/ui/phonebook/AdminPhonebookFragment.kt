@@ -14,7 +14,6 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.textfield.TextInputEditText
-import com.ibs.ibs_antdrivers.HomeFragment
 import com.ibs.ibs_antdrivers.R
 import com.ibs.ibs_antdrivers.data.AdminContact
 import com.ibs.ibs_antdrivers.data.AdminsRepository
@@ -25,6 +24,8 @@ class AdminPhonebookFragment : Fragment() {
 
     private lateinit var progress: ProgressBar
     private lateinit var emptyText: TextView
+    private lateinit var emptyStateContainer: View
+    private lateinit var adminCountBadge: TextView
     private lateinit var list: RecyclerView
     private lateinit var adapter: AdminContactsAdapter
     private lateinit var searchEdit: TextInputEditText
@@ -40,6 +41,8 @@ class AdminPhonebookFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         progress = view.findViewById(R.id.progress)
         emptyText = view.findViewById(R.id.emptyText)
+        emptyStateContainer = view.findViewById(R.id.emptyStateContainer)
+        adminCountBadge = view.findViewById(R.id.adminCountBadge)
         list = view.findViewById(R.id.adminList)
         searchEdit = view.findViewById(R.id.searchEdit)
         alphaIndex = view.findViewById(R.id.alphaIndex)
@@ -53,8 +56,8 @@ class AdminPhonebookFragment : Fragment() {
             findNavController().popBackStack()
         }
 
-        // Sticky header
-        list.addItemDecoration(StickyHeaderItemDecoration(list, adapter))
+        // Sticky header (disabled): we keep the in-list gold section headers, but remove the pinned overlay.
+        // list.addItemDecoration(StickyHeaderItemDecoration(list, adapter))
 
         // Side index scroll
         alphaIndex.setOnLetterSelected { ch ->
@@ -64,17 +67,22 @@ class AdminPhonebookFragment : Fragment() {
         }
 
         progress.visibility = View.VISIBLE
-        emptyText.visibility = View.GONE
+        emptyStateContainer.visibility = View.GONE
+        list.visibility = View.GONE
 
         repo.startListening(
             onUpdate = { data ->
                 progress.visibility = View.GONE
+                list.visibility = View.VISIBLE
                 allAdmins = data
+                // Update the badge count
+                adminCountBadge.text = "${data.size} ${if (data.size == 1) "Admin" else "Admins"}"
                 applyFilter(searchEdit.text?.toString().orEmpty())
             },
             onError = {
                 progress.visibility = View.GONE
-                emptyText.visibility = View.VISIBLE
+                emptyStateContainer.visibility = View.VISIBLE
+                list.visibility = View.GONE
                 emptyText.text = "Failed to load admins."
                 adapter.submitContacts(emptyList())
                 alphaIndex.setSections(emptyList())
@@ -104,10 +112,12 @@ class AdminPhonebookFragment : Fragment() {
         }
 
         if (filtered.isEmpty()) {
-            emptyText.visibility = View.VISIBLE
-            emptyText.text = if (q.isEmpty()) "No admins yet." else "No admins match \"$q\"."
+            emptyStateContainer.visibility = View.VISIBLE
+            list.visibility = View.GONE
+            emptyText.text = if (q.isEmpty()) "No admins yet" else "No admins match \"$q\""
         } else {
-            emptyText.visibility = View.GONE
+            emptyStateContainer.visibility = View.GONE
+            list.visibility = View.VISIBLE
         }
 
         adapter.submitContacts(filtered)

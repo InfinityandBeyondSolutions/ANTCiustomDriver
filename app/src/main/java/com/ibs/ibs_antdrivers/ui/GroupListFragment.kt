@@ -24,6 +24,8 @@ class GroupListFragment : Fragment() {
 
     private lateinit var list: RecyclerView
     private lateinit var spin: ProgressBar
+    private lateinit var emptyStateContainer: View
+    private lateinit var chatCountBadge: android.widget.TextView
     private val items = mutableListOf<Group>()
     private lateinit var adapter: GroupAdapter
     private lateinit var btnBack: ImageView
@@ -32,6 +34,8 @@ class GroupListFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_group_list, container, false).also {
             list = it.findViewById(R.id.recycler)
             spin = it.findViewById(R.id.progress)
+            emptyStateContainer = it.findViewById(R.id.emptyStateContainer)
+            chatCountBadge = it.findViewById(R.id.chatCountBadge)
         }
     }
 
@@ -57,10 +61,25 @@ class GroupListFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 spin.visibility = View.VISIBLE
+                list.visibility = View.GONE
+                emptyStateContainer.visibility = View.GONE
+
                 val groups = repo.myGroups()
                 items.clear()
                 items.addAll(groups)
                 adapter.notifyDataSetChanged()
+
+                // Update badge count
+                chatCountBadge.text = "${items.size} ${if (items.size == 1) "Chat" else "Chats"}"
+
+                // Show empty state or list
+                if (items.isEmpty()) {
+                    emptyStateContainer.visibility = View.VISIBLE
+                    list.visibility = View.GONE
+                } else {
+                    emptyStateContainer.visibility = View.GONE
+                    list.visibility = View.VISIBLE
+                }
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Failed to load groups: ${e.message}", Toast.LENGTH_LONG).show()
             } finally {

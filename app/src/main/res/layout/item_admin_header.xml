@@ -1,13 +1,16 @@
 <!-- res/layout/item_admin_header.xml -->
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/sectionTitle"
-    android:layout_width="match_parent"
-    android:layout_height="32dp"
+    android:layout_width="wrap_content"
+    android:layout_height="28dp"
+    android:layout_marginStart="16dp"
+    android:layout_marginTop="10dp"
+    android:layout_marginBottom="4dp"
     android:gravity="center"
-    android:paddingStart="30dp"
+    android:paddingStart="14dp"
+    android:paddingEnd="14dp"
     android:text="A"
-    android:textAlignment="center"
     android:textStyle="bold"
-    android:textSize="16sp"
-    android:background="@color/babyblue"
-    android:textColor="@color/black"/>
+    android:textSize="14sp"
+    android:background="@drawable/bg_admin_section_header"
+    android:textColor="@color/webnavy"/>

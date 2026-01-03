@@ -8,7 +8,6 @@ import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ibs.ibs_antdrivers.R
-import kotlin.math.max
 
 class StickyHeaderItemDecoration(
     private val recyclerView: RecyclerView,
@@ -44,7 +43,14 @@ class StickyHeaderItemDecoration(
         // Determine current section title
         val currentTitle = adapter.getSectionForPosition(topPos) ?: return
         val header = headerView!!
-        (header.findViewById<TextView>(R.id.sectionTitle)).text = currentTitle
+        val titleView = header.findViewById<TextView>(R.id.sectionTitle)
+        titleView.text = currentTitle
+
+        // Ensure the measured width stays correct when RV width changes
+        if (header.measuredWidth != recyclerView.width) {
+            measureAndLayout(header)
+            headerHeight = header.measuredHeight
+        }
 
         // If next header is coming, push up
         var yOffset = 0
@@ -61,8 +67,11 @@ class StickyHeaderItemDecoration(
             }
         }
 
+        // Align sticky header with list content padding
+        val xOffset = parent.paddingLeft.toFloat()
+
         c.save()
-        c.translate(0f, yOffset.toFloat())
+        c.translate(xOffset, yOffset.toFloat())
         header.draw(c)
         c.restore()
     }
