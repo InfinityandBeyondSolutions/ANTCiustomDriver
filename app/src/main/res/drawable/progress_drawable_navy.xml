@@ -4,7 +4,8 @@
     <item android:id="@android:id/background">
         <shape android:shape="rectangle">
             <corners android:radius="999dp" />
-            <solid android:color="#24FFFFFF" />
+            <!-- Slightly darker track so the navy progress pops inside a light card -->
+            <solid android:color="#14000000" />
         </shape>
     </item>
 
@@ -12,9 +13,10 @@
         <clip>
             <shape android:shape="rectangle">
                 <corners android:radius="999dp" />
-                <solid android:color="@color/webgold" />
+                <solid android:color="@color/navyblue" />
             </shape>
         </clip>
     </item>
 
 </layer-list>
+

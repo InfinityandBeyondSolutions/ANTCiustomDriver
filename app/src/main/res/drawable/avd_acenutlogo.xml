@@ -45,21 +45,21 @@
             <set>
                 <objectAnimator
                     android:propertyName="pivotX"
-                    android:duration="3500"
+                    android:duration="2500"
                     android:valueFrom="120"
                     android:valueTo="120"
                     android:valueType="floatType"
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="pivotY"
-                    android:duration="3500"
+                    android:duration="2500"
                     android:valueFrom="180"
                     android:valueTo="180"
                     android:valueType="floatType"
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="rotation"
-                    android:duration="3500"
+                    android:duration="2500"
                     android:valueFrom="20"
                     android:valueTo="-360"
                     android:valueType="floatType"
@@ -72,7 +72,7 @@
             <set>
                 <objectAnimator
                     android:propertyName="pivotX"
-                    android:startOffset="3400"
+                    android:startOffset="2400"
                     android:duration="100"
                     android:valueFrom="0"
                     android:valueTo="0"
@@ -80,7 +80,7 @@
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="pivotY"
-                    android:startOffset="3400"
+                    android:startOffset="2400"
                     android:duration="100"
                     android:valueFrom="0"
                     android:valueTo="0"
@@ -88,7 +88,7 @@
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="rotation"
-                    android:startOffset="3400"
+                    android:startOffset="2400"
                     android:duration="100"
                     android:valueFrom="0"
                     android:valueTo="0"
@@ -96,21 +96,21 @@
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="pivotX"
-                    android:duration="3500"
+                    android:duration="2500"
                     android:valueFrom="1"
                     android:valueTo="140"
                     android:valueType="floatType"
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="pivotY"
-                    android:duration="3500"
+                    android:duration="2500"
                     android:valueFrom="1"
                     android:valueTo="160"
                     android:valueType="floatType"
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="rotation"
-                    android:duration="3500"
+                    android:duration="2500"
                     android:valueFrom="0"
                     android:valueTo="360"
                     android:valueType="floatType"
@@ -123,7 +123,7 @@
             <set>
                 <objectAnimator
                     android:propertyName="pivotY"
-                    android:startOffset="3400"
+                    android:startOffset="2400"
                     android:duration="100"
                     android:valueFrom="0"
                     android:valueTo="0"
@@ -131,7 +131,7 @@
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="pivotX"
-                    android:startOffset="3400"
+                    android:startOffset="2400"
                     android:duration="100"
                     android:valueFrom="0"
                     android:valueTo="0"
@@ -139,21 +139,21 @@
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="rotation"
-                    android:duration="3500"
+                    android:duration="2500"
                     android:valueFrom="20"
                     android:valueTo="360"
                     android:valueType="floatType"
                     android:interpolator="@android:anim/linear_interpolator"/>
                 <objectAnimator
                     android:propertyName="pivotX"
-                    android:duration="3500"
+                    android:duration="2500"
                     android:valueFrom="120"
                     android:valueTo="120"
                     android:valueType="floatType"
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="pivotY"
-                    android:duration="3500"
+                    android:duration="2500"
                     android:valueFrom="120"
                     android:valueTo="120"
                     android:valueType="floatType"
@@ -166,7 +166,7 @@
             <set>
                 <objectAnimator
                     android:propertyName="pivotX"
-                    android:startOffset="3400"
+                    android:startOffset="2400"
                     android:duration="100"
                     android:valueFrom="0"
                     android:valueTo="0"
@@ -174,7 +174,7 @@
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="pivotY"
-                    android:startOffset="3400"
+                    android:startOffset="2400"
                     android:duration="100"
                     android:valueFrom="0"
                     android:valueTo="0"
@@ -182,7 +182,7 @@
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="rotation"
-                    android:startOffset="3400"
+                    android:startOffset="2400"
                     android:duration="100"
                     android:valueFrom="0"
                     android:valueTo="0"
@@ -190,21 +190,21 @@
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="rotation"
-                    android:duration="3500"
+                    android:duration="2500"
                     android:valueFrom="45"
                     android:valueTo="360"
                     android:valueType="floatType"
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="pivotY"
-                    android:duration="3500"
+                    android:duration="2500"
                     android:valueFrom="120"
                     android:valueTo="120"
                     android:valueType="floatType"
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="pivotX"
-                    android:startOffset="3300"
+                    android:startOffset="2350"
                     android:duration="100"
                     android:valueFrom="0"
                     android:valueTo="0"
@@ -212,7 +212,7 @@
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="pivotX"
-                    android:startOffset="3200"
+                    android:startOffset="2300"
                     android:duration="100"
                     android:valueFrom="0"
                     android:valueTo="0"
@@ -220,7 +220,7 @@
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="pivotX"
-                    android:duration="3500"
+                    android:duration="2500"
                     android:valueFrom="120"
                     android:valueTo="120"
                     android:valueType="floatType"

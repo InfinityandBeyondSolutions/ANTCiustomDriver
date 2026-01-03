@@ -29,7 +29,7 @@
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowFullscreen">true</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/avd_acenutlogo</item>
-        <item name="windowSplashScreenAnimationDuration">3500</item>
+        <item name="windowSplashScreenAnimationDuration">2500</item>
         <item name="postSplashScreenTheme">@style/Theme.ANTCustomAppDrivers</item>
     </style>
 

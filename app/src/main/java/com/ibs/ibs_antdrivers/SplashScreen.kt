@@ -7,8 +7,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.widget.ImageView
-import androidx.appcompat.app.AppCompatActivity
-import com.ibs.ibs_antdrivers.R
 
 class SplashActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,6 +22,6 @@ class SplashActivity : Activity() {
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(Intent(this, SplashscreenTwo::class.java))
             finish()
-        }, 3500) // Delay to let the animation play
+        }, 2500) // Delay to let the animation play
     }
 }
