@@ -1,9 +1,10 @@
 package com.ibs.ibs_antdrivers
 
-import android.Manifest
-import android.content.pm.PackageManager
+import android.app.DownloadManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -12,28 +13,34 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.storage.ListResult
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.io.FileOutputStream
+import java.net.URL
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
-class StoreGallery : Fragment() {
+class StoreGallery : Fragment(), GalleryPreviewDialogFragment.Listener {
 
     private lateinit var tvStoreGalleryName: TextView
+    private lateinit var tvPhotoCount: TextView
     private lateinit var rvStoreGalleryImages: RecyclerView
     private lateinit var progressBar: ProgressBar
+    private lateinit var tvEmpty: TextView
     private lateinit var btnBack: ImageView
+
+    private lateinit var selectionBar: View
+    private lateinit var tvSelectedCount: TextView
+    private lateinit var btnShareSelected: View
+    private lateinit var btnCancelSelection: View
+
     private lateinit var storeId: String
     private lateinit var storeName: String
     private lateinit var galleryImageAdapter: GalleryImageAdapter
@@ -41,14 +48,6 @@ class StoreGallery : Fragment() {
     private val imageNames = mutableListOf<String>()
     private var nextPageToken: String? = null
     private var isLoading = false
-
-    private val storagePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted: Boolean ->
-        if (granted) {
-            Toast.makeText(requireContext(), "Storage permission granted", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(requireContext(), "Storage permission required to download images", Toast.LENGTH_LONG).show()
-        }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -60,30 +59,75 @@ class StoreGallery : Fragment() {
         storeName = arguments?.getString("storeName") ?: "Unknown Store"
 
         tvStoreGalleryName = view.findViewById(R.id.tvStoreGalleryName)
+        tvPhotoCount = view.findViewById(R.id.photoCount)
         rvStoreGalleryImages = view.findViewById(R.id.rvStoreGalleryImages)
         progressBar = view.findViewById(R.id.progressBar)
+        tvEmpty = view.findViewById(R.id.empty)
         btnBack = view.findViewById(R.id.ivBackButton)
 
+        selectionBar = view.findViewById(R.id.selectionBar)
+        tvSelectedCount = view.findViewById(R.id.tvSelectedCount)
+        btnShareSelected = view.findViewById(R.id.btnShareSelected)
+        btnCancelSelection = view.findViewById(R.id.btnCancelSelection)
+
         tvStoreGalleryName.text = storeName
+        updateCountAndEmpty()
 
         btnBack.setOnClickListener {
-            findNavController().popBackStack(R.id.navStore, false)
+            if (::galleryImageAdapter.isInitialized && galleryImageAdapter.isInSelectionMode()) {
+                galleryImageAdapter.clearSelection()
+            } else {
+                findNavController().popBackStack(R.id.navStore, false)
+            }
         }
 
-        rvStoreGalleryImages.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
-        galleryImageAdapter = GalleryImageAdapter(imageUrls, imageNames) { imageUrl, imageName ->
-            downloadImage(imageUrl, imageName)
+        btnCancelSelection.setOnClickListener {
+            galleryImageAdapter.clearSelection()
         }
+
+        btnShareSelected.setOnClickListener {
+            val items = galleryImageAdapter.getSelectedItems()
+            if (items.isEmpty()) {
+                Toast.makeText(requireContext(), "Select at least 1 image to share", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            shareImages(items)
+        }
+
+        val spanCount = 2
+        rvStoreGalleryImages.layoutManager = GridLayoutManager(requireContext(), spanCount)
+
+        galleryImageAdapter = GalleryImageAdapter(
+            imageUrls,
+            imageNames,
+            onImageClick = { index ->
+                if (imageUrls.isEmpty()) return@GalleryImageAdapter
+                GalleryPreviewDialogFragment
+                    .newInstance(imageUrls, imageNames, index)
+                    .show(childFragmentManager, "GalleryPreview")
+            },
+            onDownloadClick = { imageUrl, imageName ->
+                downloadImage(imageUrl, imageName)
+            },
+            onSelectionChanged = { selectedCount ->
+                selectionBar.visibility = if (selectedCount > 0) View.VISIBLE else View.GONE
+                tvSelectedCount.text = "$selectedCount selected"
+            }
+        )
+
         rvStoreGalleryImages.adapter = galleryImageAdapter
 
-        // Add scroll listener for pagination
+        // Pagination when nearing bottom
         rvStoreGalleryImages.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
-                val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+                if (dy <= 0) return
+
+                val layoutManager = recyclerView.layoutManager as GridLayoutManager
                 val totalItemCount = layoutManager.itemCount
                 val lastVisibleItem = layoutManager.findLastVisibleItemPosition()
-                if (!isLoading && totalItemCount <= (lastVisibleItem + 5) && nextPageToken != null) {
+
+                if (!isLoading && totalItemCount <= (lastVisibleItem + 6) && nextPageToken != null) {
                     fetchImagesFromFirebase()
                 }
             }
@@ -94,18 +138,24 @@ class StoreGallery : Fragment() {
         return view
     }
 
+    private fun updateCountAndEmpty() {
+        tvPhotoCount.text = imageUrls.size.toString()
+        tvEmpty.visibility = if (!isLoading && imageUrls.isEmpty()) View.VISIBLE else View.GONE
+    }
+
     private fun fetchImagesFromFirebase() {
         if (isLoading) return
         isLoading = true
         progressBar.visibility = View.VISIBLE
+        updateCountAndEmpty()
 
         MainScope().launch {
             try {
-                val storageRef = FirebaseStorage.getInstance().reference.child("store_images/$storeId")
-                val maxResults = 10 // Fetch 10 images at a time
-                // Capture nextPageToken to avoid smart cast issue
+                val storageRef = com.google.firebase.storage.FirebaseStorage.getInstance().reference.child("store_images/$storeId")
+                val maxResults = 20
                 val currentPageToken = nextPageToken
-                val listResult: ListResult = if (currentPageToken == null) {
+
+                val listResult: com.google.firebase.storage.ListResult = if (currentPageToken == null) {
                     storageRef.list(maxResults).await()
                 } else {
                     storageRef.list(maxResults, currentPageToken).await()
@@ -129,6 +179,9 @@ class StoreGallery : Fragment() {
                 galleryImageAdapter.notifyDataSetChanged()
 
                 nextPageToken = listResult.pageToken
+
+                updateCountAndEmpty()
+
                 if (listResult.items.isEmpty() && imageUrls.isEmpty()) {
                     Toast.makeText(requireContext(), "No images found for this store", Toast.LENGTH_SHORT).show()
                 }
@@ -138,42 +191,107 @@ class StoreGallery : Fragment() {
             } finally {
                 isLoading = false
                 progressBar.visibility = View.GONE
+                updateCountAndEmpty()
             }
         }
     }
 
+    override fun onDownloadRequested(imageUrl: String, imageName: String) {
+        downloadImage(imageUrl, imageName)
+    }
+
+    override fun onShareRequested(imageUrl: String, imageName: String) {
+        shareImages(listOf(imageUrl to imageName))
+    }
+
     private fun downloadImage(imageUrl: String, imageName: String) {
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            return
+        try {
+            val safeName = imageName
+                .replace("\u0000", "")
+                .replace(Regex("[^A-Za-z0-9._-]"), "_")
+
+            val request = DownloadManager.Request(Uri.parse(imageUrl))
+                .setTitle("Downloading image")
+                .setDescription(safeName)
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(true)
+                .setDestinationInExternalPublicDir(
+                    android.os.Environment.DIRECTORY_PICTURES,
+                    "StoreGallery/$safeName"
+                )
+
+            val dm = requireContext().getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            dm.enqueue(request)
+
+            Toast.makeText(requireContext(), "Download started…", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e("StoreGallery", "Failed to enqueue download for $imageName: ${e.message}")
+            Toast.makeText(requireContext(), "Failed to download $imageName", Toast.LENGTH_SHORT).show()
         }
+    }
 
-        val storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl)
-        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val localFile = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-            "StoreGallery_$imageName"
-        )
+    private fun shareImages(items: List<Pair<String, String>>) {
+        MainScope().launch {
+            try {
+                progressBar.visibility = View.VISIBLE
 
-        storageRef.getFile(localFile)
-            .addOnSuccessListener {
-                Toast.makeText(
-                    requireContext(),
-                    "Image downloaded to ${localFile.absolutePath}",
-                    Toast.LENGTH_LONG
-                ).show()
+                val files: List<File> = withContext(Dispatchers.IO) {
+                    items.map { (url, name) ->
+                        downloadForShare(url, name)
+                    }
+                }
+
+                val uris = files.map { ShareUtils.fileToContentUri(requireContext(), it) }
+
+                val subject = if (items.size == 1) {
+                    items.first().second
+                } else {
+                    "${items.size} store images"
+                }
+
+                val intent = ShareUtils.createShareIntent(
+                    context = requireContext(),
+                    uris = uris,
+                    subject = subject,
+                    chooserTitle = "Share image${if (items.size > 1) "s" else ""}"
+                )
+
+                startActivity(intent)
+
+                // If sharing from selection mode, clear selection afterwards.
+                if (::galleryImageAdapter.isInitialized && galleryImageAdapter.isInSelectionMode()) {
+                    galleryImageAdapter.clearSelection()
+                }
+            } catch (e: Exception) {
+                Log.e("StoreGallery", "Share failed: ${e.message}")
+                Toast.makeText(requireContext(), "Failed to share images", Toast.LENGTH_SHORT).show()
+            } finally {
+                progressBar.visibility = View.GONE
             }
-            .addOnFailureListener { exception ->
-                Log.e("StoreGallery", "Failed to download $imageName: ${exception.message}")
-                Toast.makeText(
-                    requireContext(),
-                    "Failed to download $imageName: ${exception.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
+        }
+    }
+
+    private fun downloadForShare(imageUrl: String, imageName: String): File {
+        val safeName = imageName
+            .ifBlank { "image_${System.currentTimeMillis()}.jpg" }
+            .replace("\u0000", "")
+            .replace(Regex("[^A-Za-z0-9._-]"), "_")
+
+        val picturesDir = requireContext().getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+        val outDir = File(picturesDir, "StoreGalleryShare")
+        if (!outDir.exists()) outDir.mkdirs()
+
+        val outFile = File(outDir, safeName)
+
+        // If already downloaded, reuse.
+        if (outFile.exists() && outFile.length() > 0) return outFile
+
+        URL(imageUrl).openStream().use { input ->
+            FileOutputStream(outFile).use { output ->
+                input.copyTo(output)
             }
+        }
+        return outFile
     }
 }
