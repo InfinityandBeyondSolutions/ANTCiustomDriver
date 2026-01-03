@@ -11,6 +11,10 @@ import com.google.firebase.database.*
 
 class DriverStoreSearch : Fragment() {
 
+    companion object {
+        const val ARG_PREFILL_STORE_QUERY = "prefillStoreQuery"
+    }
+
     private lateinit var btnBack: ImageView
     private lateinit var recyclerView: RecyclerView
     private lateinit var searchStores: SearchView
@@ -20,6 +24,13 @@ class DriverStoreSearch : Fragment() {
     private lateinit var database: DatabaseReference
 
     private val storeList = ArrayList<StoreData>()
+
+    private var pendingPrefillQuery: String? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        pendingPrefillQuery = arguments?.getString(ARG_PREFILL_STORE_QUERY)?.trim()?.takeIf { it.isNotBlank() }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -67,6 +78,17 @@ class DriverStoreSearch : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         // Delay SearchView setup until spinners are initialized
         setupSearchView()
+
+        // If we were opened from Call Cycle, prefill and trigger a filter.
+        pendingPrefillQuery?.let { q ->
+            // Clear filters to ensure the store is visible.
+            if (spinnerFranchise.adapter != null) spinnerFranchise.setSelection(0)
+            if (spinnerRegion.adapter != null) spinnerRegion.setSelection(0)
+
+            // setQuery triggers the listener and calls filterStores().
+            searchStores.setQuery(q, false)
+            searchStores.isIconified = false
+        }
     }
 
     private fun fetchStoresFromFirebase() {
@@ -91,6 +113,13 @@ class DriverStoreSearch : Fragment() {
                 storeAdapter.updateList(storeList)
                 setupSpinnerData(spinnerFranchise, franchises)
                 setupSpinnerData(spinnerRegion, regions)
+
+                // Re-apply the deep-link query once data is loaded.
+                pendingPrefillQuery?.let {
+                    filterStores()
+                    // Scroll to top so the match is immediately visible.
+                    recyclerView.scrollToPosition(0)
+                }
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -141,10 +170,11 @@ class DriverStoreSearch : Fragment() {
         val selectedRegion = spinnerRegion.selectedItem?.toString() ?: "All"
 
         val filtered = storeList.filter { store ->
+            val idMatch = store.StoreID.lowercase().contains(query)
             val nameMatch = store.StoreName.lowercase().contains(query)
             val franchiseMatch = selectedFranchise == "All" || store.StoreFranchise == selectedFranchise
             val regionMatch = selectedRegion == "All" || store.StoreRegion == selectedRegion
-            nameMatch && franchiseMatch && regionMatch
+            (idMatch || nameMatch) && franchiseMatch && regionMatch
         }
 
         storeAdapter.updateList(filtered)
