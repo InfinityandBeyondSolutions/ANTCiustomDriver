@@ -3,6 +3,20 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
+    <!-- Announcements -->
+    <string name="announcements_title">Announcements</string>
+    <string name="announcements_subtitle">Latest updates and notes</string>
+    <string name="announcements_empty">No announcements to show</string>
+
+    <!-- Announcement card placeholders / labels -->
+    <string name="announcement_placeholder_title">Announcement Title</string>
+    <string name="announcement_placeholder_admin">Admin Name</string>
+    <string name="announcement_placeholder_date">24 Jun 2025</string>
+    <string name="announcement_placeholder_time">15:42</string>
+    <string name="announcement_placeholder_preview">Sneak peek of the announcement...</string>
+    <string name="announcement_placeholder_full_message">Full message goes here</string>
+    <string name="announcement_view_attachment">View Attachment</string>
+
     <!-- Catalogue -->
     <string name="catalogue_title">Catalogue</string>
     <string name="catalogue_subtitle">Swipe through pages and find what you need, fast</string>

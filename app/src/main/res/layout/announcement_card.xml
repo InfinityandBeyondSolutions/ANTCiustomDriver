@@ -41,7 +41,7 @@
                 android:background="@drawable/bg_title_chip"
                 android:paddingVertical="10dp"
                 android:paddingHorizontal="14dp"
-                android:text="Announcement Title"
+                android:text="@string/announcement_placeholder_title"
                 android:textAlignment="center"
                 android:textColor="#000000"
                 android:textSize="20sp"
@@ -69,7 +69,7 @@
                         android:id="@+id/adminName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Admin Name"
+                        android:text="@string/announcement_placeholder_admin"
                         android:textColor="@color/white"
                         android:textSize="14sp"
                         android:fontFamily="sans-serif-medium" />
@@ -78,7 +78,7 @@
                         android:id="@+id/announcementDate"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="24 Jun 2025"
+                        android:text="@string/announcement_placeholder_date"
                         android:textColor="@color/white"
                         android:textSize="12sp"
                         android:alpha="0.9"
@@ -88,7 +88,7 @@
                         android:id="@+id/announcementTime"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="15:42"
+                        android:text="@string/announcement_placeholder_time"
                         android:textColor="@color/white"
                         android:textSize="12sp"
                         android:alpha="0.9"
@@ -109,14 +109,14 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Sneak peek of the announcement..."
+                    android:text="@string/announcement_placeholder_preview"
                     android:textColor="@color/white"
                     android:textAlignment="textStart"
                     android:maxLines="3"
                     android:ellipsize="end"
                     android:textSize="14sp"
                     android:lineSpacingExtra="2dp"
-                    android:layout_marginLeft="8dp" />
+                    android:layout_marginStart="8dp" />
             </LinearLayout>
 
             <!-- Soft separator -->
@@ -141,22 +141,24 @@
                 android:id="@+id/fullMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Full message goes here"
+                android:text="@string/announcement_placeholder_full_message"
                 android:textColor="@android:color/white"
                 android:textSize="15sp"
                 android:lineSpacingExtra="4dp"
                 android:paddingBottom="14dp" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/viewAttachmentButton"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:paddingHorizontal="16dp"
-                android:text="View Attachment"
+                android:text="@string/announcement_view_attachment"
                 android:textAllCaps="false"
-                android:background="@drawable/bg_button_primary"
-                android:textColor="@color/navyblue"
-                android:stateListAnimator="@null" />
+                android:textColor="@color/webnavy"
+                android:stateListAnimator="@null"
+                app:cornerRadius="12dp"
+                app:backgroundTint="@color/webgold"
+                app:rippleColor="#33000000" />
         </LinearLayout>
 
     </FrameLayout>
