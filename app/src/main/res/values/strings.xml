@@ -2,4 +2,19 @@
     <string name="app_name">Ace Nut Tracker</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <!-- Catalogue -->
+    <string name="catalogue_title">Catalogue</string>
+    <string name="catalogue_subtitle">Swipe through pages and find what you need, fast</string>
+    <string name="catalogue_page">Catalogue page</string>
+    <string name="catalogue_loading">Loading catalogue</string>
+    <string name="catalogue_previous">Previous</string>
+    <string name="catalogue_next">Next</string>
+    <string name="catalogue_page_1">Page 1</string>
+
+    <string name="catalogue_download">Download</string>
+    <string name="catalogue_share">Share</string>
+    <string name="catalogue_download_complete">Catalogue saved for offline use</string>
+    <string name="catalogue_download_failed">Failed to download catalogue</string>
+    <string name="catalogue_share_unavailable">Download the catalogue first to share it</string>
 </resources>

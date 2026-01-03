@@ -5,6 +5,11 @@
         name="images"
         path="Pictures" />
 
+    <!-- App internal files (used for sharing cached catalogue PDFs, etc.) -->
+    <files-path
+        name="files"
+        path="." />
+
     <!-- Cache dir (used by some flows); safe to keep. -->
     <cache-path
         name="cache"

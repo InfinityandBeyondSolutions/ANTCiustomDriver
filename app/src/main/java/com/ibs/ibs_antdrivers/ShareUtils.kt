@@ -29,11 +29,30 @@ object ShareUtils {
 
         // Some apps rely on ClipData for persistable read access.
         if (uris.isNotEmpty()) {
-            val clip = ClipData.newUri(context.contentResolver, "shared_images", uris[0])
+            val clip = ClipData.newUri(context.contentResolver, "shared_uris", uris[0])
             for (i in 1 until uris.size) {
                 clip.addItem(ClipData.Item(uris[i]))
             }
             intent.clipData = clip
+        }
+
+        return Intent.createChooser(intent, chooserTitle)
+    }
+
+    /** Share a single file with an explicit MIME type (e.g., "application/pdf"). */
+    fun createShareFileIntent(
+        context: Context,
+        uri: Uri,
+        mimeType: String,
+        subject: String? = null,
+        chooserTitle: String = "Share"
+    ): Intent {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_STREAM, uri)
+            subject?.let { putExtra(Intent.EXTRA_SUBJECT, it) }
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            clipData = ClipData.newUri(context.contentResolver, "shared_file", uri)
         }
 
         return Intent.createChooser(intent, chooserTitle)
@@ -47,4 +66,3 @@ object ShareUtils {
         )
     }
 }
-
