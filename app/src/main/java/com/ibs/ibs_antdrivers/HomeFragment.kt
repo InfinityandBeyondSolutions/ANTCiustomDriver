@@ -23,12 +23,22 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import coil.load
+import coil.transform.CircleCropTransformation
 import com.airbnb.lottie.LottieAnimationView
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 import com.ibs.ibs_antdrivers.MainActivity
 import com.ibs.ibs_antdrivers.R
 import com.ibs.ibs_antdrivers.ui.GroupListFragment
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -56,7 +66,19 @@ class HomeFragment : Fragment() {
     private lateinit var settingsBtn: ImageView
     private lateinit var btnPhonebook: ImageView
 
+    // New enhanced UI elements
+    private lateinit var userName: TextView
+    private lateinit var greetingBadge: TextView
+    private lateinit var currentDate: TextView
+    private lateinit var currentTime: TextView
+    private lateinit var userAvatar: ImageView
+    private var clockStatusBadge: TextView? = null
+
+    private val auth by lazy { FirebaseAuth.getInstance() }
+
     private val timeFmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+    private val dateFmt = SimpleDateFormat("EEEE, MMM d", Locale.getDefault())
+    private val timeDisplayFmt = SimpleDateFormat("hh:mm a", Locale.getDefault())
     private var baseBtnTint: Int? = null
 
     // --- NEW: ticker to refresh "elapsed since clock-in"
@@ -66,8 +88,10 @@ class HomeFragment : Fragment() {
             val act = activity as? MainActivity ?: return
             if (act.isTrackingActive()) {
                 updateTimesUi(act.getClockInAt()) // keep elapsed fresh
-                uiHandler.postDelayed(this, TimeUnit.MINUTES.toMillis(1))
             }
+            // Also update current time display
+            updateDateTimeDisplay()
+            uiHandler.postDelayed(this, TimeUnit.MINUTES.toMillis(1))
         }
     }
 
@@ -96,7 +120,13 @@ class HomeFragment : Fragment() {
         settingsBtn = view.findViewById(R.id.settingsIcon)
         btnPhonebook= view.findViewById(R.id.btnPhonebook)
 
-
+        // New enhanced UI elements
+        userName = view.findViewById(R.id.userName)
+        greetingBadge = view.findViewById(R.id.greetingBadge)
+        currentDate = view.findViewById(R.id.currentDate)
+        currentTime = view.findViewById(R.id.currentTime)
+        userAvatar = view.findViewById(R.id.userAvatar)
+        clockStatusBadge = view.findViewById(R.id.clockStatusBadge)
 
         llstatus = view.findViewById(R.id.llstatus)
         lldate   = view.findViewById(R.id.lldate)
@@ -111,6 +141,11 @@ class HomeFragment : Fragment() {
 
         baseBtnTint = btnClockIn.backgroundTintList?.defaultColor
             ?: ContextCompat.getColor(requireContext(), R.color.antyellow)
+
+        // Initialize enhanced UI
+        updateGreeting()
+        updateDateTimeDisplay()
+        loadUserProfile()
 
         // Vehicle tracking quick toggle
         vehicleTrackingBtn = view.findViewById<ImageButton?>(R.id.vehicleTrackingBtn)?.apply {
@@ -183,12 +218,11 @@ class HomeFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         refreshUi()
+        updateGreeting()
+        updateDateTimeDisplay()
 
-        // start ticker if active
-        val act = activity as? MainActivity
-        if (act?.isTrackingActive() == true) {
-            uiHandler.postDelayed(ticker, TimeUnit.MINUTES.toMillis(1))
-        }
+        // Start ticker for time updates
+        uiHandler.postDelayed(ticker, TimeUnit.MINUTES.toMillis(1))
     }
 
     override fun onPause() {
@@ -392,5 +426,72 @@ class HomeFragment : Fragment() {
             text = newText
             animate().alpha(1f).setDuration(duration).start()
         }.start()
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ENHANCED UI FUNCTIONS - Greeting, Date/Time, User Profile
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private fun updateGreeting() {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        val (greeting, emoji) = when {
+            hour < 5 -> "Good Night" to "🌙"
+            hour < 12 -> "Good Morning" to "☀️"
+            hour < 17 -> "Good Afternoon" to "🌤️"
+            hour < 21 -> "Good Evening" to "🌆"
+            else -> "Good Night" to "🌙"
+        }
+        greetingBadge.text = "$greeting $emoji"
+    }
+
+    private fun updateDateTimeDisplay() {
+        val now = Date()
+        currentDate.text = dateFmt.format(now)
+        currentTime.text = timeDisplayFmt.format(now)
+
+        // Update clock status badge based on tracking state
+        val act = activity as? MainActivity
+        val isActive = act?.isTrackingActive() == true
+        clockStatusBadge?.text = if (isActive) "Active" else "Ready"
+    }
+
+    private fun loadUserProfile() {
+        val uid = auth.currentUser?.uid ?: return
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val snap = withContext(Dispatchers.IO) {
+                    FirebaseDatabase.getInstance()
+                        .reference.child("users").child(uid)
+                        .get().await()
+                }
+                val profile = snap.getValue(UserProfile::class.java)
+
+                // Get first name only for cleaner display
+                val firstName = profile?.firstName?.trim()?.split(" ")?.firstOrNull()
+                    ?: profile?.email?.substringBefore("@")?.replaceFirstChar { it.uppercase() }
+                    ?: "Driver"
+
+                userName.text = firstName
+
+                // Load profile image if available
+                val imageUrl = profile?.profileImageUrl
+                if (!imageUrl.isNullOrBlank()) {
+                    userAvatar.load(imageUrl) {
+                        crossfade(true)
+                        transformations(CircleCropTransformation())
+                        placeholder(R.drawable.ic_user_avatar)
+                        error(R.drawable.ic_user_avatar)
+                    }
+                } else {
+                    userAvatar.setImageResource(R.drawable.ic_user_avatar)
+                }
+            } catch (e: Exception) {
+                // Fallback to email-based name or default
+                val email = auth.currentUser?.email
+                val fallbackName = email?.substringBefore("@")?.replaceFirstChar { it.uppercase() } ?: "Driver"
+                userName.text = fallbackName
+            }
+        }
     }
 }
