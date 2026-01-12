@@ -13,6 +13,8 @@ import android.os.PowerManager
 import android.provider.Settings
 import android.view.View
 import android.view.WindowInsets
+import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -25,7 +27,10 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.ibs.ibs_antdrivers.data.TopicSubscriber
 import com.ibs.ibs_antdrivers.service.LocationTrackingService
 import java.text.SimpleDateFormat
@@ -42,6 +47,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bottomNavView: BottomNavigationView
     private lateinit var navController: NavController
 
+    private var authStateListener: FirebaseAuth.AuthStateListener? = null
+    private var tokenCheckRunnable: Runnable? = null
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+
     private val askPostNotifications =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (!granted) {
@@ -55,6 +64,7 @@ class MainActivity : AppCompatActivity() {
     private var pendingClockIn = false
 
     companion object {
+        private const val TOKEN_CHECK_INTERVAL_MS = 30_000L // Check every 30 seconds
         private const val PREFS = "app_prefs"
         private const val KEY_PERMS_REQUESTED = "permissions_requested"
         private const val KEY_TRACKING_ACTIVE = "tracking_active"
@@ -111,6 +121,11 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        // Initialize app normally - Firebase Auth prevents disabled accounts from authenticating
+        initializeApp()
+    }
+
+    private fun initializeApp() {
         setContentView(R.layout.activity_main)
         hideStatusBar()
 
@@ -147,6 +162,12 @@ class MainActivity : AppCompatActivity() {
             updateDriverSessionInfo(true)
         }
 
+        // Monitor Firebase Auth state for session invalidation
+        startAuthStateMonitoring()
+
+        // Start periodic token validation check
+        startPeriodicTokenCheck()
+
         Toast.makeText(this, "Ace Nut Tracking Service Ready", Toast.LENGTH_SHORT).show()
     }
 
@@ -157,7 +178,19 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        // Immediately check token validity when app resumes
+        checkTokenValidity()
+
+        // Resume periodic checks
+        startPeriodicTokenCheck()
+
         updateDriverSessionInfo(isActive = prefs.getBoolean(KEY_TRACKING_ACTIVE, false))
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Pause periodic checks to save battery when app is backgrounded
+        stopPeriodicTokenCheck()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -573,8 +606,125 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Cancel", null)
             .show()
     }
-
     // --- Utilities ---
+
+    override fun onDestroy() {
+        super.onDestroy()
+        stopAuthStateMonitoring()
+        stopPeriodicTokenCheck()
+    }
+
+    // --- Auth State Monitoring ---
+
+    private fun startAuthStateMonitoring() {
+        // Monitor Firebase Auth state - if user gets signed out (e.g., account disabled),
+        // this will detect it and show appropriate message
+        authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+            if (firebaseAuth.currentUser == null) {
+                // User has been signed out (could be account disabled, token revoked, etc.)
+                showAccountDisabledModal()
+            }
+        }
+
+        auth.addAuthStateListener(authStateListener!!)
+    }
+
+    private fun stopAuthStateMonitoring() {
+        authStateListener?.let {
+            auth.removeAuthStateListener(it)
+        }
+        authStateListener = null
+    }
+
+    /**
+     * Periodically validates the Firebase Auth token by forcing a refresh.
+     * If the account has been disabled, the token refresh will fail and trigger logout.
+     * This catches cases where the user has a valid session but their account gets disabled.
+     */
+    private fun startPeriodicTokenCheck() {
+        tokenCheckRunnable = object : Runnable {
+            override fun run() {
+                checkTokenValidity()
+                // Schedule next check
+                handler.postDelayed(this, TOKEN_CHECK_INTERVAL_MS)
+            }
+        }
+        // Start first check
+        handler.postDelayed(tokenCheckRunnable!!, TOKEN_CHECK_INTERVAL_MS)
+    }
+
+    private fun stopPeriodicTokenCheck() {
+        tokenCheckRunnable?.let {
+            handler.removeCallbacks(it)
+        }
+        tokenCheckRunnable = null
+    }
+
+    private fun checkTokenValidity() {
+        val currentUser = auth.currentUser ?: return
+
+        // Force token refresh - this will fail if account is disabled
+        currentUser.getIdToken(true)
+            .addOnFailureListener { exception ->
+                // Token refresh failed - likely account disabled or token revoked
+                android.util.Log.w("MainActivity", "Token validation failed: ${exception.message}")
+
+                // Sign out and show modal
+                runOnUiThread {
+                    if (!isFinishing && !isDestroyed) {
+                        showAccountDisabledModal()
+                    }
+                }
+            }
+            .addOnSuccessListener {
+                // Token is still valid - account is active
+                android.util.Log.d("MainActivity", "Token validation successful")
+            }
+    }
+
+    private fun showAccountDisabledModal() {
+        val dialogView = layoutInflater.inflate(R.layout.custom_dialog, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogView.findViewById<TextView>(R.id.dialogTitle).text = "Session Expired"
+        dialogView.findViewById<TextView>(R.id.dialogMessage).text =
+            "Your session has ended. This may be because your account was disabled or your access was revoked. Please login again or contact support if you believe this is an error."
+        dialogView.findViewById<View>(R.id.dialogNegativeButton).visibility = View.GONE
+
+        val positiveButton = dialogView.findViewById<View>(R.id.dialogPositiveButton) as? Button
+        positiveButton?.text = "OK"
+        positiveButton?.setOnClickListener {
+            dialog.dismiss()
+            handleAccountDisabled()
+        }
+
+        dialog.show()
+    }
+
+    private fun handleAccountDisabled() {
+        // Stop all services
+        stopLocationService()
+        updateDriverSessionInfo(false)
+
+        // Clear session
+        SessionPrefs.clear(this)
+        prefs.edit().clear().apply()
+
+        // Stop monitoring
+        stopAuthStateMonitoring()
+
+        // Navigate to login
+        val intent = Intent(this, Login::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        finish()
+    }
 
     private fun signOut() {
         stopLocationService()
