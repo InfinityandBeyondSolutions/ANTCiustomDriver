@@ -15,6 +15,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.core.view.animation.PathInterpolatorCompat
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -36,7 +37,7 @@ class AnnouncementsAdapter(
         val backView = itemView.findViewById<LinearLayout>(R.id.backView)
         val fullMessage = itemView.findViewById<TextView>(R.id.fullMessage)
         val viewAttachmentButton = itemView.findViewById<Button>(R.id.viewAttachmentButton)
-
+        val attachmentsRecyclerView = itemView.findViewById<RecyclerView>(R.id.attachmentsRecyclerView)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AnnouncementViewHolder {
@@ -84,17 +85,36 @@ class AnnouncementsAdapter(
             }
         }
 
-        if (!ann.FileUrl.isNullOrEmpty()) {
+        // Get all attachments - from new Attachments list or legacy FileUrl
+        val attachments = mutableListOf<Attachment>()
+
+        // Add attachments from new structure
+        ann.Attachments?.let {
+            attachments.addAll(it)
+        }
+
+        // Add legacy FileUrl if it exists and isn't in the attachments list
+        if (!ann.FileUrl.isNullOrEmpty() && attachments.none { it.FileUrl == ann.FileUrl }) {
+            attachments.add(Attachment(
+                FileUrl = ann.FileUrl,
+                FileName = "Attachment"
+            ))
+        }
+
+        if (attachments.isNotEmpty()) {
             holder.card.setOnClickListener {
                 val isBackVisible = holder.backView.visibility == View.VISIBLE
                 flipCard(!isBackVisible, holder.frontView, holder.backView)
 
                 holder.fullMessage.text = ann.Body ?: ""
 
-                holder.viewAttachmentButton.setOnClickListener {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(ann.FileUrl))
-                    it.context.startActivity(intent)
-                }
+                // Hide single button, show RecyclerView with all attachments
+                holder.viewAttachmentButton.visibility = View.GONE
+                holder.attachmentsRecyclerView.visibility = View.VISIBLE
+
+                // Set up attachments RecyclerView
+                holder.attachmentsRecyclerView.layoutManager = LinearLayoutManager(holder.itemView.context)
+                holder.attachmentsRecyclerView.adapter = AttachmentsAdapter(attachments)
             }
         } else {
             holder.card.setOnClickListener(null)
@@ -162,4 +182,50 @@ class AnnouncementsAdapter(
         return announcements.size
     }
 
+    // Inner adapter for attachments list
+    class AttachmentsAdapter(
+        private val attachments: List<Attachment>
+    ) : RecyclerView.Adapter<AttachmentsAdapter.AttachmentViewHolder>() {
+
+        class AttachmentViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val fileNameText = itemView.findViewById<TextView>(R.id.attachmentFileName)
+            val fileSizeText = itemView.findViewById<TextView>(R.id.attachmentFileSize)
+            val viewButton = itemView.findViewById<Button>(R.id.viewAttachmentItemButton)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AttachmentViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.attachment_item, parent, false)
+            return AttachmentViewHolder(view)
+        }
+
+        override fun onBindViewHolder(holder: AttachmentViewHolder, position: Int) {
+            val attachment = attachments[position]
+
+            holder.fileNameText.text = attachment.FileName ?: "Attachment ${position + 1}"
+
+            // Format file size
+            attachment.FileSizeBytes?.let { bytes ->
+                val sizeStr = when {
+                    bytes < 1024 -> "$bytes B"
+                    bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+                    else -> String.format("%.2f MB", bytes / (1024.0 * 1024.0))
+                }
+                holder.fileSizeText.text = sizeStr
+                holder.fileSizeText.visibility = View.VISIBLE
+            } ?: run {
+                holder.fileSizeText.visibility = View.GONE
+            }
+
+            holder.viewButton.setOnClickListener {
+                attachment.FileUrl?.let { url ->
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    it.context.startActivity(intent)
+                }
+            }
+        }
+
+        override fun getItemCount(): Int = attachments.size
+    }
 }
+

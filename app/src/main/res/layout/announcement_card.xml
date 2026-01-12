@@ -147,6 +147,7 @@
                 android:lineSpacingExtra="4dp"
                 android:paddingBottom="14dp" />
 
+            <!-- Legacy single attachment button (hidden when using multiple attachments) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/viewAttachmentButton"
                 android:layout_width="wrap_content"
@@ -158,7 +159,27 @@
                 android:stateListAnimator="@null"
                 app:cornerRadius="12dp"
                 app:backgroundTint="@color/webgold"
-                app:rippleColor="#33000000" />
+                app:rippleColor="#33000000"
+                android:visibility="gone" />
+
+            <!-- RecyclerView for multiple attachments -->
+            <TextView
+                android:id="@+id/attachmentsLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Attachments"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium"
+                android:paddingBottom="8dp"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/attachmentsRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:visibility="gone" />
         </LinearLayout>
 
     </FrameLayout>
