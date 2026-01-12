@@ -46,6 +46,10 @@ class ChatHomeFragment : Fragment() {
 
     private var childListener: ChildEventListener? = null
     private var nameListener: ValueEventListener? = null
+    private var membershipListener: ValueEventListener? = null
+
+    // Track if user has been removed
+    private var isRemovedFromGroup = false
 
     // ---- Pickers ----
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -107,11 +111,32 @@ class ChatHomeFragment : Fragment() {
         nameListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val n = snapshot.getValue(String::class.java)
-                if (!n.isNullOrBlank()) title.text = n
+                if (!n.isNullOrBlank()) {
+                    title.text = n
+                    // Show modal when group name changes
+                    if (passedName != null && n != passedName) {
+                        showGroupNameChangedModal(n)
+                    }
+                }
             }
             override fun onCancelled(error: DatabaseError) {}
         }
         nameRef.addValueEventListener(nameListener!!)
+
+        // 3) Monitor group membership - detect if user is removed
+        val membershipRef = FirebaseDatabase.getInstance().reference
+            .child("groupMembers").child(groupId).child(repo.uid() ?: "")
+        membershipListener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (!snapshot.exists() && !isRemovedFromGroup) {
+                    // User has been removed from the group
+                    isRemovedFromGroup = true
+                    showRemovedFromGroupModal()
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        }
+        membershipRef.addValueEventListener(membershipListener!!)
 
         adapter = ChatAdapter(
             data = items,
@@ -134,9 +159,9 @@ class ChatHomeFragment : Fragment() {
                 try {
                     repo.sendText(groupId, t)
                     input.setText("")
-                    // don't scroll here; the listener will scroll when the item arrives
+                    // Message sent successfully - listener will handle display
                 } catch (e: Exception) {
-                    toast("Send failed: ${e.message}")
+                    showErrorModal("Failed to send message: ${e.message}")
                 } finally {
                     send.isEnabled = true
                 }
@@ -177,10 +202,46 @@ class ChatHomeFragment : Fragment() {
                 adapter.notifyItemInserted(items.lastIndex)
                 list.scrollToPosition(items.lastIndex)
             }
-            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {}
-            override fun onChildRemoved(snapshot: DataSnapshot) {}
+
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                // Handle message edits/updates
+                val updatedMessage = snapshot.getValue(Message::class.java) ?: return
+                val messageId = snapshot.key ?: return
+
+                val index = items.indexOfFirst { it.first == messageId }
+                if (index >= 0) {
+                    val oldMessage = items[index].second
+                    items[index] = messageId to updatedMessage
+                    adapter.notifyItemChanged(index)
+
+                    // Only show modal if:
+                    // 1. The message text/content actually changed (not just seen/reactions)
+                    // 2. The message is from another user (not the current user)
+                    val contentChanged = oldMessage.text != updatedMessage.text ||
+                                       oldMessage.attachment?.url != updatedMessage.attachment?.url
+                    val isOtherUser = updatedMessage.senderId != repo.uid()
+
+                    if (contentChanged && isOtherUser) {
+                        showMessageUpdatedModal()
+                    }
+                }
+            }
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {
+                // Handle message deletions
+                val messageId = snapshot.key ?: return
+                val index = items.indexOfFirst { it.first == messageId }
+                if (index >= 0) {
+                    items.removeAt(index)
+                    adapter.notifyItemRemoved(index)
+                    showMessageDeletedModal()
+                }
+            }
+
             override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
-            override fun onCancelled(error: DatabaseError) {}
+            override fun onCancelled(error: DatabaseError) {
+                toast("Connection error: ${error.message}")
+            }
         }
         q.addChildEventListener(childListener as ChildEventListener)
     }
@@ -197,6 +258,148 @@ class ChatHomeFragment : Fragment() {
                 .removeEventListener(it)
         }
         nameListener = null
+
+        membershipListener?.let {
+            FirebaseDatabase.getInstance().reference
+                .child("groupMembers").child(groupId).child(repo.uid() ?: "")
+                .removeEventListener(it)
+        }
+        membershipListener = null
+    }
+
+    // ---- Modal Functions ----
+
+    private fun showRemovedFromGroupModal() {
+        val dialogView = layoutInflater.inflate(R.layout.custom_dialog, null)
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogView.findViewById<TextView>(R.id.dialogTitle).text = "Removed from Group"
+        dialogView.findViewById<TextView>(R.id.dialogMessage).text =
+            "You have been removed from this group by an administrator. You will be returned to the groups list."
+        dialogView.findViewById<View>(R.id.dialogNegativeButton).visibility = View.GONE
+
+        val positiveButton = dialogView.findViewById<View>(R.id.dialogPositiveButton) as? Button
+        positiveButton?.text = "OK"
+        positiveButton?.setOnClickListener {
+            dialog.dismiss()
+            findNavController().popBackStack()
+        }
+
+        dialog.show()
+    }
+
+    private fun showGroupNameChangedModal(newName: String) {
+        val dialogView = layoutInflater.inflate(R.layout.custom_dialog, null)
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogView.findViewById<TextView>(R.id.dialogTitle).text = "Group Name Updated"
+        dialogView.findViewById<TextView>(R.id.dialogMessage).text =
+            "This group has been renamed to \"$newName\" by an administrator."
+        dialogView.findViewById<View>(R.id.dialogNegativeButton).visibility = View.GONE
+
+        val positiveButton = dialogView.findViewById<View>(R.id.dialogPositiveButton) as? Button
+        positiveButton?.text = "OK"
+        positiveButton?.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun showMessageUpdatedModal() {
+        val dialogView = layoutInflater.inflate(R.layout.custom_dialog, null)
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogView.findViewById<TextView>(R.id.dialogTitle).text = "Message Updated"
+        dialogView.findViewById<TextView>(R.id.dialogMessage).text =
+            "A message in this chat has been updated by an administrator."
+        dialogView.findViewById<View>(R.id.dialogNegativeButton).visibility = View.GONE
+
+        val positiveButton = dialogView.findViewById<View>(R.id.dialogPositiveButton) as? Button
+        positiveButton?.text = "OK"
+        positiveButton?.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun showMessageDeletedModal() {
+        val dialogView = layoutInflater.inflate(R.layout.custom_dialog, null)
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogView.findViewById<TextView>(R.id.dialogTitle).text = "Message Deleted"
+        dialogView.findViewById<TextView>(R.id.dialogMessage).text =
+            "A message has been removed from this chat by an administrator."
+        dialogView.findViewById<View>(R.id.dialogNegativeButton).visibility = View.GONE
+
+        val positiveButton = dialogView.findViewById<View>(R.id.dialogPositiveButton) as? Button
+        positiveButton?.text = "OK"
+        positiveButton?.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun showUploadSuccessModal(fileType: String) {
+        val dialogView = layoutInflater.inflate(R.layout.custom_dialog, null)
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogView.findViewById<TextView>(R.id.dialogTitle).text = "Upload Successful"
+        dialogView.findViewById<TextView>(R.id.dialogMessage).text =
+            "$fileType has been uploaded and sent to the group."
+        dialogView.findViewById<View>(R.id.dialogNegativeButton).visibility = View.GONE
+
+        val positiveButton = dialogView.findViewById<View>(R.id.dialogPositiveButton) as? Button
+        positiveButton?.text = "OK"
+        positiveButton?.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun showErrorModal(message: String) {
+        val dialogView = layoutInflater.inflate(R.layout.custom_dialog, null)
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogView.findViewById<TextView>(R.id.dialogTitle).text = "Error"
+        dialogView.findViewById<TextView>(R.id.dialogMessage).text = message
+        dialogView.findViewById<View>(R.id.dialogNegativeButton).visibility = View.GONE
+
+        val positiveButton = dialogView.findViewById<View>(R.id.dialogPositiveButton) as? Button
+        positiveButton?.text = "OK"
+        positiveButton?.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     // ---- Upload helpers ----
@@ -208,8 +411,9 @@ class ChatHomeFragment : Fragment() {
                 val (name, mime) = withContext(Dispatchers.IO) { queryNameAndType(uri) }
                 val bytes = requireContext().contentResolver.openInputStream(uri)!!.use { it.readBytes() }
                 repo.sendImage(groupId, name ?: "image.jpg", bytes, mime ?: "image/jpeg")
+                showUploadSuccessModal("Image")
             } catch (e: Exception) {
-                toast("Upload failed: ${e.message}")
+                showErrorModal("Failed to upload image: ${e.message}")
             } finally {
                 progress.isVisible = false
             }
@@ -240,8 +444,9 @@ class ChatHomeFragment : Fragment() {
                     bytes,
                     mime ?: "application/octet-stream"
                 )
+                showUploadSuccessModal("Document")
             } catch (e: Exception) {
-                toast("Upload failed: ${e.message}")
+                showErrorModal("Failed to upload document: ${e.message}")
             } finally {
                 progress.isVisible = false
             }
