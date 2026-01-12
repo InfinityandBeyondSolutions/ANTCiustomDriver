@@ -18,6 +18,10 @@
     <string name="announcement_view_attachment">View Attachment</string>
 
     <!-- Catalogue -->
+    <string name="catalogues_title">Catalogues</string>
+    <string name="catalogues_subtitle">Select a catalogue to view</string>
+    <string name="no_catalogues_available">No catalogues available</string>
+
     <string name="catalogue_title">Catalogue</string>
     <string name="catalogue_subtitle">Swipe through pages and find what you need, fast</string>
     <string name="catalogue_page">Catalogue page</string>
