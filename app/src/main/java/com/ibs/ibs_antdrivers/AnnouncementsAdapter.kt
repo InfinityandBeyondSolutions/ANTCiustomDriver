@@ -101,24 +101,45 @@ class AnnouncementsAdapter(
             ))
         }
 
-        if (attachments.isNotEmpty()) {
-            holder.card.setOnClickListener {
-                val isBackVisible = holder.backView.visibility == View.VISIBLE
-                flipCard(!isBackVisible, holder.frontView, holder.backView)
+        holder.card.setOnClickListener {
+            val isBackVisible = holder.backView.visibility == View.VISIBLE
 
+            // Toggle flip BOTH directions
+            flipCard(!isBackVisible, holder.frontView, holder.backView)
+
+            if (!isBackVisible) {
+                // Flipping to BACK → show full message + attachments
                 holder.fullMessage.text = ann.Body ?: ""
 
-                // Hide single button, show RecyclerView with all attachments
                 holder.viewAttachmentButton.visibility = View.GONE
                 holder.attachmentsRecyclerView.visibility = View.VISIBLE
 
-                // Set up attachments RecyclerView
-                holder.attachmentsRecyclerView.layoutManager = LinearLayoutManager(holder.itemView.context)
-                holder.attachmentsRecyclerView.adapter = AttachmentsAdapter(attachments)
+                holder.attachmentsRecyclerView.layoutManager =
+                    LinearLayoutManager(holder.itemView.context)
+                holder.attachmentsRecyclerView.adapter =
+                    AttachmentsAdapter(attachments)
             }
-        } else {
-            holder.card.setOnClickListener(null)
         }
+
+
+//        if (attachments.isNotEmpty()) {
+//            holder.card.setOnClickListener {
+//                val isBackVisible = holder.backView.visibility == View.VISIBLE
+//                flipCard(!isBackVisible, holder.frontView, holder.backView)
+//
+//                holder.fullMessage.text = ann.Body ?: ""
+//
+//                // Hide single button, show RecyclerView with all attachments
+//                holder.viewAttachmentButton.visibility = View.GONE
+//                holder.attachmentsRecyclerView.visibility = View.VISIBLE
+//
+//                // Set up attachments RecyclerView
+//                holder.attachmentsRecyclerView.layoutManager = LinearLayoutManager(holder.itemView.context)
+//                holder.attachmentsRecyclerView.adapter = AttachmentsAdapter(attachments)
+//            }
+//        } else {
+//            holder.card.setOnClickListener(null)
+//        }
     }
 
     private fun flipCard(showBack: Boolean, front: View, back: View) {
