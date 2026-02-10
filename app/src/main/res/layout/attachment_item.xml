@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:gravity="center_vertical"
+    android:background="?attr/selectableItemBackground">
+
+    <!-- File info -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginEnd="8dp">
+
+        <TextView
+            android:id="@+id/attachmentFileName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Attachment"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/attachmentFileSize"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 KB"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:alpha="0.7"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <!-- View button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/viewAttachmentItemButton"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:paddingHorizontal="12dp"
+        android:text="View"
+        android:textAllCaps="false"
+        android:textColor="@color/webnavy"
+        android:textSize="13sp"
+        android:stateListAnimator="@null"
+        app:cornerRadius="10dp"
+        app:backgroundTint="@color/webgold"
+        app:rippleColor="#33000000" />
+
+</LinearLayout>
+

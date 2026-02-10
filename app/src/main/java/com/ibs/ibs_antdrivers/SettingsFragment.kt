@@ -233,11 +233,30 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 .setTitle("Sign out")
                 .setMessage("Are you sure you want to sign out?")
                 .setPositiveButton("Sign out") { _, _ ->
-                    auth.signOut()
-                    SessionPrefs.clear(requireContext())
-                    SecurePrefs.clear(requireContext())
-                    startActivity(Intent(requireContext(), Login::class.java))
-                    requireActivity().finish()
+                    val user = auth.currentUser
+                    user?.reload()?.addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            user.getIdToken(true).addOnCompleteListener { tokenTask ->
+                                if (tokenTask.isSuccessful) {
+                                    val claims = tokenTask.result?.claims
+                                    val isDisabled = claims?.get("disabled") as? Boolean ?: false
+                                    if (isDisabled) {
+                                        auth.signOut()
+                                        SessionPrefs.clear(requireContext())
+                                        SecurePrefs.clear(requireContext())
+                                        startActivity(Intent(requireContext(), Login::class.java))
+                                        requireActivity().finish()
+                                    } else {
+                                        Snackbar.make(requireView(), "Cannot sign out. User is not disabled.", Snackbar.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    Snackbar.make(requireView(), "Failed to verify user status.", Snackbar.LENGTH_SHORT).show()
+                                }
+                            }
+                        } else {
+                            Snackbar.make(requireView(), "Failed to reload user.", Snackbar.LENGTH_SHORT).show()
+                        }
+                    }
                 }
                 .setNegativeButton("Cancel", null)
                 .show()

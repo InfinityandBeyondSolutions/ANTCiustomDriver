@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.google.firebase.storage.ktx.storage
 import com.google.firebase.ktx.Firebase
@@ -30,14 +31,26 @@ class CatalogueFragment : Fragment() {
     private var pageIndex = 0
     private var totalPages = 0
 
+    // Category info from arguments
+    private var categoryId: Int = 1 // Default to 1 for backward compatibility
+    private var categoryName: String = "Catalogue"
+    private var fileUrl: String? = null
+
     private val cachedCatalogueFile: File
-        get() = File(requireContext().filesDir, "catalogue/current.pdf")
+        get() = File(requireContext().filesDir, "catalogue/catalogue_$categoryId.pdf")
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         val view = inflater.inflate(R.layout.fragment_catalogue, container, false)
+
+        // Get category info from arguments
+        arguments?.let {
+            categoryId = it.getInt("categoryId", 1)
+            categoryName = it.getString("categoryName", "Catalogue")
+            fileUrl = it.getString("fileUrl")
+        }
 
         pdfPageImageView = view.findViewById(R.id.pdfPage)
         prevButton = view.findViewById(R.id.prevPage)
@@ -74,8 +87,8 @@ class CatalogueFragment : Fragment() {
     private fun loadPdfFromFirebaseTempPreview() {
         showHint(getString(R.string.catalogue_loading), true)
 
-        val storageRef = Firebase.storage.getReference("catalogue/current.pdf")
-        val localFile = File.createTempFile("catalogue", "pdf", requireContext().cacheDir)
+        val storageRef = Firebase.storage.getReference("catalogue/categories/$categoryId/current.pdf")
+        val localFile = File.createTempFile("catalogue_$categoryId", "pdf", requireContext().cacheDir)
 
         storageRef.getFile(localFile).addOnSuccessListener {
             openRenderer(localFile)
@@ -83,7 +96,7 @@ class CatalogueFragment : Fragment() {
             showHint("", false)
         }.addOnFailureListener {
             showHint("", false)
-            Toast.makeText(context, getString(R.string.catalogue_download_failed), Toast.LENGTH_SHORT).show()
+            showErrorModal("Failed to load catalogue. Please check your connection.")
         }
     }
 
@@ -92,7 +105,7 @@ class CatalogueFragment : Fragment() {
         showHint(getString(R.string.catalogue_loading), true)
         setShareEnabled(false)
 
-        val storageRef = Firebase.storage.getReference("catalogue/current.pdf")
+        val storageRef = Firebase.storage.getReference("catalogue/categories/$categoryId/current.pdf")
 
         val target = cachedCatalogueFile
         target.parentFile?.mkdirs()
@@ -106,12 +119,54 @@ class CatalogueFragment : Fragment() {
             showHint("", false)
             setShareEnabled(true)
             if (showToastOnSuccess) {
-                Toast.makeText(context, getString(R.string.catalogue_download_complete), Toast.LENGTH_SHORT).show()
+                showSuccessModal()
             }
         }.addOnFailureListener {
             showHint("", false)
-            Toast.makeText(context, getString(R.string.catalogue_download_failed), Toast.LENGTH_SHORT).show()
+            showErrorModal("Failed to download catalogue. Please try again.")
         }
+    }
+
+    private fun showSuccessModal() {
+        val dialogView = layoutInflater.inflate(R.layout.custom_dialog, null)
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogView.findViewById<TextView>(R.id.dialogTitle).text = "Success!"
+        dialogView.findViewById<TextView>(R.id.dialogMessage).text = "Catalogue has been saved for offline use."
+        dialogView.findViewById<View>(R.id.dialogNegativeButton).visibility = View.GONE
+
+        val positiveButton = dialogView.findViewById<View>(R.id.dialogPositiveButton) as? android.widget.Button
+        positiveButton?.text = "OK"
+        positiveButton?.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun showErrorModal(message: String) {
+        val dialogView = layoutInflater.inflate(R.layout.custom_dialog, null)
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogView.findViewById<TextView>(R.id.dialogTitle).text = "Error"
+        dialogView.findViewById<TextView>(R.id.dialogMessage).text = message
+        dialogView.findViewById<View>(R.id.dialogNegativeButton).visibility = View.GONE
+
+        val positiveButton = dialogView.findViewById<View>(R.id.dialogPositiveButton) as? android.widget.Button
+        positiveButton?.text = "OK"
+        positiveButton?.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     private fun shareCatalogueIfAvailable() {
@@ -119,7 +174,7 @@ class CatalogueFragment : Fragment() {
         val file = cachedCatalogueFile
 
         if (!file.exists()) {
-            Toast.makeText(ctx, getString(R.string.catalogue_share_unavailable), Toast.LENGTH_SHORT).show()
+            showErrorModal("Download the catalogue first to share it.")
             return
         }
 
@@ -128,7 +183,7 @@ class CatalogueFragment : Fragment() {
             ctx,
             uri,
             mimeType = "application/pdf",
-            subject = getString(R.string.catalogue_title),
+            subject = categoryName,
             chooserTitle = getString(R.string.catalogue_share)
         )
 
