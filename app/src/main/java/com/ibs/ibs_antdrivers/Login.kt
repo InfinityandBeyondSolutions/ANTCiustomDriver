@@ -1,10 +1,17 @@
 package com.ibs.ibs_antdrivers
 
+import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
+import android.view.KeyEvent
+import android.view.MotionEvent
+import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ScrollView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
@@ -53,6 +60,8 @@ class Login : AppCompatActivity() {
         username = findViewById(R.id.loginUsername)
         password = findViewById(R.id.loginPassword)
         login = findViewById(R.id.loginButton)
+
+        setupKeyboardBehaviour()
 
         login.setOnClickListener {
             val email = username.text.toString().trim()
@@ -186,5 +195,60 @@ class Login : AppCompatActivity() {
     private fun goToMain() {
         startActivity(Intent(this, MainActivity::class.java))
         finish()
+    }
+
+    private fun hideKeyboard() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val view = currentFocus ?: findViewById<View>(android.R.id.content)
+        imm.hideSoftInputFromWindow(view.windowToken, 0)
+        view.clearFocus()
+    }
+
+    private fun setupKeyboardBehaviour() {
+        val scrollView = findViewById<ScrollView>(R.id.main)
+
+        // Ensure the focused input is fully visible when the keyboard opens.
+        fun scrollToView(v: View) {
+            scrollView.post {
+                scrollView.smoothScrollTo(0, v.bottom)
+            }
+        }
+
+        username.setOnFocusChangeListener { v, hasFocus ->
+            if (hasFocus) scrollToView(v)
+        }
+        password.setOnFocusChangeListener { v, hasFocus ->
+            if (hasFocus) scrollToView(v)
+        }
+
+        // IME actions: Next moves to password, Done triggers login + hides keyboard.
+        username.setOnEditorActionListener { _, actionId, event ->
+            val isEnter = event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN
+            if (actionId == EditorInfo.IME_ACTION_NEXT || isEnter) {
+                password.requestFocus()
+                true
+            } else {
+                false
+            }
+        }
+
+        password.setOnEditorActionListener { _, actionId, event ->
+            val isEnter = event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN
+            if (actionId == EditorInfo.IME_ACTION_DONE || isEnter) {
+                hideKeyboard()
+                login.performClick()
+                true
+            } else {
+                false
+            }
+        }
+
+        // Tap anywhere on the background to dismiss the keyboard.
+        scrollView.setOnTouchListener { _, motionEvent ->
+            if (motionEvent.action == MotionEvent.ACTION_DOWN) {
+                hideKeyboard()
+            }
+            false
+        }
     }
 }

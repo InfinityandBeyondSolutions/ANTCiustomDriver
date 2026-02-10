@@ -7,12 +7,24 @@
     android:layout_height="match_parent"
     android:background="@color/antyellow"
     android:fillViewport="true"
+    android:focusableInTouchMode="true"
+    android:descendantFocusability="afterDescendants"
     tools:context="com.ibs.ibs_antdrivers.Login">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingBottom="32dp">
+
+        <!-- When the Activity opens, take focus here so the keyboard doesn't pop immediately -->
+        <View
+            android:id="@+id/initialFocus"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
         <!-- Logo at the top, responsive width -->
         <ImageView
@@ -113,6 +125,7 @@
                         android:autofillHints="emailAddress"
                         android:fontFamily="@font/maitree_bold"
                         android:inputType="textEmailAddress"
+                        android:imeOptions="actionNext"
                         android:textColor="@color/navyblue"
                         android:textSize="16sp" />
                 </com.google.android.material.textfield.TextInputLayout>
@@ -143,6 +156,7 @@
                         android:autofillHints="password"
                         android:fontFamily="@font/maitree_bold"
                         android:inputType="textPassword"
+                        android:imeOptions="actionDone"
                         android:textColor="@color/navyblue"
                         android:textSize="16sp" />
                 </com.google.android.material.textfield.TextInputLayout>
