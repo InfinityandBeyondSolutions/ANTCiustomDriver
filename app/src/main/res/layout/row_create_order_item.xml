@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingVertical="10dp"
+    android:paddingHorizontal="8dp"
+    android:background="@color/white">
+
+    <TextView
+        android:id="@+id/colItemNo"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:textColor="@color/webnavy"
+        android:textStyle="bold"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/colDescription"
+        android:layout_width="160dp"
+        android:layout_height="wrap_content"
+        android:textColor="@color/webnavy"
+        android:textSize="12sp"
+        android:maxLines="2"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/colBrand"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:textColor="#667788"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/colSize"
+        android:layout_width="70dp"
+        android:layout_height="wrap_content"
+        android:textColor="#667788"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/colUnitBarcode"
+        android:layout_width="130dp"
+        android:layout_height="wrap_content"
+        android:textColor="#0A1F44"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/colOuterBarcode"
+        android:layout_width="130dp"
+        android:layout_height="wrap_content"
+        android:textColor="#0A1F44"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/colCasePrice"
+        android:layout_width="90dp"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:textColor="@color/webnavy"
+        android:textStyle="bold"
+        android:textSize="12sp" />
+
+    <!-- Quantity Spinner -->
+    <LinearLayout
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <ImageButton
+            android:id="@+id/btnDecrease"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_action_icon_circle_gold"
+            android:src="@drawable/ic_remove"
+            android:scaleType="centerInside"
+            android:padding="8dp"
+            android:contentDescription="Decrease quantity"
+            app:tint="@color/webnavy" />
+
+        <TextView
+            android:id="@+id/tvQuantity"
+            android:layout_width="36dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="0"
+            android:textColor="@color/webnavy"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+
+        <ImageButton
+            android:id="@+id/btnIncrease"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_action_icon_circle_gold"
+            android:src="@android:drawable/ic_input_add"
+            android:scaleType="centerInside"
+            android:padding="8dp"
+            android:contentDescription="Increase quantity"
+            app:tint="@color/webnavy" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/colLineTotal"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:text="-"
+        android:textColor="@color/webnavy"
+        android:textStyle="bold"
+        android:textSize="12sp" />
+
+</LinearLayout>
+

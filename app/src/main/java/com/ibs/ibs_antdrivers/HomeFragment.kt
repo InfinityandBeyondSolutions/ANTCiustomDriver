@@ -67,6 +67,7 @@ class HomeFragment : Fragment() {
     private lateinit var btnPhonebook: ImageView
 
     private var priceListsCard: View? = null
+    private var catalogueCard: View? = null
 
     // New enhanced UI elements
     private lateinit var userName: TextView
@@ -123,6 +124,7 @@ class HomeFragment : Fragment() {
         btnPhonebook= view.findViewById(R.id.btnPhonebook)
 
         priceListsCard = view.findViewById(R.id.priceListsCard)
+        catalogueCard = view.findViewById(R.id.catalogueCard)
 
         // New enhanced UI elements
         userName = view.findViewById(R.id.userName)
@@ -175,6 +177,10 @@ class HomeFragment : Fragment() {
 
         priceListsCard?.setOnClickListener {
             findNavController().navigate(R.id.action_home_to_priceLists)
+        }
+
+        catalogueCard?.setOnClickListener {
+            findNavController().navigate(R.id.action_home_to_catalogue)
         }
 
         //GOING TO CHAT NAVIGATION DOWN HERE

@@ -42,6 +42,14 @@
             app:exitAnim="@anim/fragment_slide_out_left"
             app:popEnterAnim="@anim/fragment_slide_in_left"
             app:popExitAnim="@anim/fragment_slide_out_right" />
+
+        <action
+            android:id="@+id/action_home_to_catalogue"
+            app:destination="@id/navCatalogue"
+            app:enterAnim="@anim/fragment_slide_in_right"
+            app:exitAnim="@anim/fragment_slide_out_left"
+            app:popEnterAnim="@anim/fragment_slide_in_left"
+            app:popExitAnim="@anim/fragment_slide_out_right" />
     </fragment>
 
     <fragment
@@ -194,4 +202,26 @@
         android:id="@+id/adminPhonebookFragment"
         android:name="com.ibs.ibs_antdrivers.ui.phonebook.AdminPhonebookFragment"
         android:label="Phonebook" />
+
+    <!-- Order Dashboard -->
+    <fragment
+        android:id="@+id/orderDashboardFragment"
+        android:name="com.ibs.ibs_antdrivers.OrderDashboardFragment"
+        android:label="Orders"
+        tools:layout="@layout/fragment_order_dashboard">
+        <action
+            android:id="@+id/action_orderDashboard_to_createOrder"
+            app:destination="@id/createOrderFragment"
+            app:enterAnim="@anim/fragment_slide_in_right"
+            app:exitAnim="@anim/fragment_slide_out_left"
+            app:popEnterAnim="@anim/fragment_slide_in_left"
+            app:popExitAnim="@anim/fragment_slide_out_right" />
+    </fragment>
+
+    <!-- Create Order -->
+    <fragment
+        android:id="@+id/createOrderFragment"
+        android:name="com.ibs.ibs_antdrivers.CreateOrderFragment"
+        android:label="Create Order"
+        tools:layout="@layout/fragment_create_order" />
 </navigation>

@@ -18,9 +18,9 @@
         />
 
     <item
-        android:id="@+id/navCatalogue"
-        android:icon="@drawable/catalogue"
-        android:title="Catalogue"
+        android:id="@+id/orderDashboardFragment"
+        android:icon="@drawable/ic_orders"
+        android:title="Orders"
         />
 
 

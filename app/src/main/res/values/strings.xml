@@ -35,4 +35,14 @@
     <string name="catalogue_download_complete">Catalogue saved for offline use</string>
     <string name="catalogue_download_failed">Failed to download catalogue</string>
     <string name="catalogue_share_unavailable">Download the catalogue first to share it</string>
+
+    <!-- Orders -->
+    <string name="orders_title">My Orders</string>
+    <string name="orders_subtitle">View and manage your orders</string>
+    <string name="orders_empty">No orders yet.\nTap the button below to create your first order.</string>
+    <string name="orders_failed">Failed to load orders</string>
+    <string name="create_order_title">Create New Order</string>
+    <string name="create_order_subtitle">Select store and price list to begin</string>
+    <string name="order_submit_success">Order submitted successfully!</string>
+    <string name="order_submit_failed">Failed to submit order</string>
 </resources>
