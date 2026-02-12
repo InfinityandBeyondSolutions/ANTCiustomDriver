@@ -34,6 +34,14 @@
         <action
             android:id="@+id/action_home_to_adminPhonebook"
             app:destination="@id/adminPhonebookFragment" />
+
+        <action
+            android:id="@+id/action_home_to_priceLists"
+            app:destination="@id/navPriceLists"
+            app:enterAnim="@anim/fragment_slide_in_right"
+            app:exitAnim="@anim/fragment_slide_out_left"
+            app:popEnterAnim="@anim/fragment_slide_in_left"
+            app:popExitAnim="@anim/fragment_slide_out_right" />
     </fragment>
 
     <fragment
@@ -94,6 +102,22 @@
             app:exitAnim="@anim/fragment_slide_out_left"
             app:popEnterAnim="@anim/fragment_slide_in_left"
             app:popExitAnim="@anim/fragment_slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navPriceLists"
+        android:name="com.ibs.ibs_antdrivers.PriceListsFragment"
+        android:label="Price Lists"
+        tools:layout="@layout/fragment_price_lists" />
+
+    <fragment
+        android:id="@+id/priceListDetailFragment"
+        android:name="com.ibs.ibs_antdrivers.PriceListDetailFragment"
+        android:label="Price List"
+        tools:layout="@layout/fragment_pricelist_detail">
+        <argument
+            android:name="priceListId"
+            app:argType="string" />
     </fragment>
 
     <fragment

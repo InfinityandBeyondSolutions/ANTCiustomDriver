@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="price_lists_failed">Failed to load price lists</string>
+</resources>

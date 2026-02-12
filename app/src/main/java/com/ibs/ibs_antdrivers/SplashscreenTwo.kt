@@ -4,11 +4,10 @@ import android.animation.ValueAnimator
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.view.animation.Animation
-import android.view.animation.AnimationUtils
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.auth.FirebaseAuth
 import kotlin.math.max
 
 class SplashscreenTwo : AppCompatActivity() {
@@ -56,8 +55,8 @@ class SplashscreenTwo : AppCompatActivity() {
             }
             addListener(object : android.animation.AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: android.animation.Animator) {
-                    if (!isFinishing) {
-                        runExitAndNavigate()
+                    if (!isFinishing && !hasNavigated) {
+                        navigateToNextScreen()
                     }
                 }
             })
@@ -65,28 +64,27 @@ class SplashscreenTwo : AppCompatActivity() {
         }
     }
 
-    private fun runExitAndNavigate() {
+    private fun navigateToNextScreen() {
         if (hasNavigated) return
         hasNavigated = true
 
-        // Fade-out animation for current activity
-        val fadeOut = AnimationUtils.loadAnimation(this, android.R.anim.fade_out)
-        findViewById<View>(R.id.main).startAnimation(fadeOut)
+        // Check auth status immediately
+        val auth = FirebaseAuth.getInstance()
+        val isLoggedIn = auth.currentUser != null && SessionPrefs.validateOrClear(this)
 
-        fadeOut.setAnimationListener(object : Animation.AnimationListener {
-            override fun onAnimationStart(animation: Animation?) {}
-            override fun onAnimationRepeat(animation: Animation?) {}
-            override fun onAnimationEnd(animation: Animation?) {
-                val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
-                val next = if (auth.currentUser != null && SessionPrefs.validateOrClear(this@SplashscreenTwo)) {
-                    MainActivity::class.java
-                } else {
-                    Login::class.java
-                }
-                startActivity(Intent(this@SplashscreenTwo, next))
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                finish()
-            }
-        })
+        val nextActivity = if (isLoggedIn) {
+            MainActivity::class.java
+        } else {
+            Login::class.java
+        }
+
+        // Navigate directly without animation delay
+        val intent = Intent(this, nextActivity)
+        // Clear the back stack so user can't go back to splash screens
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        // Use simple fade transition
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        finish()
     }
 }
