@@ -23,6 +23,7 @@ sealed class CallCycleRowItem {
         val title: String,
         val subtitle: String?,
         val checked: Boolean,
+        val isCallActive: Boolean = false,
     ) : CallCycleRowItem()
 
     data class Empty(val message: String) : CallCycleRowItem()
@@ -31,6 +32,9 @@ sealed class CallCycleRowItem {
 class CallCycleAdapter(
     private val onTodayStoreChecked: ((storeId: String, checked: Boolean) -> Unit)? = null,
     private val onTodayStoreViewDetails: ((storeId: String) -> Unit)? = null,
+    private val onTodayStoreStartCall: ((storeId: String) -> Unit)? = null,
+    private val onTodayStoreEndCall: ((storeId: String) -> Unit)? = null,
+    private val onTodayStoreMakeOrder: ((storeId: String) -> Unit)? = null,
     private val data: MutableList<CallCycleRowItem> = mutableListOf(),
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -55,7 +59,14 @@ class CallCycleAdapter(
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
             0 -> HeaderVH(inflater.inflate(R.layout.row_call_cycle_header, parent, false))
-            2 -> TodayStoreVH(inflater.inflate(R.layout.row_call_cycle_today_store, parent, false), onTodayStoreChecked, onTodayStoreViewDetails)
+            2 -> TodayStoreVH(
+                inflater.inflate(R.layout.row_call_cycle_today_store, parent, false),
+                onTodayStoreChecked,
+                onTodayStoreViewDetails,
+                onTodayStoreStartCall,
+                onTodayStoreEndCall,
+                onTodayStoreMakeOrder
+            )
             3 -> EmptyVH(inflater.inflate(R.layout.row_call_cycle_empty, parent, false))
             else -> CallVH(inflater.inflate(R.layout.row_call_cycle_item, parent, false))
         }
@@ -88,11 +99,17 @@ class CallCycleAdapter(
         v: View,
         private val onChecked: ((storeId: String, checked: Boolean) -> Unit)?,
         private val onEye: ((storeId: String) -> Unit)?,
+        private val onStartCall: ((storeId: String) -> Unit)?,
+        private val onEndCall: ((storeId: String) -> Unit)?,
+        private val onMakeOrder: ((storeId: String) -> Unit)?,
     ) : RecyclerView.ViewHolder(v) {
         private val check: MaterialCheckBox = v.findViewById(R.id.check)
         private val title: TextView = v.findViewById(R.id.title)
         private val subtitle: TextView = v.findViewById(R.id.subtitle)
         private val eye: ImageView = v.findViewById(R.id.eye)
+        private val callButton: View = v.findViewById(R.id.callButton)
+        private val callIcon: ImageView = v.findViewById(R.id.callIcon)
+        private val orderButton: View = v.findViewById(R.id.orderButton)
 
         fun bind(item: CallCycleRowItem.TodayStore) {
             title.text = item.title
@@ -111,6 +128,18 @@ class CallCycleAdapter(
                 onChecked?.invoke(item.storeId, isChecked)
             }
 
+            // Update call button based on active state
+            if (item.isCallActive) {
+                // Show End Call icon (stop/check icon)
+                callIcon.setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+                callButton.setOnClickListener { onEndCall?.invoke(item.storeId) }
+            } else {
+                // Show Start Call icon
+                callIcon.setImageResource(android.R.drawable.ic_menu_call)
+                callButton.setOnClickListener { onStartCall?.invoke(item.storeId) }
+            }
+
+            orderButton.setOnClickListener { onMakeOrder?.invoke(item.storeId) }
             eye.setOnClickListener { onEye?.invoke(item.storeId) }
         }
     }

@@ -52,25 +52,81 @@
 
         </LinearLayout>
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="#0A1F44"
-            app:strokeColor="#1AD4AF37"
-            app:strokeWidth="1dp">
+        <!-- Action Buttons Container -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginStart="8dp">
 
-            <ImageView
-                android:id="@+id/eye"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="9dp"
-                android:contentDescription="View store details"
-                android:src="@android:drawable/ic_menu_view"
-                app:tint="@color/webgold" />
+            <!-- Start/End Call Button -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/callButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="#0A1F44"
+                app:strokeColor="#1AD4AF37"
+                app:strokeWidth="1dp">
 
-        </com.google.android.material.card.MaterialCardView>
+                <ImageView
+                    android:id="@+id/callIcon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="9dp"
+                    android:contentDescription="Start or end call"
+                    android:src="@android:drawable/ic_menu_call"
+                    app:tint="@color/webgold" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Make Order Button -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/orderButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="#0A1F44"
+                app:strokeColor="#1AD4AF37"
+                app:strokeWidth="1dp">
+
+                <ImageView
+                    android:id="@+id/orderIcon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="9dp"
+                    android:contentDescription="Make order"
+                    android:src="@android:drawable/ic_menu_add"
+                    app:tint="@color/webgold" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- View Details Button -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="#0A1F44"
+                app:strokeColor="#1AD4AF37"
+                app:strokeWidth="1dp">
+
+                <ImageView
+                    android:id="@+id/eye"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="9dp"
+                    android:contentDescription="View store details"
+                    android:src="@android:drawable/ic_menu_view"
+                    app:tint="@color/webgold" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
 
     </LinearLayout>
 

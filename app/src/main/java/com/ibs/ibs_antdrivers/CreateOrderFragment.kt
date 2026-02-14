@@ -6,9 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Filter
-import android.widget.Filterable
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -101,9 +101,18 @@ class CreateOrderFragment : Fragment() {
         loadPriceLists()
         setupListeners()
 
-        // Auto-focus on the first required field to guide the driver
-        view.post {
-            actvStore.requestFocus()
+        // Check for prefilled store from arguments (from Call Cycle)
+        val prefillStoreId = arguments?.getString("prefillStoreId")
+        if (!prefillStoreId.isNullOrBlank()) {
+            // Wait for stores to load, then auto-select
+            view.postDelayed({
+                autoSelectStore(prefillStoreId)
+            }, 500)
+        } else {
+            // Auto-focus on the first required field to guide the driver
+            view.post {
+                actvStore.requestFocus()
+            }
         }
     }
 
@@ -567,4 +576,26 @@ class CreateOrderFragment : Fragment() {
             }
         }
     }
+
+    /**
+     * Auto-select a store based on storeId from arguments
+     */
+    private fun autoSelectStore(storeId: String) {
+        val store = storeList.firstOrNull { it.StoreID.equals(storeId, ignoreCase = true) }
+        if (store != null) {
+            val displayText = displayStore(store)
+            actvStore.setText(displayText, false)
+            selectedStore = store
+            updateSelectionHeader()
+
+            // Show a toast to confirm the store was selected
+            Toast.makeText(requireContext(), "Store ${store.StoreName} selected", Toast.LENGTH_SHORT).show()
+
+            // Focus on price list field next
+            actvPriceList.requestFocus()
+        } else {
+            Toast.makeText(requireContext(), "Store $storeId not found", Toast.LENGTH_SHORT).show()
+        }
+    }
 }
+

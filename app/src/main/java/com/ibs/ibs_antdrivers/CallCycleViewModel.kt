@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.ibs.ibs_antdrivers.data.CallCyclesRepository
+import com.ibs.ibs_antdrivers.data.CompletedCallsRepository
 import com.ibs.ibs_antdrivers.data.StoresRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,10 +20,16 @@ import java.util.Locale
 class CallCycleViewModel(
     private val repo: CallCyclesRepository = CallCyclesRepository(),
     private val storesRepo: StoresRepository = StoresRepository(),
+    private val completedCallsRepo: CompletedCallsRepository = CompletedCallsRepository(),
 ) : ViewModel() {
 
     sealed class UiEvent {
         data class OpenStoreDetails(val storeId: String, val storeName: String?) : UiEvent()
+        data class ConfirmStartCall(val storeId: String, val storeName: String?) : UiEvent()
+        data class ConfirmEndCall(val storeId: String, val storeName: String?) : UiEvent()
+        data class NavigateToCreateOrder(val storeId: String, val storeName: String?) : UiEvent()
+        data class ShowError(val message: String) : UiEvent()
+        data class ShowSuccess(val message: String) : UiEvent()
     }
 
     data class TodayStore(
@@ -30,6 +37,7 @@ class CallCycleViewModel(
         val storeName: String? = null,
         val storeAddress: String? = null,
         val checked: Boolean = false,
+        val isCallActive: Boolean = false,
     )
 
     data class TodaySpontaneousItem(
@@ -222,6 +230,62 @@ class CallCycleViewModel(
         }
     }
 
+    fun requestStartCall(storeId: String) {
+        viewModelScope.launch {
+            val storeName = _state.value.todayStores.firstOrNull { it.storeId == storeId }?.storeName
+            _events.emit(UiEvent.ConfirmStartCall(storeId = storeId, storeName = storeName))
+        }
+    }
+
+    fun confirmStartCall(storeId: String) {
+        viewModelScope.launch {
+            try {
+                val storeName = _state.value.todayStores.firstOrNull { it.storeId == storeId }?.storeName
+                completedCallsRepo.startCall(storeId, storeName, "planned")
+                _events.emit(UiEvent.ShowSuccess("Call started for $storeName"))
+
+                // Refresh the today list to update the button state
+                refreshToday()
+            } catch (e: Exception) {
+                _events.emit(UiEvent.ShowError(e.message ?: "Failed to start call"))
+            }
+        }
+    }
+
+    fun requestEndCall(storeId: String) {
+        viewModelScope.launch {
+            val storeName = _state.value.todayStores.firstOrNull { it.storeId == storeId }?.storeName
+            _events.emit(UiEvent.ConfirmEndCall(storeId = storeId, storeName = storeName))
+        }
+    }
+
+    fun confirmEndCall(storeId: String) {
+        viewModelScope.launch {
+            try {
+                val activeCall = completedCallsRepo.getActiveCallForStore(storeId)
+                if (activeCall != null) {
+                    completedCallsRepo.endCall(activeCall.callId, activeCall.date)
+                    _events.emit(UiEvent.ShowSuccess("Call ended for ${activeCall.storeName}"))
+
+                    // Refresh the today list to update the button state
+                    refreshToday()
+                } else {
+                    _events.emit(UiEvent.ShowError("No active call found for this store"))
+                }
+            } catch (e: Exception) {
+                _events.emit(UiEvent.ShowError(e.message ?: "Failed to end call"))
+            }
+        }
+    }
+
+    fun navigateToMakeOrder(storeId: String) {
+        viewModelScope.launch {
+            val storeName = _state.value.todayStores.firstOrNull { it.storeId == storeId }?.storeName
+                ?: _state.value.todaySpontaneousItems.firstOrNull { it.storeId == storeId }?.storeName
+            _events.emit(UiEvent.NavigateToCreateOrder(storeId = storeId, storeName = storeName))
+        }
+    }
+
     private suspend fun buildTodayStores(
         cycle: CallCyclesRepository.DisplayCycle?,
         checkedIds: Set<String>,
@@ -238,11 +302,13 @@ class CallCycleViewModel(
 
         return storeIds.map { id ->
             val store = runCatching { storesRepo.getStoreById(id) }.getOrNull()
+            val isCallActive = runCatching { completedCallsRepo.isCallActiveForStore(id) }.getOrNull() ?: false
             TodayStore(
                 storeId = id,
                 storeName = store?.StoreName?.takeIf { it.isNotBlank() } ?: id,
                 storeAddress = store?.StoreAddress?.takeIf { it.isNotBlank() },
                 checked = checkedIds.contains(id),
+                isCallActive = isCallActive,
             )
         }
     }
@@ -288,11 +354,12 @@ class CallCycleViewModel(
     class Factory(
         private val repo: CallCyclesRepository = CallCyclesRepository(),
         private val storesRepo: StoresRepository = StoresRepository(),
+        private val completedCallsRepo: CompletedCallsRepository = CompletedCallsRepository(),
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(CallCycleViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
-                return CallCycleViewModel(repo, storesRepo) as T
+                return CallCycleViewModel(repo, storesRepo, completedCallsRepo) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

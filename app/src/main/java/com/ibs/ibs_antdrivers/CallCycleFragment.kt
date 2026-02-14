@@ -21,7 +21,6 @@ import com.ibs.ibs_antdrivers.data.CallCyclesRepository
 import com.ibs.ibs_antdrivers.ui.CallCycleAdapter
 import com.ibs.ibs_antdrivers.ui.CallCycleRowItem
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 
 class CallCycleFragment : Fragment() {
 
@@ -78,6 +77,15 @@ class CallCycleFragment : Fragment() {
                 } else {
                     vm.openStoreDetails(id)
                 }
+            },
+            onTodayStoreStartCall = { id ->
+                vm.requestStartCall(id)
+            },
+            onTodayStoreEndCall = { id ->
+                vm.requestEndCall(id)
+            },
+            onTodayStoreMakeOrder = { id ->
+                vm.navigateToMakeOrder(id)
             }
         )
         recycler.layoutManager = LinearLayoutManager(requireContext())
@@ -126,6 +134,24 @@ class CallCycleFragment : Fragment() {
                             putString("prefillStoreQuery", e.storeId)
                         }
                         findNavController().navigate(R.id.navStore, bundle)
+                    }
+                    is CallCycleViewModel.UiEvent.ConfirmStartCall -> {
+                        showStartCallConfirmation(e.storeId, e.storeName)
+                    }
+                    is CallCycleViewModel.UiEvent.ConfirmEndCall -> {
+                        showEndCallConfirmation(e.storeId, e.storeName)
+                    }
+                    is CallCycleViewModel.UiEvent.NavigateToCreateOrder -> {
+                        val bundle = Bundle().apply {
+                            putString("prefillStoreId", e.storeId)
+                        }
+                        findNavController().navigate(R.id.createOrderFragment, bundle)
+                    }
+                    is CallCycleViewModel.UiEvent.ShowError -> {
+                        Toast.makeText(requireContext(), e.message, Toast.LENGTH_LONG).show()
+                    }
+                    is CallCycleViewModel.UiEvent.ShowSuccess -> {
+                        Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -248,6 +274,7 @@ class CallCycleFragment : Fragment() {
                     title = s.storeName ?: s.storeId,
                     subtitle = s.storeAddress,
                     checked = s.checked,
+                    isCallActive = s.isCallActive,
                 )
             }
         }
@@ -268,6 +295,7 @@ class CallCycleFragment : Fragment() {
                     title = c.storeName ?: c.storeId,
                     subtitle = c.storeAddress,
                     checked = c.checked,
+                    isCallActive = false, // Spontaneous calls don't have active call tracking yet
                 )
             }
         }
@@ -276,7 +304,7 @@ class CallCycleFragment : Fragment() {
     }
 
     private fun dayName(dayOfWeek: Int): String {
-        // Your data seems to use 1..7. We’ll map 1=Mon .. 7=Sun.
+        // Your data seems to use 1..7. We'll map 1=Mon .. 7=Sun.
         return when (dayOfWeek) {
             1 -> "Monday"
             2 -> "Tuesday"
@@ -287,5 +315,29 @@ class CallCycleFragment : Fragment() {
             7 -> "Sunday"
             else -> "Day $dayOfWeek"
         }
+    }
+
+    private fun showStartCallConfirmation(storeId: String, storeName: String?) {
+        val displayName = storeName ?: storeId
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Start Call")
+            .setMessage("Do you want to start the call for $displayName?")
+            .setPositiveButton("Yes") { _, _ ->
+                vm.confirmStartCall(storeId)
+            }
+            .setNegativeButton("No", null)
+            .show()
+    }
+
+    private fun showEndCallConfirmation(storeId: String, storeName: String?) {
+        val displayName = storeName ?: storeId
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("End Call")
+            .setMessage("Do you want to end the call for $displayName?")
+            .setPositiveButton("Yes") { _, _ ->
+                vm.confirmEndCall(storeId)
+            }
+            .setNegativeButton("No", null)
+            .show()
     }
 }
