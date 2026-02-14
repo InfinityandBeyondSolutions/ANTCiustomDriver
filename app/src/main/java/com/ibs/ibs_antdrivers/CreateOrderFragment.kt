@@ -5,6 +5,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Filter
+import android.widget.Filterable
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.core.widget.doAfterTextChanged
@@ -74,6 +76,9 @@ class CreateOrderFragment : Fragment() {
     private var storeAdapter: ArrayAdapter<String>? = null
     private var priceListAdapter: ArrayAdapter<String>? = null
 
+    // Keep an unfiltered store display list for search
+    private val storeDisplayListAll = mutableListOf<String>()
+
     private val priceListsRepo = PriceListsRepository()
     private val ordersRepo = OrdersRepository()
     private val auth by lazy { FirebaseAuth.getInstance() }
@@ -130,6 +135,12 @@ class CreateOrderFragment : Fragment() {
         // Make the dropdowns filter immediately
         actvStore.threshold = 0
         actvPriceList.threshold = 0
+
+        // Show dropdown on focus/click so it behaves like a searchable picker
+        actvStore.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) actvStore.showDropDown() }
+        actvStore.setOnClickListener { actvStore.showDropDown() }
+        actvPriceList.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) actvPriceList.showDropDown() }
+        actvPriceList.setOnClickListener { actvPriceList.showDropDown() }
     }
 
     private fun setupAdapter() {
@@ -154,6 +165,17 @@ class CreateOrderFragment : Fragment() {
             if (t.isBlank()) {
                 selectedStore = null
                 updateSelectionHeader()
+                return@doAfterTextChanged
+            }
+
+            // Keep dropdown open while typing to emphasize search
+            actvStore.post { actvStore.showDropDown() }
+
+            // if text isn't exactly one of the list items, don't keep a stale selectedStore
+            val exact = storeDisplayListAll.any { d -> d.equals(t, ignoreCase = true) }
+            if (!exact) {
+                selectedStore = null
+                updateSelectionHeader()
             }
         }
 
@@ -173,6 +195,17 @@ class CreateOrderFragment : Fragment() {
         actvPriceList.doAfterTextChanged {
             val t = it?.toString()?.trim().orEmpty()
             if (t.isBlank()) {
+                selectedPriceList = null
+                orderItemsAdapter.submitList(emptyList())
+                updateGrandTotal()
+                updateSelectionHeader()
+                return@doAfterTextChanged
+            }
+
+            actvPriceList.post { actvPriceList.showDropDown() }
+
+            val exact = priceListDisplayList.any { d -> d.equals(t, ignoreCase = true) }
+            if (!exact) {
                 selectedPriceList = null
                 orderItemsAdapter.submitList(emptyList())
                 updateGrandTotal()
@@ -205,7 +238,47 @@ class CreateOrderFragment : Fragment() {
                 storeDisplayList.clear()
                 storeDisplayList.addAll(storeList.map { displayStore(it) })
 
-                storeAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, storeDisplayList)
+                storeDisplayListAll.clear()
+                storeDisplayListAll.addAll(storeDisplayList)
+
+                // Custom adapter so search matches Store Name OR Store ID regardless of display formatting
+                storeAdapter = object : ArrayAdapter<String>(requireContext(), android.R.layout.simple_list_item_1, storeDisplayList) {
+                    override fun getFilter(): Filter {
+                        return object : Filter() {
+                            override fun performFiltering(constraint: CharSequence?): FilterResults {
+                                val query = constraint?.toString()?.trim()?.lowercase().orEmpty()
+                                val results = FilterResults()
+
+                                val filtered = if (query.isBlank()) {
+                                    storeDisplayListAll
+                                } else {
+                                    storeList
+                                        .filter { s ->
+                                            s.StoreName.lowercase().contains(query) || s.StoreID.lowercase().contains(query)
+                                        }
+                                        .map { displayStore(it) }
+                                }
+
+                                results.values = filtered
+                                results.count = filtered.size
+                                return results
+                            }
+
+                            @Suppress("UNCHECKED_CAST")
+                            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                                val filtered = results?.values as? List<String> ?: emptyList()
+                                clear()
+                                addAll(filtered)
+                                notifyDataSetChanged()
+                            }
+
+                            override fun convertResultToString(resultValue: Any?): CharSequence {
+                                return resultValue?.toString().orEmpty()
+                            }
+                        }
+                    }
+                }
+
                 actvStore.setAdapter(storeAdapter)
             }
 
@@ -372,7 +445,7 @@ class CreateOrderFragment : Fragment() {
                     completedByLastName = "",
 
                     priority = "normal",
-                    status = "pending",
+                    status = "New",
                     totalAmount = totalAmount,
                     items = itemsWithQuantity,
                 )

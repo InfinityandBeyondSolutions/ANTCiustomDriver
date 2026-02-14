@@ -1,0 +1,12 @@
+{
+  "rules": {
+    "orders": {
+      ".indexOn": ["driverId"],
+      "$orderId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    }
+  }
+}
+

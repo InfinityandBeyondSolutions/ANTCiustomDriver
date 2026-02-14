@@ -46,9 +46,13 @@ class OrderDashboardFragment : Fragment() {
         btnCreateOrder = view.findViewById(R.id.btnCreateOrder)
 
         adapter = OrdersAdapter(
-            onItemClick = { order ->
-                // Navigate to order detail if needed in the future
-                Snackbar.make(view, "Order: ${order.orderNumber}", Snackbar.LENGTH_SHORT).show()
+            onViewClick = { order ->
+                if (order.id.isBlank()) {
+                    Snackbar.make(view, "Missing order id", Snackbar.LENGTH_SHORT).show()
+                    return@OrdersAdapter
+                }
+                val b = Bundle().apply { putString("orderId", order.id) }
+                findNavController().navigate(R.id.action_orderDashboard_to_orderDetail, b)
             }
         )
 
@@ -72,6 +76,8 @@ class OrderDashboardFragment : Fragment() {
         if (currentUser == null) {
             emptyText.visibility = View.VISIBLE
             emptyText.text = "Please sign in to view orders"
+            adapter.submitList(emptyList())
+            progress.visibility = View.GONE
             return
         }
 
@@ -102,4 +108,3 @@ class OrderDashboardFragment : Fragment() {
         }
     }
 }
-

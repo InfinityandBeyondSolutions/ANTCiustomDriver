@@ -13,15 +13,38 @@ class OrdersRepository(
      * Get all orders submitted by a specific driver
      */
     suspend fun getOrdersByDriver(driverId: String): List<Order> {
-        val snap = db.child("orders")
-            .orderByChild("driverId")
-            .equalTo(driverId)
-            .get()
-            .await()
+        return try {
+            val snap = db.child("orders")
+                .orderByChild("driverId")
+                .equalTo(driverId)
+                .get()
+                .await()
 
+            if (!snap.exists()) return emptyList()
+
+            snap.children.mapNotNull { it.toOrderOrNull() }
+                .sortedByDescending { it.createdAt }
+        } catch (t: Throwable) {
+            // If the database rules haven't been updated with an index, Firebase throws:
+            // "Index not defined, add '.indexOn': 'driverId'..."
+            // As a resilience fallback, fetch orders and filter on the client.
+            val message = t.message.orEmpty()
+            if (message.contains("Index not defined", ignoreCase = true) ||
+                message.contains(".indexOn", ignoreCase = true)
+            ) {
+                getOrdersByDriverClientFilter(driverId)
+            } else {
+                throw t
+            }
+        }
+    }
+
+    private suspend fun getOrdersByDriverClientFilter(driverId: String): List<Order> {
+        val snap = db.child("orders").get().await()
         if (!snap.exists()) return emptyList()
 
         return snap.children.mapNotNull { it.toOrderOrNull() }
+            .filter { it.driverId == driverId }
             .sortedByDescending { it.createdAt }
     }
 

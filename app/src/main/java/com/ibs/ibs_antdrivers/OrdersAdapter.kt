@@ -7,6 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.button.MaterialButton
 import com.ibs.ibs_antdrivers.data.Order
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -14,7 +15,7 @@ import java.util.Date
 import java.util.Locale
 
 class OrdersAdapter(
-    private val onItemClick: (Order) -> Unit,
+    private val onViewClick: (Order) -> Unit,
 ) : ListAdapter<Order, OrdersAdapter.VH>(Diff) {
 
     private val dateFormat = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
@@ -28,13 +29,17 @@ class OrdersAdapter(
     inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val orderNumber: TextView = itemView.findViewById(R.id.orderNumber)
         private val storeName: TextView = itemView.findViewById(R.id.orderStoreName)
+        private val storeId: TextView = itemView.findViewById(R.id.orderStoreId)
         private val orderDate: TextView = itemView.findViewById(R.id.orderDate)
         private val orderTotal: TextView = itemView.findViewById(R.id.orderTotal)
         private val orderStatus: TextView = itemView.findViewById(R.id.orderStatus)
+        private val btnView: MaterialButton = itemView.findViewById(R.id.btnViewOrder)
 
         fun bind(item: Order) {
             orderNumber.text = "Order #${item.orderNumber}"
             storeName.text = item.storeName.ifBlank { "Unknown Store" }
+            storeId.text = if (item.storeId.isNotBlank()) "Store ID: ${item.storeId}" else ""
+
             orderDate.text = if (item.createdAt > 0) {
                 dateFormat.format(Date(item.createdAt))
             } else {
@@ -54,7 +59,8 @@ class OrdersAdapter(
             }
             orderStatus.setBackgroundResource(statusBg)
 
-            itemView.setOnClickListener { onItemClick(item) }
+            btnView.setOnClickListener { onViewClick(item) }
+            itemView.setOnClickListener { onViewClick(item) }
         }
     }
 
