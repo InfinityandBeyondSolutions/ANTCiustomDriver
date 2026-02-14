@@ -100,6 +100,11 @@ class CreateOrderFragment : Fragment() {
         loadStores()
         loadPriceLists()
         setupListeners()
+
+        // Auto-focus on the first required field to guide the driver
+        view.post {
+            actvStore.requestFocus()
+        }
     }
 
     private fun initViews(view: View) {
@@ -210,6 +215,26 @@ class CreateOrderFragment : Fragment() {
                 orderItemsAdapter.submitList(emptyList())
                 updateGrandTotal()
                 updateSelectionHeader()
+            }
+        }
+
+        // Order number validation
+        etOrderNumber.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                // Validate when losing focus
+                val orderNumber = etOrderNumber.text?.toString()?.trim() ?: ""
+                if (orderNumber.isBlank()) {
+                    tilOrderNumber.error = "Order number is required"
+                } else {
+                    tilOrderNumber.error = null
+                }
+            }
+        }
+
+        // Clear error when typing
+        etOrderNumber.doAfterTextChanged {
+            if (!it.isNullOrBlank()) {
+                tilOrderNumber.error = null
             }
         }
 
@@ -372,29 +397,36 @@ class CreateOrderFragment : Fragment() {
     }
 
     private fun submitOrder() {
-        // Validate inputs
-        val orderNumber = etOrderNumber.text?.toString()?.trim() ?: ""
-        if (orderNumber.isBlank()) {
-            tilOrderNumber.error = "Order number is required"
-            return
-        }
-        tilOrderNumber.error = null
-
+        // Validate inputs with auto-focus
         val store = selectedStore
         if (store == null) {
             Snackbar.make(requireView(), "Please select a store", Snackbar.LENGTH_SHORT).show()
+            focusAndScrollTo(actvStore)
             return
         }
 
         val priceList = selectedPriceList
         if (priceList == null) {
             Snackbar.make(requireView(), "Please select a price list", Snackbar.LENGTH_SHORT).show()
+            focusAndScrollTo(actvPriceList)
             return
         }
+
+        val orderNumber = etOrderNumber.text?.toString()?.trim() ?: ""
+        if (orderNumber.isBlank()) {
+            tilOrderNumber.error = "Order number is required"
+            focusAndScrollTo(etOrderNumber)
+            return
+        }
+        tilOrderNumber.error = null
 
         val itemsWithQuantity = orderItemsAdapter.getItemsWithQuantity()
         if (itemsWithQuantity.isEmpty()) {
             Snackbar.make(requireView(), "Please add at least one item to the order", Snackbar.LENGTH_SHORT).show()
+            // Scroll to the items table
+            view?.findViewById<View>(R.id.orderItemsRecycler)?.let { recycler ->
+                scrollToView(recycler)
+            }
             return
         }
 
@@ -491,5 +523,48 @@ class CreateOrderFragment : Fragment() {
 
     private fun displayPriceList(pl: PriceList): String {
         return pl.title.ifBlank { pl.name }.ifBlank { "Price List" }
+    }
+
+    /**
+     * Focus on a view and scroll to it smoothly
+     */
+    private fun focusAndScrollTo(view: View) {
+        view.post {
+            // Request focus
+            view.requestFocus()
+
+            // For AutoCompleteTextView, show the dropdown
+            if (view is MaterialAutoCompleteTextView) {
+                view.showDropDown()
+            }
+
+            // Scroll to the view
+            scrollToView(view)
+        }
+    }
+
+    /**
+     * Smooth scroll to make a view visible
+     */
+    private fun scrollToView(view: View) {
+        view.post {
+            // Find the NestedScrollView
+            val scrollView = this.view?.findViewById<androidx.core.widget.NestedScrollView>(R.id.nestedScrollView)
+
+            if (scrollView != null) {
+                // Calculate the view's position
+                val location = IntArray(2)
+                view.getLocationInWindow(location)
+
+                val scrollViewLocation = IntArray(2)
+                scrollView.getLocationInWindow(scrollViewLocation)
+
+                // Calculate scroll position (with some padding at top)
+                val scrollY = location[1] - scrollViewLocation[1] - 100
+
+                // Smooth scroll to position
+                scrollView.smoothScrollTo(0, scrollView.scrollY + scrollY)
+            }
+        }
     }
 }

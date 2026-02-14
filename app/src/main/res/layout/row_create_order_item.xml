@@ -1,60 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/itemCard"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="2dp"
+    android:layout_marginHorizontal="0dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardCornerRadius="4dp"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="@color/white"
+    app:strokeWidth="0dp"
+    app:rippleColor="@color/weblightgold">
+
+<LinearLayout
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingVertical="10dp"
+    android:paddingVertical="12dp"
     android:paddingHorizontal="8dp"
     android:background="@color/white">
 
+    <!-- Product Code -->
     <TextView
         android:id="@+id/colItemNo"
-        android:layout_width="80dp"
+        android:layout_width="100dp"
         android:layout_height="wrap_content"
         android:textColor="@color/webnavy"
         android:textStyle="bold"
-        android:textSize="12sp" />
+        android:textSize="13sp"
+        android:paddingEnd="8dp" />
 
+    <!-- Product Name -->
     <TextView
         android:id="@+id/colDescription"
-        android:layout_width="160dp"
+        android:layout_width="180dp"
         android:layout_height="wrap_content"
         android:textColor="@color/webnavy"
-        android:textSize="12sp"
+        android:textSize="13sp"
         android:maxLines="2"
-        android:ellipsize="end" />
+        android:ellipsize="end"
+        android:paddingEnd="8dp" />
 
+    <!-- Brand -->
     <TextView
         android:id="@+id/colBrand"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:textColor="#667788"
+        android:textSize="12sp"
+        android:paddingEnd="8dp" />
+
+    <!-- Size -->
+    <TextView
+        android:id="@+id/colSize"
         android:layout_width="80dp"
         android:layout_height="wrap_content"
         android:textColor="#667788"
-        android:textSize="12sp" />
+        android:textSize="12sp"
+        android:paddingEnd="8dp" />
 
+    <!-- Unit Price -->
     <TextView
-        android:id="@+id/colSize"
-        android:layout_width="70dp"
+        android:id="@+id/colUnitPrice"
+        android:layout_width="90dp"
         android:layout_height="wrap_content"
-        android:textColor="#667788"
-        android:textSize="12sp" />
+        android:gravity="end"
+        android:textColor="@color/webnavy"
+        android:textSize="12sp"
+        android:paddingEnd="8dp" />
 
-    <TextView
-        android:id="@+id/colUnitBarcode"
-        android:layout_width="130dp"
-        android:layout_height="wrap_content"
-        android:textColor="#0A1F44"
-        android:textSize="12sp" />
-
-    <TextView
-        android:id="@+id/colOuterBarcode"
-        android:layout_width="130dp"
-        android:layout_height="wrap_content"
-        android:textColor="#0A1F44"
-        android:textSize="12sp" />
-
+    <!-- Case Price -->
     <TextView
         android:id="@+id/colCasePrice"
         android:layout_width="90dp"
@@ -62,57 +81,100 @@
         android:gravity="end"
         android:textColor="@color/webnavy"
         android:textStyle="bold"
-        android:textSize="12sp" />
+        android:textSize="13sp"
+        android:paddingEnd="8dp" />
 
-    <!-- Quantity Spinner -->
-    <LinearLayout
-        android:layout_width="100dp"
+    <!-- Improved Quantity Control -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="140dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center">
+        android:layout_marginHorizontal="4dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="@color/background">
 
-        <ImageButton
-            android:id="@+id/btnDecrease"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="@drawable/bg_action_icon_circle_gold"
-            android:src="@drawable/ic_remove"
-            android:scaleType="centerInside"
-            android:padding="8dp"
-            android:contentDescription="Decrease quantity"
-            app:tint="@color/webnavy" />
-
-        <TextView
-            android:id="@+id/tvQuantity"
-            android:layout_width="36dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="0"
-            android:textColor="@color/webnavy"
-            android:textStyle="bold"
-            android:textSize="14sp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="4dp">
 
-        <ImageButton
-            android:id="@+id/btnIncrease"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="@drawable/bg_action_icon_circle_gold"
-            android:src="@android:drawable/ic_input_add"
-            android:scaleType="centerInside"
-            android:padding="8dp"
-            android:contentDescription="Increase quantity"
-            app:tint="@color/webnavy" />
-    </LinearLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDecrease"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:backgroundTint="@color/webgold"
+                android:contentDescription="Decrease quantity"
+                android:insetLeft="0dp"
+                android:insetTop="0dp"
+                android:insetRight="0dp"
+                android:insetBottom="0dp"
+                app:icon="@drawable/ic_remove"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="20dp"
+                app:iconTint="@color/webnavy"
+                app:cornerRadius="18dp" />
 
+            <TextView
+                android:id="@+id/tvQuantity"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="0"
+                android:textColor="@color/webnavy"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:minWidth="40dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnIncrease"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:backgroundTint="@color/webgold"
+                android:contentDescription="Increase quantity"
+                android:insetLeft="0dp"
+                android:insetTop="0dp"
+                android:insetRight="0dp"
+                android:insetBottom="0dp"
+                app:icon="@android:drawable/ic_input_add"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="20dp"
+                app:iconTint="@color/webnavy"
+                app:cornerRadius="18dp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Line Total -->
     <TextView
         android:id="@+id/colLineTotal"
-        android:layout_width="100dp"
+        android:layout_width="110dp"
         android:layout_height="wrap_content"
         android:gravity="end"
         android:text="-"
         android:textColor="@color/webnavy"
         android:textStyle="bold"
-        android:textSize="12sp" />
+        android:textSize="14sp"
+        android:paddingStart="8dp" />
+
+    <!-- Hidden fields (for data retention) -->
+    <TextView
+        android:id="@+id/colUnitBarcode"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/colOuterBarcode"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
 
 </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
 
