@@ -20,6 +20,7 @@ import com.google.android.material.tabs.TabLayout
 import com.ibs.ibs_antdrivers.data.CallCyclesRepository
 import com.ibs.ibs_antdrivers.ui.CallCycleAdapter
 import com.ibs.ibs_antdrivers.ui.CallCycleRowItem
+import com.ibs.ibs_antdrivers.ui.ConfettiView
 import kotlinx.coroutines.launch
 
 class CallCycleFragment : Fragment() {
@@ -33,6 +34,7 @@ class CallCycleFragment : Fragment() {
     private lateinit var progress: ProgressBar
     private lateinit var empty: TextView
     private lateinit var weekRange: TextView
+    private lateinit var confettiView: ConfettiView
 
     private lateinit var adapter: CallCycleAdapter
 
@@ -58,13 +60,18 @@ class CallCycleFragment : Fragment() {
         progress = view.findViewById(R.id.progress)
         empty = view.findViewById(R.id.empty)
         weekRange = view.findViewById(R.id.weekRange)
+        confettiView = view.findViewById(R.id.confettiView)
 
         adapter = CallCycleAdapter(
-            onTodayStoreChecked = { id, _ ->
+            onTodayStoreChecked = { id, checked ->
                 if (id.startsWith("sc_")) {
                     vm.toggleTodaySpontaneousChecked(id)
                 } else {
                     vm.toggleTodayStoreChecked(id)
+                }
+                // Trigger confetti celebration when checkbox is checked!
+                if (checked) {
+                    confettiView.startConfetti()
                 }
             },
             onTodayStoreViewDetails = { id ->

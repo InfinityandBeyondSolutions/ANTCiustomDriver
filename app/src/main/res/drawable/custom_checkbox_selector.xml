@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Checked state - Gold box with white checkmark -->
+    <item android:state_checked="true">
+        <layer-list>
+            <!-- Gold background -->
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="#D4AF37" />
+                    <corners android:radius="10dp" />
+                    <stroke
+                        android:width="3dp"
+                        android:color="#B8860B" />
+                </shape>
+            </item>
+            <!-- White checkmark icon -->
+            <item
+                android:left="8dp"
+                android:top="8dp"
+                android:right="8dp"
+                android:bottom="8dp"
+                android:drawable="@drawable/ic_check_white" />
+        </layer-list>
+    </item>
+    <!-- Unchecked state - White box with visible gray border -->
+    <item android:state_checked="false">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <corners android:radius="10dp" />
+            <stroke
+                android:width="3dp"
+                android:color="#6B7280" />
+        </shape>
+    </item>
+</selector>
+

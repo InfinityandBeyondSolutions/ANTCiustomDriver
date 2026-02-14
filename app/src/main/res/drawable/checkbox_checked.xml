@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Gold Background -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#D4AF37" />
+            <corners android:radius="8dp" />
+            <stroke
+                android:width="2dp"
+                android:color="#B8860B" />
+        </shape>
+    </item>
+    <!-- White Checkmark centered -->
+    <item
+        android:left="6dp"
+        android:top="6dp"
+        android:right="6dp"
+        android:bottom="6dp">
+        <bitmap
+            android:src="@drawable/ic_check_white"
+            android:gravity="center" />
+    </item>
+</layer-list>
+

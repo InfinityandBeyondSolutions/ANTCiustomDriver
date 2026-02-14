@@ -3,10 +3,10 @@ package com.ibs.ibs_antdrivers.ui
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.checkbox.MaterialCheckBox
 import com.ibs.ibs_antdrivers.R
 
 sealed class CallCycleRowItem {
@@ -103,7 +103,7 @@ class CallCycleAdapter(
         private val onEndCall: ((storeId: String) -> Unit)?,
         private val onMakeOrder: ((storeId: String) -> Unit)?,
     ) : RecyclerView.ViewHolder(v) {
-        private val check: MaterialCheckBox = v.findViewById(R.id.check)
+        private val check: CheckBox = v.findViewById(R.id.check)
         private val title: TextView = v.findViewById(R.id.title)
         private val subtitle: TextView = v.findViewById(R.id.subtitle)
         private val eye: ImageView = v.findViewById(R.id.eye)
