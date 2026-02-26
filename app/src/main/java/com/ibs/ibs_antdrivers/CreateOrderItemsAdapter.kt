@@ -24,6 +24,9 @@ class CreateOrderItemsAdapter(
     // We need to track quantities separately since the list is immutable
     private val quantityMap = mutableMapOf<String, Int>()
 
+    // Full unfiltered list so filtering never loses items or quantities
+    private val masterList = mutableListOf<OrderItem>()
+
     // Track currently selected item for highlighting
     private var selectedPosition = -1
     private val handler = Handler(Looper.getMainLooper())
@@ -184,17 +187,37 @@ class CreateOrderItemsAdapter(
     }
 
     override fun submitList(list: List<OrderItem>?) {
-        // Reset quantity map when new list is submitted
+        // Reset quantity map and master list when a completely new price-list is loaded
         quantityMap.clear()
+        masterList.clear()
         list?.forEach { item ->
             quantityMap[item.id] = item.quantity
+            masterList.add(item)
         }
         super.submitList(list)
     }
 
+    /** Filter the displayed rows by [query] without losing quantity state. */
+    fun filter(query: String) {
+        val trimmed = query.trim().lowercase()
+        val filtered = if (trimmed.isBlank()) {
+            masterList.toList()
+        } else {
+            masterList.filter { item ->
+                item.productCode.lowercase().contains(trimmed) ||
+                item.productName.lowercase().contains(trimmed) ||
+                item.brand.lowercase().contains(trimmed) ||
+                item.size.lowercase().contains(trimmed)
+            }
+        }
+        // Use DiffUtil-aware submitList but do NOT clear quantityMap
+        super.submitList(filtered)
+    }
+
     fun getGrandTotal(): Double {
         var total = 0.0
-        currentList.forEach { item ->
+        // Always calculate from master list so filtered-out items with qty still count
+        masterList.forEach { item ->
             val quantity = quantityMap[item.id] ?: 0
             total += item.casePriceExVat * quantity
         }
@@ -202,7 +225,7 @@ class CreateOrderItemsAdapter(
     }
 
     fun getItemsWithQuantity(): List<OrderItem> {
-        return currentList.mapNotNull { item ->
+        return masterList.mapNotNull { item ->
             val quantity = quantityMap[item.id] ?: 0
             if (quantity > 0) {
                 item.copy(

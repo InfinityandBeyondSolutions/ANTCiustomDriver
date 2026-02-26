@@ -101,9 +101,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:hint="Store"
+                    android:hint="Search Store"
                     app:boxStrokeColor="@color/weblightgold"
-                    app:hintTextColor="#6B7280">
+                    app:hintTextColor="#6B7280"
+                    app:endIconMode="clear_text"
+                    app:endIconTint="@color/webnavy">
 
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         android:id="@+id/actvStore"
@@ -121,9 +123,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:hint="Price List"
+                    android:hint="Search Price List"
                     app:boxStrokeColor="@color/weblightgold"
-                    app:hintTextColor="#6B7280">
+                    app:hintTextColor="#6B7280"
+                    app:endIconMode="clear_text"
+                    app:endIconTint="@color/webnavy">
 
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         android:id="@+id/actvPriceList"
@@ -289,6 +293,31 @@
                     android:text="Use the ➖ and ➕ buttons to adjust item quantities"
                     android:textColor="#667788"
                     android:textSize="13sp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilItemSearch"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone"
+                    android:hint="Search products…"
+                    app:boxStrokeColor="@color/weblightgold"
+                    app:hintTextColor="#6B7280"
+                    app:startIconDrawable="@drawable/ic_search_gold"
+                    app:startIconTint="@color/webnavy"
+                    app:endIconMode="clear_text"
+                    app:endIconTint="@color/webnavy">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etItemSearch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:imeOptions="actionSearch"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
             <ProgressBar

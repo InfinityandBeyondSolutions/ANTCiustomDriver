@@ -39,6 +39,8 @@ import java.util.Locale
 class CreateOrderFragment : Fragment() {
 
     // Header UI
+    private lateinit var tilStore: TextInputLayout
+    private lateinit var tilPriceList: TextInputLayout
     private lateinit var actvStore: MaterialAutoCompleteTextView
     private lateinit var actvPriceList: MaterialAutoCompleteTextView
     private lateinit var headerCard: MaterialCardView
@@ -53,6 +55,8 @@ class CreateOrderFragment : Fragment() {
     private lateinit var etOrderNotes: TextInputEditText
 
     // Price List Table UI
+    private lateinit var tilItemSearch: TextInputLayout
+    private lateinit var etItemSearch: TextInputEditText
     private lateinit var tableProgress: ProgressBar
     private lateinit var tableEmpty: TextView
     private lateinit var orderItemsRecycler: RecyclerView
@@ -118,6 +122,8 @@ class CreateOrderFragment : Fragment() {
 
     private fun initViews(view: View) {
         // Exposed dropdowns
+        tilStore = view.findViewById(R.id.tilStore)
+        tilPriceList = view.findViewById(R.id.tilPriceList)
         actvStore = view.findViewById(R.id.actvStore)
         actvPriceList = view.findViewById(R.id.actvPriceList)
 
@@ -134,6 +140,8 @@ class CreateOrderFragment : Fragment() {
         etOrderNotes = view.findViewById(R.id.etOrderNotes)
 
         // Table
+        tilItemSearch = view.findViewById(R.id.tilItemSearch)
+        etItemSearch = view.findViewById(R.id.etItemSearch)
         tableProgress = view.findViewById(R.id.tableProgress)
         tableEmpty = view.findViewById(R.id.tableEmpty)
         orderItemsRecycler = view.findViewById(R.id.orderItemsRecycler)
@@ -150,11 +158,48 @@ class CreateOrderFragment : Fragment() {
         actvStore.threshold = 0
         actvPriceList.threshold = 0
 
-        // Show dropdown on focus/click so it behaves like a searchable picker
-        actvStore.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) actvStore.showDropDown() }
-        actvStore.setOnClickListener { actvStore.showDropDown() }
-        actvPriceList.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) actvPriceList.showDropDown() }
-        actvPriceList.setOnClickListener { actvPriceList.showDropDown() }
+        // Show dropdown on focus/click only when no selection is made yet
+        actvStore.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus && selectedStore == null) actvStore.showDropDown()
+        }
+        actvStore.setOnClickListener {
+            if (selectedStore == null) actvStore.showDropDown()
+        }
+        actvPriceList.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus && selectedPriceList == null) actvPriceList.showDropDown()
+        }
+        actvPriceList.setOnClickListener {
+            if (selectedPriceList == null) actvPriceList.showDropDown()
+        }
+
+        // Clear icon resets store selection
+        tilStore.setEndIconOnClickListener {
+            selectedStore = null
+            actvStore.setText("")
+            actvStore.isEnabled = true
+            actvStore.isFocusableInTouchMode = true
+            tilStore.hint = "Search Store"
+            updateSelectionHeader()
+            actvStore.requestFocus()
+            actvStore.showDropDown()
+        }
+
+        // Clear icon resets price list selection
+        tilPriceList.setEndIconOnClickListener {
+            selectedPriceList = null
+            actvPriceList.setText("")
+            actvPriceList.isEnabled = true
+            actvPriceList.isFocusableInTouchMode = true
+            tilPriceList.hint = "Search Price List"
+            // Hide and clear the item search bar
+            tilItemSearch.visibility = View.GONE
+            etItemSearch.setText("")
+            orderItemsAdapter.submitList(emptyList())
+            updateGrandTotal()
+            updateSelectionHeader()
+            actvPriceList.requestFocus()
+            actvPriceList.showDropDown()
+        }
     }
 
     private fun setupAdapter() {
@@ -170,11 +215,22 @@ class CreateOrderFragment : Fragment() {
         actvStore.setOnItemClickListener { _, _, position, _ ->
             val selectedText = storeAdapter?.getItem(position)
             selectedStore = storeList.firstOrNull { displayStore(it) == selectedText }
+            if (selectedStore != null) {
+                // Lock the field — show only the selected value, no more dropdown
+                actvStore.dismissDropDown()
+                actvStore.clearFocus()
+                actvStore.isFocusable = false
+                actvStore.isFocusableInTouchMode = false
+                tilStore.hint = "Store"
+            }
             updateSelectionHeader()
         }
 
         // If user types something that doesn't match, clear selection
         actvStore.doAfterTextChanged {
+            // Don't interfere while the field is locked (store already selected)
+            if (selectedStore != null) return@doAfterTextChanged
+
             val t = it?.toString()?.trim().orEmpty()
             if (t.isBlank()) {
                 selectedStore = null
@@ -198,6 +254,12 @@ class CreateOrderFragment : Fragment() {
             val selectedText = priceListAdapter?.getItem(position)
             selectedPriceList = priceListList.firstOrNull { displayPriceList(it) == selectedText }
             if (selectedPriceList != null) {
+                // Lock the field — show only the selected value, no more dropdown
+                actvPriceList.dismissDropDown()
+                actvPriceList.clearFocus()
+                actvPriceList.isFocusable = false
+                actvPriceList.isFocusableInTouchMode = false
+                tilPriceList.hint = "Price List"
                 loadPriceListItems()
             } else {
                 orderItemsAdapter.submitList(emptyList())
@@ -207,9 +269,14 @@ class CreateOrderFragment : Fragment() {
         }
 
         actvPriceList.doAfterTextChanged {
+            // Don't interfere while the field is locked (pricelist already selected)
+            if (selectedPriceList != null) return@doAfterTextChanged
+
             val t = it?.toString()?.trim().orEmpty()
             if (t.isBlank()) {
                 selectedPriceList = null
+                tilItemSearch.visibility = View.GONE
+                etItemSearch.setText("")
                 orderItemsAdapter.submitList(emptyList())
                 updateGrandTotal()
                 updateSelectionHeader()
@@ -221,6 +288,8 @@ class CreateOrderFragment : Fragment() {
             val exact = priceListDisplayList.any { d -> d.equals(t, ignoreCase = true) }
             if (!exact) {
                 selectedPriceList = null
+                tilItemSearch.visibility = View.GONE
+                etItemSearch.setText("")
                 orderItemsAdapter.submitList(emptyList())
                 updateGrandTotal()
                 updateSelectionHeader()
@@ -249,6 +318,11 @@ class CreateOrderFragment : Fragment() {
 
         btnSubmitOrder.setOnClickListener {
             submitOrder()
+        }
+
+        // Live product search — filter the items table as the user types
+        etItemSearch.doAfterTextChanged { text ->
+            orderItemsAdapter.filter(text?.toString().orEmpty())
         }
     }
 
@@ -354,10 +428,13 @@ class CreateOrderFragment : Fragment() {
             tableProgress.visibility = View.GONE
             tableEmpty.visibility = View.VISIBLE
             tableEmpty.text = "No items in this price list"
+            tilItemSearch.visibility = View.GONE
+            etItemSearch.setText("")
             orderItemsAdapter.submitList(emptyList())
         } else {
             tableProgress.visibility = View.GONE
             tableEmpty.visibility = View.GONE
+            tilItemSearch.visibility = View.VISIBLE
 
             fun parseMoney(s: String): Double {
                 // handles: "R 12.34", "12,34", "12.34"
@@ -586,6 +663,12 @@ class CreateOrderFragment : Fragment() {
             val displayText = displayStore(store)
             actvStore.setText(displayText, false)
             selectedStore = store
+
+            // Lock the field after auto-selection
+            actvStore.isFocusable = false
+            actvStore.isFocusableInTouchMode = false
+            tilStore.hint = "Store"
+
             updateSelectionHeader()
 
             // Show a toast to confirm the store was selected
@@ -593,6 +676,7 @@ class CreateOrderFragment : Fragment() {
 
             // Focus on price list field next
             actvPriceList.requestFocus()
+            if (selectedPriceList == null) actvPriceList.showDropDown()
         } else {
             Toast.makeText(requireContext(), "Store $storeId not found", Toast.LENGTH_SHORT).show()
         }
