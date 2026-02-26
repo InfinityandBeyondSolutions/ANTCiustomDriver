@@ -24,9 +24,10 @@ import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.NavigationUI
-import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
@@ -141,10 +142,17 @@ class MainActivity : AppCompatActivity() {
         val navHost = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHost.navController
-        bottomNavView.setupWithNavController(navController)
 
-        // Setup bottom navigation animations
+        // Bottom nav: connect to NavController.
+        NavigationUI.setupWithNavController(bottomNavView, navController)
+
+        // Setup bottom navigation animations + robust tab switching
         setupBottomNavAnimations()
+
+        // Keep bottom nav highlight in sync even when we navigate programmatically
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            syncBottomNavSelection(destination)
+        }
 
         // Deep link from FCM
         handleIntent(intent)
@@ -247,6 +255,20 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.hide()
     }
 
+    private fun syncBottomNavSelection(destination: NavDestination) {
+        // Pick the first bottom-nav item that matches the destination hierarchy.
+        val matchId = bottomNavView.menu
+            .let { menu ->
+                (0 until menu.size())
+                    .map { menu.getItem(it).itemId }
+                    .firstOrNull { itemId -> destination.hierarchy.any { it.id == itemId } }
+            }
+
+        if (matchId != null && bottomNavView.selectedItemId != matchId) {
+            bottomNavView.selectedItemId = matchId
+        }
+    }
+
     /**
      * Sets up smooth scale animations for bottom navigation items.
      * Selected items scale up slightly for emphasis, while deselected items scale back to normal.
@@ -257,21 +279,15 @@ class MainActivity : AppCompatActivity() {
         val scaleDefault = 1.0f
         val animDuration = 200L
 
-        // Apply initial state based on currently selected item
         bottomNavView.post {
             animateNavItemSelection(bottomNavView.selectedItemId, scaleSelected, scaleDefault, 0L)
         }
 
-        // Listen for selection changes
         bottomNavView.setOnItemSelectedListener { item ->
-            // Debounce rapid taps to avoid overlapping fragment transactions.
             val now = SystemClock.elapsedRealtime()
             if (now - lastNavClickAtMs < 350L) return@setOnItemSelectedListener false
             lastNavClickAtMs = now
 
-            // Let NavigationUI drive the actual navigation.
-            // (setupWithNavController() also wires this up, but setting our own listener replaces it,
-            // so we must forward to NavigationUI here.)
             val handled = NavigationUI.onNavDestinationSelected(item, navController)
 
             if (handled) {
@@ -281,7 +297,6 @@ class MainActivity : AppCompatActivity() {
             handled
         }
 
-        // (Optional) When re-tapping the currently selected item, ignore.
         bottomNavView.setOnItemReselectedListener { /* no-op */ }
     }
 

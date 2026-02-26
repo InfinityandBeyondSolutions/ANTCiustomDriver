@@ -11,8 +11,11 @@ import com.ibs.ibs_antdrivers.R
 
 sealed class CallCycleRowItem {
     data class Header(val title: String, val subtitle: String? = null) : CallCycleRowItem()
-    data class Call(
-        val title: String,
+
+    /** Planned-week store row (Weekly plan tab). */
+    data class PlannedStore(
+        val storeId: String,
+        val storeName: String,
         val subtitle: String,
         val badge: String,
         val iconRes: Int = R.drawable.callcycles,
@@ -35,6 +38,7 @@ class CallCycleAdapter(
     private val onTodayStoreStartCall: ((storeId: String) -> Unit)? = null,
     private val onTodayStoreEndCall: ((storeId: String) -> Unit)? = null,
     private val onTodayStoreMakeOrder: ((storeId: String) -> Unit)? = null,
+    private val onPlannedStoreViewDetails: ((storeId: String) -> Unit)? = null,
     private val data: MutableList<CallCycleRowItem> = mutableListOf(),
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -49,7 +53,7 @@ class CallCycleAdapter(
     override fun getItemViewType(position: Int): Int {
         return when (data[position]) {
             is CallCycleRowItem.Header -> 0
-            is CallCycleRowItem.Call -> 1
+            is CallCycleRowItem.PlannedStore -> 1
             is CallCycleRowItem.TodayStore -> 2
             is CallCycleRowItem.Empty -> 3
         }
@@ -59,6 +63,10 @@ class CallCycleAdapter(
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
             0 -> HeaderVH(inflater.inflate(R.layout.row_call_cycle_header, parent, false))
+            1 -> PlannedStoreVH(
+                inflater.inflate(R.layout.row_call_cycle_item, parent, false),
+                onPlannedStoreViewDetails,
+            )
             2 -> TodayStoreVH(
                 inflater.inflate(R.layout.row_call_cycle_today_store, parent, false),
                 onTodayStoreChecked,
@@ -68,7 +76,10 @@ class CallCycleAdapter(
                 onTodayStoreMakeOrder
             )
             3 -> EmptyVH(inflater.inflate(R.layout.row_call_cycle_empty, parent, false))
-            else -> CallVH(inflater.inflate(R.layout.row_call_cycle_item, parent, false))
+            else -> PlannedStoreVH(
+                inflater.inflate(R.layout.row_call_cycle_item, parent, false),
+                onPlannedStoreViewDetails,
+            )
         }
     }
 
@@ -76,22 +87,31 @@ class CallCycleAdapter(
         when (val item = data[position]) {
             is CallCycleRowItem.Header -> (holder as HeaderVH).bind(item)
             is CallCycleRowItem.Empty -> (holder as EmptyVH).bind(item)
-            is CallCycleRowItem.Call -> (holder as CallVH).bind(item)
+            is CallCycleRowItem.PlannedStore -> (holder as PlannedStoreVH).bind(item)
             is CallCycleRowItem.TodayStore -> (holder as TodayStoreVH).bind(item)
         }
     }
 
-    private class CallVH(v: View) : RecyclerView.ViewHolder(v) {
+    private class PlannedStoreVH(
+        v: View,
+        private val onEye: ((storeId: String) -> Unit)?,
+    ) : RecyclerView.ViewHolder(v) {
         private val icon: ImageView? = v.findViewById(R.id.icon)
         private val title: TextView = v.findViewById(R.id.title)
         private val subtitle: TextView = v.findViewById(R.id.subtitle)
         private val badge: TextView? = v.findViewById(R.id.badge)
+        private val eye: ImageView? = v.findViewById(R.id.eye)
 
-        fun bind(item: CallCycleRowItem.Call) {
+        fun bind(item: CallCycleRowItem.PlannedStore) {
             icon?.setImageResource(item.iconRes)
-            title.text = item.title
+            title.text = "${item.storeId} - ${item.storeName}".trim()
             subtitle.text = item.subtitle
             badge?.text = item.badge
+
+            // Eye button navigates to store details (implemented as store search with prefill).
+            if (eye == null) return
+            eye.visibility = View.VISIBLE
+            eye.setOnClickListener { onEye?.invoke(item.storeId) }
         }
     }
 

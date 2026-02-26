@@ -14,6 +14,8 @@ class DriverStoreSearch : Fragment() {
 
     companion object {
         const val ARG_PREFILL_STORE_QUERY = "prefillStoreQuery"
+        const val ARG_RETURN_TO = "returnTo"
+        const val RETURN_TO_CALL_CYCLE = "callCycle"
     }
 
     private lateinit var btnBack: ImageView
@@ -28,10 +30,12 @@ class DriverStoreSearch : Fragment() {
     private val storeList = ArrayList<StoreData>()
 
     private var pendingPrefillQuery: String? = null
+    private var returnTo: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pendingPrefillQuery = arguments?.getString(ARG_PREFILL_STORE_QUERY)?.trim()?.takeIf { it.isNotBlank() }
+        returnTo = arguments?.getString(ARG_RETURN_TO)?.trim()?.takeIf { it.isNotBlank() }
     }
 
     override fun onCreateView(
@@ -48,7 +52,17 @@ class DriverStoreSearch : Fragment() {
         storeCountView = view.findViewById(R.id.storeCount)
 
         btnBack.setOnClickListener {
-            findNavController().popBackStack(R.id.navHomeDriver, false)
+            // If launched from Calling Cycle via "view store", go back there.
+            if (returnTo == RETURN_TO_CALL_CYCLE) {
+                // Prefer normal back stack if Calling Cycle is underneath; otherwise fall back to explicit destination.
+                val popped = findNavController().popBackStack(R.id.navCallCycle, false)
+                if (!popped) {
+                    findNavController().navigate(R.id.navCallCycle)
+                }
+            } else {
+                // Default behavior: return to Home.
+                findNavController().popBackStack(R.id.navHomeDriver, false)
+            }
         }
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())

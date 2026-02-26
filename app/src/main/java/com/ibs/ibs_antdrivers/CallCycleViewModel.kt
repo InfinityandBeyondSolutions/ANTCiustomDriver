@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.ibs.ibs_antdrivers.data.CallCyclesRepository
 import com.ibs.ibs_antdrivers.data.CompletedCallsRepository
 import com.ibs.ibs_antdrivers.data.StoresRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,12 +19,16 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.WeekFields
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 class CallCycleViewModel(
     private val repo: CallCyclesRepository = CallCyclesRepository(),
     private val storesRepo: StoresRepository = StoresRepository(),
     private val completedCallsRepo: CompletedCallsRepository = CompletedCallsRepository(),
 ) : ViewModel() {
+
+    // Simple in-memory store cache to avoid re-fetching the same store repeatedly.
+    private val storeCache: MutableMap<String, StoreData> = ConcurrentHashMap()
 
     sealed class UiEvent {
         data class OpenStoreDetails(val storeId: String, val storeName: String?) : UiEvent()
@@ -59,6 +66,9 @@ class CallCycleViewModel(
 
         // Resolved planned cycle for selected option
         val plannedCycle: CallCyclesRepository.DisplayCycle? = null,
+
+        // Weekly plan store name cache (keyed by storeId)
+        val plannedStoresById: Map<String, StoreData> = emptyMap(),
 
         // Today tab
         val todayTitle: String = "",
@@ -101,6 +111,7 @@ class CallCycleViewModel(
                 }
 
                 val plannedCycle = repo.resolvePlannedCycle(uid, selection)
+                val plannedStoresById = loadStoresForPlannedCycle(plannedCycle)
 
                 val today = LocalDate.now()
                 val todayTitle = buildTodayTitle(today)
@@ -118,6 +129,7 @@ class CallCycleViewModel(
                     plannedOptions = plannedOptions,
                     selectedPlannedOption = selection,
                     plannedCycle = plannedCycle,
+                    plannedStoresById = plannedStoresById,
                     todayTitle = todayTitle,
                     todayStores = todayStores,
                     todaySpontaneous = todaySpontaneous,
@@ -143,11 +155,64 @@ class CallCycleViewModel(
             _state.value = _state.value.copy(isLoading = true, selectedPlannedOption = option, error = null)
             try {
                 val plannedCycle = repo.resolvePlannedCycle(uid, option)
-                _state.value = _state.value.copy(isLoading = false, plannedCycle = plannedCycle, error = null)
+                val plannedStoresById = loadStoresForPlannedCycle(plannedCycle)
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    plannedCycle = plannedCycle,
+                    plannedStoresById = plannedStoresById,
+                    error = null,
+                )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(isLoading = false, error = e.message ?: "Failed to load planned calls")
             }
         }
+    }
+
+    private suspend fun loadStoresForPlannedCycle(
+        plannedCycle: CallCyclesRepository.DisplayCycle?,
+    ): Map<String, StoreData> {
+        if (plannedCycle == null) return emptyMap()
+
+        val days = when (plannedCycle.source) {
+            "WEEK" -> plannedCycle.week?.days
+            "TEMPLATE" -> plannedCycle.template?.days
+            else -> null
+        }.orEmpty()
+
+        val ids = days.flatMap { it.storeIds.orEmpty() }
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+
+        if (ids.isEmpty()) return emptyMap()
+
+        // Fill from cache first.
+        val out = LinkedHashMap<String, StoreData>(ids.size)
+        val missing = ArrayList<String>()
+        for (id in ids) {
+            val cached = storeCache[id]
+            if (cached != null) out[id] = cached else missing.add(id)
+        }
+
+        if (missing.isEmpty()) return out
+
+        // Fetch missing concurrently.
+        coroutineScope {
+            val fetched = missing.map { id ->
+                async {
+                    id to runCatching { storesRepo.getStoreById(id) }.getOrNull()
+                }
+            }.awaitAll()
+
+            for ((id, store) in fetched) {
+                if (store != null) {
+                    storeCache[id] = store
+                    out[id] = store
+                }
+            }
+        }
+
+        return out
     }
 
     fun refreshToday() {
@@ -300,15 +365,36 @@ class CallCycleViewModel(
         val storeIds = sourceDays.firstOrNull { it.dayOfWeek == todayDow }?.storeIds.orEmpty()
         if (storeIds.isEmpty()) return emptyList()
 
+        // Preload store details concurrently (and cache them), then build the rows.
+        val storesById = coroutineScope {
+            storeIds.distinct().map { id ->
+                async {
+                    val cached = storeCache[id]
+                    if (cached != null) return@async id to cached
+                    val store = runCatching { storesRepo.getStoreById(id) }.getOrNull()
+                    if (store != null) storeCache[id] = store
+                    id to store
+                }
+            }.awaitAll().toMap()
+        }
+
+        // Active call checks can be slower; we do them concurrently too.
+        val activeById = coroutineScope {
+            storeIds.distinct().map { id ->
+                async {
+                    id to (runCatching { completedCallsRepo.isCallActiveForStore(id) }.getOrNull() ?: false)
+                }
+            }.awaitAll().toMap()
+        }
+
         return storeIds.map { id ->
-            val store = runCatching { storesRepo.getStoreById(id) }.getOrNull()
-            val isCallActive = runCatching { completedCallsRepo.isCallActiveForStore(id) }.getOrNull() ?: false
+            val store = storesById[id]
             TodayStore(
                 storeId = id,
                 storeName = store?.StoreName?.takeIf { it.isNotBlank() } ?: id,
                 storeAddress = store?.StoreAddress?.takeIf { it.isNotBlank() },
                 checked = checkedIds.contains(id),
-                isCallActive = isCallActive,
+                isCallActive = activeById[id] ?: false,
             )
         }
     }
@@ -319,13 +405,26 @@ class CallCycleViewModel(
     ): List<TodaySpontaneousItem> {
         if (calls.isEmpty()) return emptyList()
 
-        // Newest first
         val ordered = calls.sortedByDescending { it.createdAt ?: 0L }
+
+        // Preload store details concurrently for all storeIds in the list.
+        val storeIds = ordered.mapNotNull { it.storeId }.distinct()
+        val storesById = coroutineScope {
+            storeIds.map { id ->
+                async {
+                    val cached = storeCache[id]
+                    if (cached != null) return@async id to cached
+                    val store = runCatching { storesRepo.getStoreById(id) }.getOrNull()
+                    if (store != null) storeCache[id] = store
+                    id to store
+                }
+            }.awaitAll().toMap()
+        }
 
         return ordered.mapNotNull { c ->
             val callId = c.callId ?: return@mapNotNull null
             val storeId = c.storeId ?: return@mapNotNull null
-            val store = runCatching { storesRepo.getStoreById(storeId) }.getOrNull()
+            val store = storesById[storeId]
 
             TodaySpontaneousItem(
                 callId = callId,

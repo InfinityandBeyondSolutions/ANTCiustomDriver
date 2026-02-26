@@ -93,6 +93,14 @@ class CallCycleFragment : Fragment() {
             },
             onTodayStoreMakeOrder = { id ->
                 vm.navigateToMakeOrder(id)
+            },
+            onPlannedStoreViewDetails = { storeId ->
+                // Weekly plan tab: view store details
+                val bundle = Bundle().apply {
+                    putString("prefillStoreQuery", storeId)
+                    putString(DriverStoreSearch.ARG_RETURN_TO, DriverStoreSearch.RETURN_TO_CALL_CYCLE)
+                }
+                findNavController().navigate(R.id.navStore, bundle)
             }
         )
         recycler.layoutManager = LinearLayoutManager(requireContext())
@@ -139,6 +147,7 @@ class CallCycleFragment : Fragment() {
                         // Navigate to the store search screen and auto-search the storeId.
                         val bundle = Bundle().apply {
                             putString("prefillStoreQuery", e.storeId)
+                            putString(DriverStoreSearch.ARG_RETURN_TO, DriverStoreSearch.RETURN_TO_CALL_CYCLE)
                         }
                         findNavController().navigate(R.id.navStore, bundle)
                     }
@@ -239,6 +248,8 @@ class CallCycleFragment : Fragment() {
             subtitle = if (cycle.source == "TEMPLATE") "Weekly Template" else "Selected Week",
         )
 
+        val plannedStores = vm.state.value.plannedStoresById
+
         for (d in days) {
             val dow = d.dayOfWeek ?: continue
             val storeIds = d.storeIds.orEmpty()
@@ -251,8 +262,10 @@ class CallCycleFragment : Fragment() {
                 out += CallCycleRowItem.Empty("No planned calls")
             } else {
                 storeIds.forEach { sid ->
-                    out += CallCycleRowItem.Call(
-                        title = sid,
+                    val name = plannedStores[sid]?.StoreName?.trim().orEmpty()
+                    out += CallCycleRowItem.PlannedStore(
+                        storeId = sid,
+                        storeName = name,
                         subtitle = "Planned call",
                         badge = if (cycle.source == "TEMPLATE") "WEEKLY" else "WEEK",
                     )

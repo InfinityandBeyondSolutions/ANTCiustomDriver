@@ -15,7 +15,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="14dp">
+        android:padding="14dp"
+        android:gravity="center_vertical">
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="42dp"
@@ -63,6 +64,27 @@
                 android:textColor="#6B7280" />
 
         </LinearLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_marginEnd="10dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#0A1F44"
+            app:strokeColor="#1AD4AF37"
+            app:strokeWidth="1dp">
+
+            <ImageView
+                android:id="@+id/eye"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="8dp"
+                android:contentDescription="View store details"
+                android:src="@android:drawable/ic_menu_view"
+                app:tint="@color/webgold" />
+
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:id="@+id/badge"
