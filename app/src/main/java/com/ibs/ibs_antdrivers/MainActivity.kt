@@ -10,6 +10,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.View
 import android.view.WindowInsets
@@ -24,6 +25,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.NavigationUI
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
@@ -46,6 +48,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var bottomNavView: BottomNavigationView
     private lateinit var navController: NavController
+
+    private var lastNavClickAtMs: Long = 0L
 
     private var authStateListener: FirebaseAuth.AuthStateListener? = null
    // private var tokenCheckRunnable: Runnable? = null
@@ -260,13 +264,25 @@ class MainActivity : AppCompatActivity() {
 
         // Listen for selection changes
         bottomNavView.setOnItemSelectedListener { item ->
-            // Animate the selection change
-            animateNavItemSelection(item.itemId, scaleSelected, scaleDefault, animDuration)
+            // Debounce rapid taps to avoid overlapping fragment transactions.
+            val now = SystemClock.elapsedRealtime()
+            if (now - lastNavClickAtMs < 350L) return@setOnItemSelectedListener false
+            lastNavClickAtMs = now
 
-            // Let the NavController handle the navigation
-            navController.navigate(item.itemId)
-            true
+            // Let NavigationUI drive the actual navigation.
+            // (setupWithNavController() also wires this up, but setting our own listener replaces it,
+            // so we must forward to NavigationUI here.)
+            val handled = NavigationUI.onNavDestinationSelected(item, navController)
+
+            if (handled) {
+                animateNavItemSelection(item.itemId, scaleSelected, scaleDefault, animDuration)
+            }
+
+            handled
         }
+
+        // (Optional) When re-tapping the currently selected item, ignore.
+        bottomNavView.setOnItemReselectedListener { /* no-op */ }
     }
 
     /**
