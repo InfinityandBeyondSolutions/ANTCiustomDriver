@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@color/background"
     tools:context=".CatalogueFragment">
-
+    <!-- Header card -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/headerCard"
         android:layout_width="0dp"
@@ -21,36 +21,52 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_call_cycle_header"
-            android:orientation="vertical"
-            android:padding="18dp">
-
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="18dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp">
             <TextView
                 android:id="@+id/catalogueTitle"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="@string/catalogue_title"
                 android:textColor="@color/white"
                 android:textSize="22sp"
                 android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/catalogueSubtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/catalogue_subtitle"
-                android:textColor="#E6FFFFFF"
-                android:textSize="13sp" />
-
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/downloadCatalogue"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginEnd="4dp"
+                android:contentDescription="@string/catalogue_download"
+                app:icon="@drawable/ic_download_24"
+                app:iconSize="24dp"
+                app:iconTint="@color/white"
+                app:backgroundTint="@android:color/transparent"
+                app:rippleColor="#40FFFFFF" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/shareCatalogue"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:contentDescription="@string/catalogue_share"
+                android:enabled="false"
+                app:icon="@drawable/ic_share_24"
+                app:iconSize="24dp"
+                app:iconTint="@color/white"
+                app:backgroundTint="@android:color/transparent"
+                app:rippleColor="#40FFFFFF" />
         </LinearLayout>
-
     </com.google.android.material.card.MaterialCardView>
-
+    <!-- PDF card - full width now that arrows are below -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/pdfCard"
         android:layout_width="0dp"
@@ -58,31 +74,26 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="12dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="12dp"
-        app:cardBackgroundColor="@color/surface"
+        android:layout_marginBottom="8dp"
+        app:cardBackgroundColor="@android:color/white"
         app:cardCornerRadius="18dp"
-        app:cardElevation="0dp"
+        app:cardElevation="2dp"
         app:strokeColor="@color/softDivider"
         app:strokeWidth="1dp"
-        app:layout_constraintBottom_toTopOf="@id/bottomBar"
+        app:layout_constraintBottom_toTopOf="@id/navRow"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/headerCard">
-
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:foreground="?android:attr/selectableItemBackground">
-
-            <ImageView
+            android:layout_height="match_parent">
+            <com.ibs.ibs_antdrivers.ui.ZoomableImageView
                 android:id="@+id/pdfPage"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:adjustViewBounds="true"
                 android:background="@android:color/white"
                 android:contentDescription="@string/catalogue_page"
                 android:scaleType="fitCenter" />
-
             <TextView
                 android:id="@+id/catalogueHint"
                 android:layout_width="wrap_content"
@@ -94,138 +105,58 @@
                 android:textColor="#6B7280"
                 android:textSize="14sp"
                 android:visibility="gone" />
-
         </FrameLayout>
-
     </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/bottomBar"
-        android:layout_width="0dp"
+    <!-- Navigation row: [ < ]  Page X of Y  [ > ] -->
+    <LinearLayout
+        android:id="@+id/navRow"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="@color/surface"
-        app:cardCornerRadius="18dp"
-        app:cardElevation="0dp"
-        app:strokeColor="@color/softDivider"
-        app:strokeWidth="1dp"
+        android:layout_marginBottom="14dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_call_cycle_header"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
-
-        <LinearLayout
-            android:layout_width="match_parent"
+        <ImageButton
+            android:id="@+id/prevPage"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_action_icon_circle_gold"
+            android:contentDescription="@string/catalogue_previous"
+            android:enabled="false"
+            android:src="@drawable/ic_chevron_left_24"
+            android:padding="8dp"
+            android:alpha="0.4"
+            android:elevation="2dp" />
+        <TextView
+            android:id="@+id/pageIndicator"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
-
-            <!-- Pager row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/prevPage"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:enabled="false"
-                    android:minHeight="44dp"
-                    android:text="@string/catalogue_previous"
-                    android:textColor="@color/webnavy"
-                    app:backgroundTint="@color/webgold"
-                    app:cornerRadius="12dp" />
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <TextView
-                    android:id="@+id/pageIndicator"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_badge_navy_outline"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="7dp"
-                    android:text="@string/catalogue_page_1"
-                    android:textColor="@color/webnavy"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/nextPage"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:enabled="false"
-                    android:minHeight="44dp"
-                    android:text="@string/catalogue_next"
-                    android:textColor="@color/webnavy"
-                    app:backgroundTint="@color/webgold"
-                    app:cornerRadius="12dp" />
-
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="10dp" />
-
-            <!-- Actions row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/downloadCatalogue"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:minHeight="44dp"
-                    android:text="@string/catalogue_download"
-                    android:textColor="@color/webnavy"
-                    app:cornerRadius="12dp"
-                    app:icon="@drawable/ic_download_24"
-                    app:iconPadding="10dp"
-                    app:iconTint="@color/webnavy"
-                    app:strokeColor="@color/weblightgold" />
-
-                <View
-                    android:layout_width="12dp"
-                    android:layout_height="0dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/shareCatalogue"
-                    style="@style/Widget.Material3.Button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:enabled="false"
-                    android:minHeight="44dp"
-                    android:text="@string/catalogue_share"
-                    android:textColor="@color/webnavy"
-                    app:backgroundTint="@color/webgold"
-                    app:cornerRadius="12dp"
-                    app:icon="@drawable/ic_share_24"
-                    app:iconPadding="10dp"
-                    app:iconTint="@color/webnavy" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-    </com.google.android.material.card.MaterialCardView>
-
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:text="@string/catalogue_page_1"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:minWidth="100dp"
+            android:visibility="gone" />
+        <ImageButton
+            android:id="@+id/nextPage"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_action_icon_circle_gold"
+            android:contentDescription="@string/catalogue_next"
+            android:enabled="false"
+            android:src="@drawable/ic_chevron_right_24"
+            android:padding="8dp"
+            android:alpha="0.4"
+            android:elevation="2dp" />
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

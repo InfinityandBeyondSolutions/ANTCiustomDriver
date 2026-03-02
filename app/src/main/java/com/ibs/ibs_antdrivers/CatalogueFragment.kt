@@ -18,9 +18,11 @@ import java.io.File
 class CatalogueFragment : Fragment() {
 
     private lateinit var pdfPageImageView: ImageView
-    private lateinit var prevButton: Button
-    private lateinit var nextButton: Button
+    private lateinit var prevButton: ImageButton
+    private lateinit var nextButton: ImageButton
     private lateinit var pageIndicator: TextView
+    private lateinit var catalogueTitle: TextView
+    private lateinit var navRow: android.view.View
 
     private lateinit var downloadButton: View
     private lateinit var shareButton: View
@@ -60,6 +62,12 @@ class CatalogueFragment : Fragment() {
         downloadButton = view.findViewById(R.id.downloadCatalogue)
         shareButton = view.findViewById(R.id.shareCatalogue)
         hintText = view.findViewById(R.id.catalogueHint)
+        catalogueTitle = view.findViewById(R.id.catalogueTitle)
+        navRow = view.findViewById(R.id.navRow)
+        navRow.visibility = View.INVISIBLE   // hide until first page is ready
+
+        // Set header to the selected category name
+        catalogueTitle.text = categoryName
 
         prevButton.setOnClickListener { showPage(pageIndex - 1) }
         nextButton.setOnClickListener { showPage(pageIndex + 1) }
@@ -221,9 +229,18 @@ class CatalogueFragment : Fragment() {
     }
 
     private fun updateUI() {
+        navRow.visibility = View.VISIBLE
+        pageIndicator.visibility = View.VISIBLE
         pageIndicator.text = "Page ${pageIndex + 1} of $totalPages"
-        prevButton.isEnabled = pageIndex > 0
-        nextButton.isEnabled = pageIndex < totalPages - 1
+
+        val hasPrev = pageIndex > 0
+        val hasNext = pageIndex < totalPages - 1
+
+        prevButton.isEnabled = hasPrev
+        prevButton.alpha = if (hasPrev) 1.0f else 0.35f
+
+        nextButton.isEnabled = hasNext
+        nextButton.alpha = if (hasNext) 1.0f else 0.35f
 
         // Keep share enabled only if we have an offline file we can safely share.
         setShareEnabled(cachedCatalogueFile.exists())

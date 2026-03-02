@@ -5,7 +5,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -19,7 +18,6 @@ import com.google.firebase.database.FirebaseDatabase
 class CatalogueCategoriesFragment : Fragment() {
 
     private lateinit var database: DatabaseReference
-    private lateinit var containerLayout: LinearLayout
     private lateinit var noText: TextView
     private lateinit var recyclerView: RecyclerView
     private val categories = mutableListOf<CatalogueCategory>()
@@ -30,13 +28,9 @@ class CatalogueCategoriesFragment : Fragment() {
     ): View {
         val view = inflater.inflate(R.layout.fragment_catalogue_categories, container, false)
 
-        containerLayout = view.findViewById(R.id.categoriesContainer)
         noText = view.findViewById(R.id.noCategoriesText)
-
-        recyclerView = RecyclerView(requireContext()).apply {
-            layoutManager = GridLayoutManager(requireContext(), 2)
-        }
-        containerLayout.addView(recyclerView)
+        recyclerView = view.findViewById(R.id.categoriesRecyclerView)
+        recyclerView.layoutManager = GridLayoutManager(requireContext(), 2)
 
         fetchCategories()
 

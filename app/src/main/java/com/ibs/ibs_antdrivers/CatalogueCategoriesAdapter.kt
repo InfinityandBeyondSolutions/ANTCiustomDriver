@@ -1,11 +1,12 @@
 package com.ibs.ibs_antdrivers
 
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.card.MaterialCardView
 
 class CatalogueCategoriesAdapter(
     private val categories: List<CatalogueCategory>,
@@ -13,7 +14,7 @@ class CatalogueCategoriesAdapter(
 ) : RecyclerView.Adapter<CatalogueCategoriesAdapter.CategoryViewHolder>() {
 
     class CategoryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val card = itemView.findViewById<CardView>(R.id.categoryCard)
+        val card = itemView as MaterialCardView
         val categoryName = itemView.findViewById<TextView>(R.id.categoryName)
         val categoryIcon = itemView.findViewById<TextView>(R.id.categoryIcon)
         val noPdfBadge = itemView.findViewById<TextView>(R.id.noPdfBadge)
@@ -22,6 +23,14 @@ class CatalogueCategoriesAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CategoryViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.catalogue_category_item, parent, false)
+        // Force a consistent fixed height for all cards (160dp)
+        val heightPx = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP, 160f,
+            parent.context.resources.displayMetrics
+        ).toInt()
+        view.layoutParams = view.layoutParams.apply {
+            height = heightPx
+        }
         return CategoryViewHolder(view)
     }
 
