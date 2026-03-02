@@ -15,7 +15,7 @@ import com.google.firebase.database.FirebaseDatabase
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
-
+import java.time.Instant
 
 class AnnouncementsFragment : Fragment() {
 
@@ -26,17 +26,43 @@ class AnnouncementsFragment : Fragment() {
     private val announcements = mutableListOf<Announcement>()
 
     // Parses DatePosted/UploadedAt to epoch millis so we can sort newest -> oldest.
-    // Expected format: 2025-02-17T13:45:12.123Z (or with timezone offset).
+    // Examples we expect from Firebase:
+    // - 2026-03-02T17:42:44.7544295Z   (7 fractional digits)
+    // - 2026-03-02T17:42:44.754Z
+    // - 2026-03-02T17:42:44Z
     private fun parseIsoToEpochMillis(value: String?): Long? {
         if (value.isNullOrBlank()) return null
-        return try {
-            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX", Locale.US).apply {
-                timeZone = TimeZone.getTimeZone("UTC")
-            }
-            sdf.parse(value)?.time
-        } catch (_: Exception) {
-            null
+
+        // Prefer Instant for best ISO-8601 coverage (API 26+). This project targets modern Android,
+        // but keep a fallback just in case.
+        try {
+            return Instant.parse(value).toEpochMilli()
+        } catch (_: Throwable) {
+            // ignore; fall back to SimpleDateFormat(s)
         }
+
+        val patterns = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSX", // 7 fractional digits
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSX",  // 6
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSX",   // 5
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSX",    // 4
+            "yyyy-MM-dd'T'HH:mm:ss.SSSX",     // 3
+            "yyyy-MM-dd'T'HH:mm:ssX"          // none
+        )
+
+        for (pattern in patterns) {
+            try {
+                val sdf = SimpleDateFormat(pattern, Locale.US).apply {
+                    timeZone = TimeZone.getTimeZone("UTC")
+                }
+                val parsed = sdf.parse(value)
+                if (parsed != null) return parsed.time
+            } catch (_: Exception) {
+                // try next
+            }
+        }
+
+        return null
     }
 
     private fun sortKeyMillis(ann: Announcement): Long {
@@ -74,6 +100,8 @@ class AnnouncementsFragment : Fragment() {
     private fun fetchAnnouncements() {
         database = FirebaseDatabase.getInstance().getReference("announcements")
 
+        // Fetch without an ordered query so we don't depend on a Realtime Database index/rule.
+        // We sort in-memory to guarantee newest-first in the UI.
         database.get().addOnSuccessListener { snapshot ->
             announcements.clear()
 
@@ -85,7 +113,7 @@ class AnnouncementsFragment : Fragment() {
                     }
                 }
 
-                // Newest first
+                // Newest first (top of the list)
                 announcements.sortWith(
                     compareByDescending<Announcement> { sortKeyMillis(it) }
                         .thenByDescending { it.Id ?: "" }
@@ -97,9 +125,16 @@ class AnnouncementsFragment : Fragment() {
                 } else {
                     noText.visibility = View.VISIBLE
                 }
+            } else {
+                noText.visibility = View.VISIBLE
             }
-        }.addOnFailureListener {
-            Toast.makeText(requireContext(), "Failed to load announcements", Toast.LENGTH_SHORT).show()
+        }.addOnFailureListener { e ->
+            Toast.makeText(
+                requireContext(),
+                "Failed to load announcements: ${e.message ?: "unknown error"}",
+                Toast.LENGTH_LONG
+            ).show()
+            noText.visibility = View.VISIBLE
         }
     }
 
