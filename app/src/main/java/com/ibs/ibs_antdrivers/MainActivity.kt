@@ -14,7 +14,9 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.view.View
 import android.view.WindowInsets
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,6 +25,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -49,6 +54,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var bottomNavView: BottomNavigationView
     private lateinit var navController: NavController
+    private lateinit var btnDismissKeyboard: ImageButton
 
     private var lastNavClickAtMs: Long = 0L
 
@@ -131,6 +137,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initializeApp() {
+        // Allow insets (including IME/keyboard) to dispatch through the view tree
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(R.layout.activity_main)
         hideStatusBar()
 
@@ -152,6 +160,40 @@ class MainActivity : AppCompatActivity() {
         // Keep bottom nav highlight in sync even when we navigate programmatically
         navController.addOnDestinationChangedListener { _, destination, _ ->
             syncBottomNavSelection(destination)
+        }
+
+        // ---- Keyboard dismiss button ----
+        btnDismissKeyboard = findViewById(R.id.btnDismissKeyboard)
+        btnDismissKeyboard.setOnClickListener { hideKeyboard() }
+
+        // ---- Insets: float the dismiss button just above the keyboard ----
+        val bottomNavContainer = findViewById<View>(R.id.bottomNavContainer)
+
+        // Keep bottom nav above the system gesture/home bar
+        ViewCompat.setOnApplyWindowInsetsListener(bottomNavContainer) { view, insets ->
+            val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, navBarInsets.bottom)
+            insets
+        }
+
+        // Animate the dismiss button so it always sits just above the keyboard.
+        // Use window.decorView for reliable keyboard height detection with adjustPan.
+        val decorView = window.decorView
+        decorView.viewTreeObserver.addOnGlobalLayoutListener {
+            val rect = android.graphics.Rect()
+            decorView.getWindowVisibleDisplayFrame(rect)
+            val screenHeight = decorView.height
+            val imeHeight = screenHeight - rect.bottom   // 0 when keyboard is hidden
+
+            if (imeHeight > screenHeight * 0.15) {
+                // Keyboard is open — show button, shift it up by keyboard height + small gap
+                btnDismissKeyboard.visibility = View.VISIBLE
+                btnDismissKeyboard.translationY = -(imeHeight.toFloat())
+            } else {
+                // Keyboard is closed — hide button, reset position
+                btnDismissKeyboard.visibility = View.GONE
+                btnDismissKeyboard.translationY = 0f
+            }
         }
 
         // Deep link from FCM
@@ -655,6 +697,13 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
     // --- Utilities ---
+
+    private fun hideKeyboard() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val focused = currentFocus ?: window.decorView
+        imm.hideSoftInputFromWindow(focused.windowToken, 0)
+        focused.clearFocus()
+    }
 
     override fun onDestroy() {
         super.onDestroy()

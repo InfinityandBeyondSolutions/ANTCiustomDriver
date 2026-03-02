@@ -76,7 +76,8 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:windowSoftInputMode="adjustPan|stateHidden">
 
             <!-- Deep link from FCM: app opens and routes to Chat with groupId -->
             <intent-filter android:autoVerify="true">
