@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import com.google.firebase.auth.FirebaseAuth
+import com.ibs.ibs_antdrivers.offlineupload.UploadWorkScheduler
 import com.ibs.ibs_antdrivers.service.LocationTrackingService
 
 class BootReceiver : BroadcastReceiver() {
@@ -14,9 +15,10 @@ class BootReceiver : BroadcastReceiver() {
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_MY_PACKAGE_REPLACED,
             Intent.ACTION_PACKAGE_REPLACED -> {
-                // Check if user is logged in before starting service
                 if (FirebaseAuth.getInstance().currentUser != null) {
                     startLocationService(context)
+                    // Re-enqueue any pending image uploads that were interrupted by the reboot.
+                    UploadWorkScheduler.enqueue(context)
                 }
             }
         }

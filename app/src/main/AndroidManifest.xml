@@ -132,5 +132,15 @@
             </intent-filter>
         </receiver>
 
+        <!-- Network Change Receiver: re-enqueues pending uploads the moment internet is available -->
+        <receiver
+            android:name=".receiver.NetworkChangeReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+            </intent-filter>
+        </receiver>
+
     </application>
 </manifest>

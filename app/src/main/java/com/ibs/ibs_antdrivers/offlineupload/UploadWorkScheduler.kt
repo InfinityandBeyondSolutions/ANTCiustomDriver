@@ -12,13 +12,12 @@ object UploadWorkScheduler {
 
     /**
      * Schedules a background upload pass.
-     *
-     * "Stable internet" here means unmetered (typically Wi‑Fi). If you want to allow mobile data,
-     * change to NetworkType.CONNECTED.
+     * Uses NetworkType.CONNECTED so uploads proceed over any internet connection
+     * (Wi-Fi or mobile data) the moment the device comes online.
      */
     fun enqueue(context: Context) {
         val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.UNMETERED)
+            .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
         val request = OneTimeWorkRequestBuilder<UploadPendingImagesWorker>()

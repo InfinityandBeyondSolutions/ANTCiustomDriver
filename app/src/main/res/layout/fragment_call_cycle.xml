@@ -27,56 +27,45 @@
             android:orientation="vertical"
             android:padding="18dp">
 
-            <TextView
-                android:id="@+id/title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Calling Cycle"
-                android:textColor="@color/white"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/subtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Your planned week + spontaneous calls"
-                android:textColor="#E6FFFFFF"
-                android:textSize="13sp" />
-
+            <!-- Title row: "Calling Cycle" + weekRange badge + active chip all inline -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/activeChip"
-                    style="@style/Widget.Material3.Chip.Assist"
+                <TextView
+                    android:id="@+id/title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Active"
-                    android:textColor="@color/webnavy"
-                    android:visibility="gone"
-                    app:chipBackgroundColor="@color/webgold"
-                    app:chipStrokeColor="@android:color/transparent" />
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
+                    android:text="Calling Cycle"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/weekRange"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
                     android:background="@drawable/bg_badge_navy_outline"
                     android:paddingHorizontal="10dp"
                     android:paddingVertical="6dp"
                     android:text=""
                     android:textColor="@color/white"
                     android:textSize="12sp" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/activeChip"
+                    style="@style/Widget.Material3.Chip.Assist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Active"
+                    android:textColor="@color/webnavy"
+                    android:visibility="gone"
+                    app:chipBackgroundColor="@color/webgold"
+                    app:chipStrokeColor="@android:color/transparent" />
 
             </LinearLayout>
 

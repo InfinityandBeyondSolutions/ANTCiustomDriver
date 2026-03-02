@@ -63,8 +63,13 @@ class UploadPendingImagesWorker(
             }
         }
 
-        // If there are still pending items, schedule another pass.
-        // Returning retry will cause WorkManager to run again with backoff.
+        // If there are still pending items, schedule another pass immediately.
+        val morePending = dao.getNextPending(limit = 1).isNotEmpty()
+        if (morePending) {
+            UploadWorkScheduler.enqueue(applicationContext)
+        }
+
+        // Returning retry on transient failure lets WorkManager back off and retry automatically.
         return if (anyTransientFailure) Result.retry() else Result.success()
     }
 }

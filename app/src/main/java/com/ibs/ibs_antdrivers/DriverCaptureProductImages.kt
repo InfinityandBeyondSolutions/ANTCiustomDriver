@@ -89,15 +89,39 @@ class DriverCaptureProductImages : Fragment() {
 
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            val imageUri: Uri? = result.data?.data
-            imageUri?.let {
-                if (validateImageSize(requireContext(), it)) {
-                    imageList.add(it)
-                    imageAdapter.notifyDataSetChanged()
-                    updateUiState()
-                } else {
-                    Toast.makeText(requireContext(), "Image must be under 5MB", Toast.LENGTH_SHORT).show()
+            val data = result.data ?: return@registerForActivityResult
+
+            // Collect all selected URIs (multi-select returns via clipData; single via data).
+            val uris = mutableListOf<Uri>()
+            val clipData = data.clipData
+            if (clipData != null) {
+                for (i in 0 until clipData.itemCount) {
+                    uris += clipData.getItemAt(i).uri
                 }
+            } else {
+                data.data?.let { uris += it }
+            }
+
+            var skipped = 0
+            for (uri in uris) {
+                if (validateImageSize(requireContext(), uri)) {
+                    imageList.add(uri)
+                } else {
+                    skipped++
+                }
+            }
+
+            if (skipped > 0) {
+                Toast.makeText(
+                    requireContext(),
+                    "$skipped image(s) exceeded the 8 MB limit and were not added.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+            if (uris.size > skipped) {
+                imageAdapter.notifyDataSetChanged()
+                updateUiState()
             }
         }
     }
@@ -110,7 +134,7 @@ class DriverCaptureProductImages : Fragment() {
                 imageAdapter.notifyDataSetChanged()
                 updateUiState()
             } else {
-                Toast.makeText(requireContext(), "Image must be under 5MB", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Image exceeds the 8 MB limit and cannot be uploaded.", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -187,8 +211,12 @@ class DriverCaptureProductImages : Fragment() {
                 Toast.makeText(requireContext(), "Upload in progress…", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-            imagePickerLauncher.launch(intent)
+            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                type = "image/*"
+                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                addCategory(Intent.CATEGORY_OPENABLE)
+            }
+            imagePickerLauncher.launch(Intent.createChooser(intent, "Select images"))
         }
 
         btnCaptureImage.setOnClickListener {
@@ -316,10 +344,23 @@ class DriverCaptureProductImages : Fragment() {
     }
 
     private fun validateImageSize(context: Context, uri: Uri): Boolean {
+        // Try to get accurate file size via content resolver metadata first.
+        val cursor = context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null)
+        if (cursor != null) {
+            cursor.use {
+                if (it.moveToFirst()) {
+                    val sizeIndex = it.getColumnIndex(android.provider.OpenableColumns.SIZE)
+                    if (sizeIndex != -1 && !it.isNull(sizeIndex)) {
+                        return it.getLong(sizeIndex) <= 8L * 1024 * 1024 // 8 MB
+                    }
+                }
+            }
+        }
+        // Fallback: open the stream and read available bytes.
         val inputStream = context.contentResolver.openInputStream(uri)
         val sizeInBytes = inputStream?.available() ?: 0
         inputStream?.close()
-        return sizeInBytes <= 5 * 1024 * 1024 // 5MB
+        return sizeInBytes <= 8L * 1024 * 1024 // 8 MB
     }
 
     private suspend fun getDriverFullName(): String = suspendCoroutine { continuation ->

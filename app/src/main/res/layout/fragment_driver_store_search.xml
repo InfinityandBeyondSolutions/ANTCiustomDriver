@@ -69,15 +69,6 @@
 
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/subtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Search by name or ID. Filter by franchise + region."
-                android:textColor="#E6FFFFFF"
-                android:textSize="13sp" />
-
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
