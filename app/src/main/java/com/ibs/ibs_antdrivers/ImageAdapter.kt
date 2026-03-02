@@ -19,6 +19,12 @@ class ImageAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.store_image_item, parent, false)
+        // Enforce square dimensions based on parent width divided by span count
+        val spanCount = 3
+        val spacing = (8 * parent.context.resources.displayMetrics.density).toInt() // 4dp margin * 2 sides
+        val itemSize = (parent.measuredWidth - spacing * spanCount) / spanCount
+        val safeSize = if (itemSize > 0) itemSize else parent.measuredWidth / spanCount
+        view.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, safeSize.coerceAtLeast(100))
         return ImageViewHolder(view)
     }
 

@@ -13,9 +13,10 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,7 +25,6 @@ import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
@@ -47,15 +47,15 @@ import kotlin.coroutines.suspendCoroutine
 class DriverCaptureProductImages : Fragment() {
 
     private lateinit var rvStoreImages: RecyclerView
-    private lateinit var btnAddImage: Button
-    private lateinit var btnCaptureImage: Button
-    private lateinit var btnUploadImages: Button
+    private lateinit var btnAddImage: LinearLayout
+    private lateinit var btnCaptureImage: LinearLayout
+    private lateinit var btnUploadImages: FloatingActionButton
     private lateinit var tvStoreName: TextView
     private lateinit var btnBack: ImageView
 
     private var storeIdBadge: TextView? = null
     private var imageCountBadge: TextView? = null
-    private var emptyImages: TextView? = null
+    private var emptyImages: View? = null
     private var storeMonogram: TextView? = null
 
     private val imageList = mutableListOf<Uri>()
@@ -170,7 +170,7 @@ class DriverCaptureProductImages : Fragment() {
             }
         )
 
-        rvStoreImages.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
+        rvStoreImages.layoutManager = androidx.recyclerview.widget.GridLayoutManager(requireContext(), 3)
         imageAdapter = ImageAdapter(imageList) { position ->
             if (isUploading) {
                 Toast.makeText(requireContext(), "Upload in progress…", Toast.LENGTH_SHORT).show()
@@ -260,9 +260,14 @@ class DriverCaptureProductImages : Fragment() {
     private fun updateUiState() {
         imageCountBadge?.text = imageList.size.toString()
         emptyImages?.visibility = if (imageList.isEmpty()) View.VISIBLE else View.GONE
-        btnUploadImages.isEnabled = imageList.isNotEmpty() && !isUploading
-        btnAddImage.isEnabled = !isUploading
-        btnCaptureImage.isEnabled = !isUploading
+        val uploadEnabled = imageList.isNotEmpty() && !isUploading
+        btnUploadImages.isEnabled = uploadEnabled
+        btnUploadImages.alpha = if (uploadEnabled) 1f else 0.5f
+        val actionsEnabled = !isUploading
+        btnAddImage.isEnabled = actionsEnabled
+        btnAddImage.alpha = if (actionsEnabled) 1f else 0.5f
+        btnCaptureImage.isEnabled = actionsEnabled
+        btnCaptureImage.alpha = if (actionsEnabled) 1f else 0.5f
     }
 
     private fun showUploadingModal(total: Int) {
