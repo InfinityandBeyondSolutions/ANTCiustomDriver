@@ -139,6 +139,12 @@ class MainActivity : AppCompatActivity() {
     private fun initializeApp() {
         // Allow insets (including IME/keyboard) to dispatch through the view tree
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        // Make system nav bar fully transparent so nothing shows behind the floating nav card
+        @Suppress("DEPRECATION")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
         setContentView(R.layout.activity_main)
         hideStatusBar()
 
@@ -169,10 +175,13 @@ class MainActivity : AppCompatActivity() {
         // ---- Insets: float the dismiss button just above the keyboard ----
         val bottomNavContainer = findViewById<View>(R.id.bottomNavContainer)
 
-        // Keep bottom nav above the system gesture/home bar
+        // Keep bottom nav floating just above the system gesture/home bar
         ViewCompat.setOnApplyWindowInsetsListener(bottomNavContainer) { view, insets ->
             val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, navBarInsets.bottom)
+            val gap = (8 * resources.displayMetrics.density).toInt()
+            val params = view.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            params.bottomMargin = navBarInsets.bottom + gap
+            view.layoutParams = params
             insets
         }
 
