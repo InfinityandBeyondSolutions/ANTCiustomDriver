@@ -156,10 +156,13 @@ class PriceListDetailFragment : Fragment() {
     // ── PDF generation ──────────────────────────────────────────────────────
 
     /**
-     * Generates the PDF on the IO thread, then either:
-     *  - [share] = true  → opens the system share sheet (WhatsApp, Email, Drive…)
-     *  - [share] = false → copies PDF to the public Downloads folder so the user
-     *                      can find it in the Files app, then shows a confirmation.
+     * Unified PDF flow for BOTH the Share and Download menu actions.
+     *
+     * 1. Generate the PDF (same file every time — cached in filesDir by name).
+     * 2. Save / copy it to the public Downloads folder.
+     * 3. If [share] == true  → open the system share sheet immediately.
+     *    If [share] == false → show a Snackbar confirming the save, with a
+     *                         "Share" action that re-uses the already-saved file.
      */
     @Suppress("DEPRECATION")
     private fun generateAndHandlePdf(share: Boolean) {
@@ -170,7 +173,7 @@ class PriceListDetailFragment : Fragment() {
         }
 
         val dialog = ProgressDialog(requireContext()).apply {
-            setMessage(if (share) "Generating PDF…" else "Saving to Downloads…")
+            setMessage(if (share) "Preparing PDF…" else "Saving to Downloads…")
             isIndeterminate = true
             setCancelable(false)
             show()
@@ -178,20 +181,23 @@ class PriceListDetailFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
+                // Step 1 – generate (cached in filesDir)
                 val pdfFile: File = withContext(Dispatchers.IO) {
                     PriceListPdfGenerator.generate(requireContext(), pl)
                 }
 
+                // Step 2 – save the exact same file to public Downloads
+                val savedFileName: String? = withContext(Dispatchers.IO) {
+                    saveToDownloads(pdfFile, pl)
+                }
+
+                dialog.dismiss()
+
                 if (share) {
-                    dialog.dismiss()
+                    // Step 3a – open share sheet with the saved PDF
                     sharePdf(pdfFile, pl)
                 } else {
-                    // Copy to public Downloads folder
-                    val savedFileName = withContext(Dispatchers.IO) {
-                        saveToDownloads(pdfFile, pl)
-                    }
-                    dialog.dismiss()
-
+                    // Step 3b – confirm the save, offer Share action
                     val msg = if (savedFileName != null)
                         "Saved to Downloads: $savedFileName"
                     else

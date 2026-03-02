@@ -91,15 +91,24 @@ class PriceListsFragment : Fragment() {
         }
     }
 
+    /**
+     * Unified PDF flow used by BOTH the share and download buttons.
+     *
+     * 1. Generate the PDF (same file every time).
+     * 2. Save / copy it to the public Downloads folder.
+     * 3. If [thenShare] == true  → open the system share sheet immediately.
+     *    If [thenShare] == false → show a Snackbar confirming the save, with a
+     *                             "Share" action that re-uses the same cached file.
+     */
     @Suppress("DEPRECATION")
-    private fun generateAndSharePdf(pl: PriceList) {
+    private fun generateSaveAndMaybeShare(pl: PriceList, thenShare: Boolean) {
         if (pl.items.isEmpty()) {
             Snackbar.make(requireView(), "This price list has no items to export", Snackbar.LENGTH_SHORT).show()
             return
         }
 
         val dialog = ProgressDialog(requireContext()).apply {
-            setMessage("Generating PDF…")
+            setMessage(if (thenShare) "Preparing PDF…" else "Saving to Downloads…")
             isIndeterminate = true
             setCancelable(false)
             show()
@@ -107,64 +116,32 @@ class PriceListsFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val pdfFile = withContext(Dispatchers.IO) {
+                // Step 1 – generate (cached in filesDir)
+                val pdfFile: File = withContext(Dispatchers.IO) {
                     PriceListPdfGenerator.generate(requireContext(), pl)
                 }
-                dialog.dismiss()
 
-                val uri = FileProvider.getUriForFile(
-                    requireContext(),
-                    "${requireContext().packageName}.fileprovider",
-                    pdfFile
-                )
-                val shareTitle = pl.title.ifBlank { pl.name }.ifBlank { "Price List" }
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "application/pdf"
-                    putExtra(Intent.EXTRA_SUBJECT, shareTitle)
-                    putExtra(Intent.EXTRA_TEXT, "Please find the attached price list: $shareTitle")
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                startActivity(Intent.createChooser(intent, "Share \"$shareTitle\" via…"))
-            } catch (t: Throwable) {
-                dialog.dismiss()
-                Snackbar.make(requireView(), "Failed to generate PDF: ${t.message}", Snackbar.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    @Suppress("DEPRECATION")
-    private fun generateAndDownloadPdf(pl: PriceList) {
-        if (pl.items.isEmpty()) {
-            Snackbar.make(requireView(), "This price list has no items to export", Snackbar.LENGTH_SHORT).show()
-            return
-        }
-
-        val dialog = ProgressDialog(requireContext()).apply {
-            setMessage("Saving to Downloads…")
-            isIndeterminate = true
-            setCancelable(false)
-            show()
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val pdfFile = withContext(Dispatchers.IO) {
-                    PriceListPdfGenerator.generate(requireContext(), pl)
-                }
-                val savedFileName = withContext(Dispatchers.IO) {
+                // Step 2 – save the exact same file to public Downloads
+                val savedFileName: String? = withContext(Dispatchers.IO) {
                     saveToDownloads(pdfFile)
                 }
+
                 dialog.dismiss()
 
-                val msg = if (savedFileName != null)
-                    "Saved to Downloads: $savedFileName"
-                else
-                    "Could not save to Downloads — tap Share to send the PDF"
+                if (thenShare) {
+                    // Step 3a – share the file that was just saved (same PDF)
+                    sharePdf(pdfFile, pl)
+                } else {
+                    // Step 3b – confirm the save with a Snackbar + optional Share action
+                    val msg = if (savedFileName != null)
+                        "Saved to Downloads: $savedFileName"
+                    else
+                        "Could not save to Downloads — tap Share to send the PDF"
 
-                Snackbar.make(requireView(), msg, Snackbar.LENGTH_LONG)
-                    .setAction("Share") { generateAndSharePdf(pl) }
-                    .show()
+                    Snackbar.make(requireView(), msg, Snackbar.LENGTH_LONG)
+                        .setAction("Share") { sharePdf(pdfFile, pl) }
+                        .show()
+                }
             } catch (t: Throwable) {
                 dialog.dismiss()
                 Snackbar.make(requireView(), "Failed to generate PDF: ${t.message}", Snackbar.LENGTH_LONG).show()
@@ -172,7 +149,34 @@ class PriceListsFragment : Fragment() {
         }
     }
 
-    /** Copy a PDF file into public Downloads and return the saved filename, or null on failure. */
+    private fun generateAndSharePdf(pl: PriceList)    = generateSaveAndMaybeShare(pl, thenShare = true)
+    private fun generateAndDownloadPdf(pl: PriceList) = generateSaveAndMaybeShare(pl, thenShare = false)
+
+    /** Opens the system share sheet for [pdfFile] via FileProvider. */
+    private fun sharePdf(pdfFile: File, pl: PriceList) {
+        val uri = FileProvider.getUriForFile(
+            requireContext(),
+            "${requireContext().packageName}.fileprovider",
+            pdfFile
+        )
+        val shareTitle = pl.title.ifBlank { pl.name }.ifBlank { "Price List" }
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_SUBJECT, shareTitle)
+            putExtra(Intent.EXTRA_TEXT, "Please find the attached price list: $shareTitle")
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(intent, "Share \"$shareTitle\" via…"))
+    }
+
+    /**
+     * Copies [pdfFile] (from internal filesDir) into the device's public Downloads folder.
+     * Uses [MediaStore] on Android 10+ (no storage permission needed) and
+     * [Environment.getExternalStoragePublicDirectory] on older versions.
+     *
+     * @return the file-name as it was saved, or null on failure.
+     */
     private fun saveToDownloads(pdfFile: File): String? {
         val fileName = pdfFile.name
         return try {
