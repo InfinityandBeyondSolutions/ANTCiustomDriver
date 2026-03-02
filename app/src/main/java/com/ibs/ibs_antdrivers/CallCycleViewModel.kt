@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.ibs.ibs_antdrivers.data.CallCyclesRepository
 import com.ibs.ibs_antdrivers.data.CompletedCallsRepository
 import com.ibs.ibs_antdrivers.data.StoresRepository
+import com.ibs.ibs_antdrivers.data.VisitedStoresRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -25,6 +26,7 @@ class CallCycleViewModel(
     private val repo: CallCyclesRepository = CallCyclesRepository(),
     private val storesRepo: StoresRepository = StoresRepository(),
     private val completedCallsRepo: CompletedCallsRepository = CompletedCallsRepository(),
+    private val visitedRepo: VisitedStoresRepository = VisitedStoresRepository(),
 ) : ViewModel() {
 
     // Simple in-memory store cache to avoid re-fetching the same store repeatedly.
@@ -116,9 +118,16 @@ class CallCycleViewModel(
                 val today = LocalDate.now()
                 val todayTitle = buildTodayTitle(today)
                 val todayCycle = repo.resolvePlannedCycle(uid, currentWeekKey(today))
-                val todayStores = buildTodayStores(todayCycle, _state.value.checkedTodayStoreIds)
+
+                // Load persisted visited state from Firebase for today.
+                val todayKey = today.toString()
+                val visitedIds: Set<String> = runCatching { visitedRepo.getVisitedIds(uid, todayKey) }.getOrElse { emptySet() }
+                val persistedStoreIds = visitedIds.filter { !it.startsWith("sc_") }.toSet()
+                val persistedSpontaneousIds = visitedIds.filter { it.startsWith("sc_") }.toSet()
+
+                val todayStores = buildTodayStores(todayCycle, persistedStoreIds)
                 val todaySpontaneous = repo.getSpontaneousCallsForDate(uid, today.toString())
-                val todaySpontaneousItems = buildTodaySpontaneousItems(todaySpontaneous, _state.value.checkedTodaySpontaneousCallIds)
+                val todaySpontaneousItems = buildTodaySpontaneousItems(todaySpontaneous, persistedSpontaneousIds)
 
                 val date = _state.value.spontaneousDate.ifBlank { LocalDate.now().toString() }
                 val spontaneous = repo.getSpontaneousCallsForDate(uid, date)
@@ -136,6 +145,8 @@ class CallCycleViewModel(
                     todaySpontaneousItems = todaySpontaneousItems,
                     spontaneousDate = date,
                     spontaneous = spontaneous,
+                    checkedTodayStoreIds = persistedStoreIds,
+                    checkedTodaySpontaneousCallIds = persistedSpontaneousIds,
                     error = null,
                 )
             } catch (e: Exception) {
@@ -222,14 +233,23 @@ class CallCycleViewModel(
                 val today = LocalDate.now()
                 val todayTitle = buildTodayTitle(today)
                 val todayCycle = repo.resolvePlannedCycle(uid, currentWeekKey(today))
-                val todayStores = buildTodayStores(todayCycle, _state.value.checkedTodayStoreIds)
+
+                // Always re-read from Firebase so persisted state is respected.
+                val todayKey = today.toString()
+                val visitedIds: Set<String> = runCatching { visitedRepo.getVisitedIds(uid, todayKey) }.getOrElse { emptySet() }
+                val persistedStoreIds = visitedIds.filter { !it.startsWith("sc_") }.toSet()
+                val persistedSpontaneousIds = visitedIds.filter { it.startsWith("sc_") }.toSet()
+
+                val todayStores = buildTodayStores(todayCycle, persistedStoreIds)
                 val todaySpontaneous = repo.getSpontaneousCallsForDate(uid, today.toString())
-                val todaySpontaneousItems = buildTodaySpontaneousItems(todaySpontaneous, _state.value.checkedTodaySpontaneousCallIds)
+                val todaySpontaneousItems = buildTodaySpontaneousItems(todaySpontaneous, persistedSpontaneousIds)
                 _state.value = _state.value.copy(
                     todayTitle = todayTitle,
                     todayStores = todayStores,
                     todaySpontaneous = todaySpontaneous,
                     todaySpontaneousItems = todaySpontaneousItems,
+                    checkedTodayStoreIds = persistedStoreIds,
+                    checkedTodaySpontaneousCallIds = persistedSpontaneousIds,
                 )
             } catch (_: Exception) {
                 // Silent refresh; errors are shown by primary load paths.
@@ -254,31 +274,47 @@ class CallCycleViewModel(
 
     fun toggleTodayStoreChecked(storeId: String) {
         val current = _state.value
+        val nowChecked = !current.checkedTodayStoreIds.contains(storeId)
         val newChecked = current.checkedTodayStoreIds.toMutableSet().apply {
-            if (contains(storeId)) remove(storeId) else add(storeId)
+            if (nowChecked) add(storeId) else remove(storeId)
         }.toSet()
 
         val newStores = current.todayStores.map {
-            if (it.storeId == storeId) it.copy(checked = newChecked.contains(storeId)) else it
+            if (it.storeId == storeId) it.copy(checked = nowChecked) else it
         }
 
         _state.value = current.copy(checkedTodayStoreIds = newChecked, todayStores = newStores)
+
+        // Persist to Firebase so the state survives app restarts and page changes.
+        val uid = current.driverUid ?: return
+        val dateKey = LocalDate.now().toString()
+        viewModelScope.launch {
+            runCatching { visitedRepo.setVisited(uid, dateKey, storeId, nowChecked) }
+        }
     }
 
     fun toggleTodaySpontaneousChecked(callId: String) {
         val current = _state.value
+        val nowChecked = !current.checkedTodaySpontaneousCallIds.contains(callId)
         val newChecked = current.checkedTodaySpontaneousCallIds.toMutableSet().apply {
-            if (contains(callId)) remove(callId) else add(callId)
+            if (nowChecked) add(callId) else remove(callId)
         }.toSet()
 
         val newItems = current.todaySpontaneousItems.map {
-            if (it.callId == callId) it.copy(checked = newChecked.contains(callId)) else it
+            if (it.callId == callId) it.copy(checked = nowChecked) else it
         }
 
         _state.value = current.copy(
             checkedTodaySpontaneousCallIds = newChecked,
             todaySpontaneousItems = newItems,
         )
+
+        // Persist to Firebase so the state survives app restarts and page changes.
+        val uid = current.driverUid ?: return
+        val dateKey = LocalDate.now().toString()
+        viewModelScope.launch {
+            runCatching { visitedRepo.setVisited(uid, dateKey, callId, nowChecked) }
+        }
     }
 
     fun openStoreDetails(storeId: String) {
@@ -454,11 +490,12 @@ class CallCycleViewModel(
         private val repo: CallCyclesRepository = CallCyclesRepository(),
         private val storesRepo: StoresRepository = StoresRepository(),
         private val completedCallsRepo: CompletedCallsRepository = CompletedCallsRepository(),
+        private val visitedRepo: VisitedStoresRepository = VisitedStoresRepository(),
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(CallCycleViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
-                return CallCycleViewModel(repo, storesRepo, completedCallsRepo) as T
+                return CallCycleViewModel(repo, storesRepo, completedCallsRepo, visitedRepo) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
