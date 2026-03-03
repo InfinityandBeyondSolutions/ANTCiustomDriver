@@ -49,9 +49,9 @@ class HomeFragment : Fragment() {
     private var confetti: LottieAnimationView? = null
     private lateinit var btnMsg: ImageButton
 
-    private lateinit var tvStatus: TextView
-    private lateinit var tvTimes: TextView
-    private lateinit var tvTimeElapsed: TextView
+    private var tvStatus: TextView? = null
+    private var tvTimes: TextView? = null
+    private var tvTimeElapsed: TextView? = null
 
     private lateinit var btnClockIn: Button
     private lateinit var btnClockOut: Button
@@ -59,9 +59,9 @@ class HomeFragment : Fragment() {
     private lateinit var progressClockIn: ProgressBar
     private lateinit var progressClockOut: ProgressBar
 
-    private lateinit var llstatus: LinearLayout
-    private lateinit var lldate: LinearLayout
-    private lateinit var lltime: LinearLayout
+    private var llstatus: LinearLayout? = null
+    private var lldate: LinearLayout? = null
+    private var lltime: LinearLayout? = null
 
     private lateinit var settingsBtn: ImageView
     private lateinit var btnPhonebook: ImageView
@@ -107,9 +107,6 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        tvStatus = view.findViewById(R.id.tvStatus)
-        tvTimes = view.findViewById(R.id.tvClockTimes)
-        tvTimeElapsed = view.findViewById(R.id.tvTimeElapsed)
 
         btnClockIn = view.findViewById(R.id.btnClockIn)
         btnClockOut = view.findViewById(R.id.btnClockOut)
@@ -134,16 +131,6 @@ class HomeFragment : Fragment() {
         userAvatar = view.findViewById(R.id.userAvatar)
         clockStatusBadge = view.findViewById(R.id.clockStatusBadge)
 
-        llstatus = view.findViewById(R.id.llstatus)
-        lldate   = view.findViewById(R.id.lldate)
-        lltime   = view.findViewById(R.id.lltime)
-
-        llstatus.alpha = 1f
-        llstatus.visibility = View.VISIBLE
-        lldate.alpha = 1f
-        lldate.visibility = View.VISIBLE
-        lltime.alpha = 1f
-        lltime.visibility = View.VISIBLE
 
         baseBtnTint = btnClockIn.backgroundTintList?.defaultColor
             ?: ContextCompat.getColor(requireContext(), R.color.antyellow)
@@ -259,30 +246,27 @@ class HomeFragment : Fragment() {
     }
 
     private fun updateStatusUi(active: Boolean) {
-        tvStatus.visibility = View.VISIBLE
-        tvStatus.setTextWithFade(if (active) "Online / Tracking" else "Offline")
-
-        // Background chip color
-        tvStatus.setBackgroundResource(
+        tvStatus?.visibility = View.VISIBLE
+        tvStatus?.setTextWithFade(if (active) "Online / Tracking" else "Offline")
+        tvStatus?.setBackgroundResource(
             if (active) R.drawable.bg_chip_status_online else R.drawable.bg_chip_status_offline
         )
-        // Optional: ensure legible text color (your palette is fine, but this is safe)
-        tvStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.navyblue))
+        tvStatus?.setTextColor(ContextCompat.getColor(requireContext(), R.color.navyblue))
     }
 
     private fun updateTimesUi(clockInAt: Long) {
-        tvTimes.visibility = View.VISIBLE
-        tvTimeElapsed.visibility = View.VISIBLE
+        tvTimes?.visibility = View.VISIBLE
+        tvTimeElapsed?.visibility = View.VISIBLE
         if (clockInAt > 0) {
             val at = timeFmt.format(Date(clockInAt))
             val elapsed = humanElapsed(clockInAt, System.currentTimeMillis())
-            tvTimes.background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_chip_time)
-            tvTimes.setTextWithFade("$at")
-            tvTimeElapsed.setTextWithFade("$elapsed")
+            tvTimes?.background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_chip_time)
+            tvTimes?.setTextWithFade("$at")
+            tvTimeElapsed?.setTextWithFade("$elapsed")
         } else {
-            tvTimes.background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_chip_time)
-            tvTimes.setTextWithFade("Not clocked in")
-            tvTimeElapsed.setTextWithFade("0 minutes")
+            tvTimes?.background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_chip_time)
+            tvTimes?.setTextWithFade("Not clocked in")
+            tvTimeElapsed?.setTextWithFade("0 minutes")
         }
     }
 
@@ -324,7 +308,7 @@ class HomeFragment : Fragment() {
             if (pending == 0) {
                 // 2) update text + buttons while hidden
                 updateStatusUi(activeAfter)
-                tvTimes.setTextWithFade(
+                tvTimes?.setTextWithFade(
                     if (activeAfter)
                         "Clocked in: ${timeFmt.format(Date(System.currentTimeMillis()))} • just now"
                     else
@@ -346,26 +330,24 @@ class HomeFragment : Fragment() {
                                 .setDuration(120L)
                                 .setInterpolator(OvershootInterpolator(2f))
                                 .withEndAction {
-                                    // 4) fade them back in immediately after wiggle
-                                    fadeIn(llstatus)
-                                    fadeIn(lldate)
-                                    fadeIn(lltime)
+                                    llstatus?.let { fadeIn(it) }
+                                    lldate?.let { fadeIn(it) }
+                                    lltime?.let { fadeIn(it) }
                                 }
                                 .start()
                         }
                         .start()
                 } else {
-                    // fallback if the button isn't present
-                    fadeIn(llstatus)
-                    fadeIn(lldate)
-                    fadeIn(lldate)
+                    llstatus?.let { fadeIn(it) }
+                    lldate?.let { fadeIn(it) }
+                    lltime?.let { fadeIn(it) }
                 }
             }
         }
 
-        fadeOut(llstatus, afterBothFaded)
-        fadeOut(lldate, afterBothFaded)
-        fadeOut(lltime, afterBothFaded)
+        llstatus?.let { fadeOut(it, afterBothFaded) } ?: afterBothFaded()
+        lldate?.let { fadeOut(it, afterBothFaded) } ?: afterBothFaded()
+        lltime?.let { fadeOut(it) }
     }
 
 
