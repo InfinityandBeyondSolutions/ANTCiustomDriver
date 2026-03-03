@@ -27,11 +27,12 @@ import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
-import com.ibs.ibs_antdrivers.ui.GroupListFragment
+import com.ibs.ibs_antdrivers.service.LocationTrackingService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import androidx.appcompat.app.AlertDialog
 
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
@@ -56,7 +57,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 // Optional: show a small test notification to confirm it works
                 ensureNotificationChannel()
                 if (Build.VERSION.SDK_INT < 33 || hasNotifPermission()) {
-                    sendLocalTestNotification()
+                    try {
+                        sendLocalTestNotification()
+                    } catch (_: SecurityException) {
+                        // If OEM/device still throws, keep settings persisted but avoid crashing.
+                    }
                 }
 
                 Snackbar.make(root, "Notifications enabled", Snackbar.LENGTH_SHORT).show()
@@ -86,6 +91,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         val btnBack             = view.findViewById<ImageView>(R.id.btnBackSettings)
         val btnSupport          = view.findViewById<MaterialButton>(R.id.btnSupport)
 
+        val rowChangePassword   = view.findViewById<View?>(R.id.rowChangePassword)
+        val rowSupport          = view.findViewById<View?>(R.id.rowSupport)
+
 
 
         btnBack.setOnClickListener {
@@ -114,16 +122,16 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             Snackbar.make(view, "Not authenticated — using local settings only.", Snackbar.LENGTH_SHORT).show()
         }
 
-        // ---- Support button → default email app with prefilled fields ----
-        btnSupport.setOnClickListener {
+        // ---- Support button/row → default email app with prefilled fields ----
+        val openSupportEmail = {
             val to = "infinityandbeyond.contact@gmail.com"
             val subject = "IBS Driver App Support"
             val body = "Hi team,\n\nI need help with ...\n\nDevice: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}\nAndroid: ${android.os.Build.VERSION.RELEASE}"
 
             val uri = android.net.Uri.parse(
                 "mailto:${android.net.Uri.encode(to)}" +
-                        "?subject=${android.net.Uri.encode(subject)}" +
-                        "&body=${android.net.Uri.encode(body)}"
+                    "?subject=${android.net.Uri.encode(subject)}" +
+                    "&body=${android.net.Uri.encode(body)}"
             )
             val intent = Intent(Intent.ACTION_SENDTO, uri).apply {
                 putExtra(Intent.EXTRA_EMAIL, arrayOf(to))
@@ -136,6 +144,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 Snackbar.make(view, "No email app installed.", Snackbar.LENGTH_LONG).show()
             }
         }
+        btnSupport.setOnClickListener { openSupportEmail() }
+        rowSupport?.setOnClickListener { openSupportEmail() }
 
         // ---- Biometrics toggle ----
         switchBiometrics.setOnCheckedChangeListener { _, enabled ->
@@ -183,9 +193,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         // ---- Notifications toggle (SharedPreferences ONLY) ----
-        switchNotifications.setOnCheckedChangeListener @androidx.annotation.RequiresPermission(
-            android.Manifest.permission.POST_NOTIFICATIONS
-        ) { _, enabled ->
+        switchNotifications.setOnCheckedChangeListener { _, enabled ->
             if (enabled) {
                 // On Android 13+, we must have POST_NOTIFICATIONS permission
                 if (Build.VERSION.SDK_INT >= 33 && !hasNotifPermission()) {
@@ -199,7 +207,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 // Optional: give immediate feedback with a local test notification
                 ensureNotificationChannel()
                 if (Build.VERSION.SDK_INT < 33 || hasNotifPermission()) {
-                    sendLocalTestNotification()
+                    try {
+                        sendLocalTestNotification()
+                    } catch (_: SecurityException) {
+                        // If OEM/device still throws, keep settings persisted but avoid crashing.
+                    }
                 }
 
                 uid?.let {
@@ -219,48 +231,29 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             }
         }
 
-        // ---- Version ----
-        txtVersion.text = "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
-
-        // ---- Change password ----
-        btnChangePassword.setOnClickListener {
-            findNavController().navigate(R.id.action_settings_to_changePassword)
-        }
-
         // ---- Sign out ----
         btnSignOut.setOnClickListener {
-            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            AlertDialog.Builder(requireContext())
                 .setTitle("Sign out")
                 .setMessage("Are you sure you want to sign out?")
                 .setPositiveButton("Sign out") { _, _ ->
-                    val user = auth.currentUser
-                    user?.reload()?.addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            user.getIdToken(true).addOnCompleteListener { tokenTask ->
-                                if (tokenTask.isSuccessful) {
-                                    val claims = tokenTask.result?.claims
-                                    val isDisabled = claims?.get("disabled") as? Boolean ?: false
-                                    if (isDisabled) {
-                                        auth.signOut()
-                                        SessionPrefs.clear(requireContext())
-                                        SecurePrefs.clear(requireContext())
-                                        startActivity(Intent(requireContext(), Login::class.java))
-                                        requireActivity().finish()
-                                    } else {
-                                        Snackbar.make(requireView(), "Cannot sign out. User is not disabled.", Snackbar.LENGTH_SHORT).show()
-                                    }
-                                } else {
-                                    Snackbar.make(requireView(), "Failed to verify user status.", Snackbar.LENGTH_SHORT).show()
-                                }
-                            }
-                        } else {
-                            Snackbar.make(requireView(), "Failed to reload user.", Snackbar.LENGTH_SHORT).show()
-                        }
-                    }
+                    // Always allow sign-out. Claims/token checks are not a security boundary and
+                    // can fail offline, which previously blocked logout.
+                    safelyLogoutToLogin()
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
         }
+
+        // ---- Version ----
+        txtVersion.text = "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+
+        // ---- Change password ----
+        val openChangePassword = {
+            findNavController().navigate(R.id.action_settings_to_changePassword)
+        }
+        btnChangePassword.setOnClickListener { openChangePassword() }
+        rowChangePassword?.setOnClickListener { openChangePassword() }
 
         // ---- Load profile (if signed in) ----
         uid?.let { userId ->
@@ -290,6 +283,34 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 }
             }
         }
+    }
+
+    private fun safelyLogoutToLogin() {
+        // Be defensive about fragment/activity lifecycle.
+        val ctx = context ?: return
+        val activity = activity ?: return
+
+        try {
+            // Stop tracking service if running (best-effort; safe if not running).
+            val stopTracking = Intent(ctx, LocationTrackingService::class.java)
+            activity.stopService(stopTracking)
+        } catch (_: Exception) {
+            // non-fatal
+        }
+
+        // Clear local session + stored credentials/biometric flags.
+        SessionPrefs.clear(ctx)
+        SecurePrefs.clear(ctx)
+
+        // Finally sign out Firebase.
+        auth.signOut()
+
+        // Go to Login and clear the back stack so the user can't navigate back in.
+        val intent = Intent(ctx, Login::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        activity.finish()
     }
 
     // --- Helpers: Biometrics ---
