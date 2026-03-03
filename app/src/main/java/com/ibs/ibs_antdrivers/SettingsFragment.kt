@@ -12,7 +12,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.annotation.RequiresPermission
-import androidx.biometric.BiometricManager
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -60,7 +59,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     try {
                         sendLocalTestNotification()
                     } catch (_: SecurityException) {
-                        // If OEM/device still throws, keep settings persisted but avoid crashing.
+                        // best-effort
                     }
                 }
 
@@ -79,22 +78,16 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         super.onViewCreated(view, savedInstanceState)
 
         // ---- Views ----
-        val imgAvatar           = view.findViewById<ImageView>(R.id.imgAvatar)
-        val txtName             = view.findViewById<TextView>(R.id.txtName)
-        val txtEmail            = view.findViewById<TextView>(R.id.txtEmail)
-        val switchBiometrics    = view.findViewById<MaterialSwitch>(R.id.switchBiometrics)
-        val switchDarkMode      = view.findViewById<MaterialSwitch>(R.id.switchDarkMode)
+        val imgAvatar = view.findViewById<ImageView>(R.id.imgAvatar)
+        val txtName = view.findViewById<TextView>(R.id.txtName)
+        val txtEmail = view.findViewById<TextView>(R.id.txtEmail)
         val switchNotifications = view.findViewById<MaterialSwitch>(R.id.switchNotifications)
-        val btnChangePassword   = view.findViewById<MaterialButton>(R.id.btnChangePassword)
-        val btnSignOut          = view.findViewById<MaterialButton>(R.id.btnSignOut)
-        val txtVersion          = view.findViewById<TextView>(R.id.txtVersion)
-        val btnBack             = view.findViewById<ImageView>(R.id.btnBackSettings)
-        val btnSupport          = view.findViewById<MaterialButton>(R.id.btnSupport)
+        val btnSignOut = view.findViewById<MaterialButton>(R.id.btnSignOut)
+        val txtVersion = view.findViewById<TextView>(R.id.txtVersion)
+        val btnBack = view.findViewById<ImageView>(R.id.btnBackSettings)
+        val btnSupport = view.findViewById<MaterialButton>(R.id.btnSupport)
 
-        val rowChangePassword   = view.findViewById<View?>(R.id.rowChangePassword)
-        val rowSupport          = view.findViewById<View?>(R.id.rowSupport)
-
-
+        val rowSupport = view.findViewById<View?>(R.id.rowSupport)
 
         btnBack.setOnClickListener {
             findNavController().popBackStack()
@@ -104,21 +97,10 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         val uid = auth.currentUser?.uid
 
         // ---- Seed switches ----
-        // Biometrics: from encrypted prefs (truth source)
-        val deviceSupportsBiometrics = canUseBiometrics()
-        switchBiometrics.isEnabled = deviceSupportsBiometrics
-        switchBiometrics.isChecked = SecurePrefs.isBiometricEnabled(requireContext())
-
-        // DarkMode + Notifications: from SharedPreferences (your requirement)
-        switchDarkMode.isChecked      = prefs.getBoolean("dark_mode", false)
+        // Notifications: from SharedPreferences
         switchNotifications.isChecked = prefs.getBoolean("notifications", true)
 
-        // Optionally hydrate from Firebase (your existing behavior)
-        if (uid != null) {
-            ThemeManager.hydrateFromFirebase(requireContext(), uid) {
-                switchDarkMode.isChecked = prefs.getBoolean("dark_mode", false)
-            }
-        } else {
+        if (uid == null) {
             Snackbar.make(view, "Not authenticated — using local settings only.", Snackbar.LENGTH_SHORT).show()
         }
 
@@ -126,12 +108,12 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         val openSupportEmail = {
             val to = "infinityandbeyond.contact@gmail.com"
             val subject = "IBS Driver App Support"
-            val body = "Hi team,\n\nI need help with ...\n\nDevice: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}\nAndroid: ${android.os.Build.VERSION.RELEASE}"
+            val body = "Hi team,\n\nI need help with ...\n\nDevice: ${Build.MANUFACTURER} ${Build.MODEL}\nAndroid: ${Build.VERSION.RELEASE}"
 
-            val uri = android.net.Uri.parse(
-                "mailto:${android.net.Uri.encode(to)}" +
-                    "?subject=${android.net.Uri.encode(subject)}" +
-                    "&body=${android.net.Uri.encode(body)}"
+            val uri = Uri.parse(
+                "mailto:${Uri.encode(to)}" +
+                    "?subject=${Uri.encode(subject)}" +
+                    "&body=${Uri.encode(body)}"
             )
             val intent = Intent(Intent.ACTION_SENDTO, uri).apply {
                 putExtra(Intent.EXTRA_EMAIL, arrayOf(to))
@@ -146,51 +128,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
         btnSupport.setOnClickListener { openSupportEmail() }
         rowSupport?.setOnClickListener { openSupportEmail() }
-
-        // ---- Biometrics toggle ----
-        switchBiometrics.setOnCheckedChangeListener { _, enabled ->
-            if (!deviceSupportsBiometrics) {
-                Snackbar.make(view, "Biometrics not available. Enroll in device settings.", Snackbar.LENGTH_LONG)
-                    .setAction("Enroll") { launchBiometricEnroll() }
-                    .show()
-                switchBiometrics.isChecked = false
-                return@setOnCheckedChangeListener
-            }
-            if (enabled) {
-                if (!canUseBiometrics()) {
-                    launchBiometricEnroll()
-                    switchBiometrics.isChecked = false
-                    return@setOnCheckedChangeListener
-                }
-                val hasCreds = !SecurePrefs.getEmail(requireContext()).isNullOrBlank() &&
-                        !SecurePrefs.getPassword(requireContext()).isNullOrBlank()
-                SecurePrefs.setBiometricEnabled(requireContext(), true)
-                if (!hasCreds) {
-                    Snackbar.make(view, "Enabled. After your next successful sign-in, biometrics will be offered.", Snackbar.LENGTH_LONG).show()
-                } else {
-                    Snackbar.make(view, "Biometric login enabled.", Snackbar.LENGTH_SHORT).show()
-                }
-            } else {
-                SecurePrefs.setBiometricEnabled(requireContext(), false)
-                Snackbar.make(view, "Biometric login disabled.", Snackbar.LENGTH_SHORT).show()
-            }
-        }
-
-        // ---- Dark mode toggle ----
-        switchDarkMode.setOnCheckedChangeListener { _, enabled ->
-            // Persist locally (SharedPreferences)
-            prefs.edit().putBoolean("dark_mode", enabled).apply()
-
-            // Persist in Firebase (optional, as you had)
-            uid?.let {
-                FirebaseDatabase.getInstance().reference
-                    .child("users").child(it).child("settings").child("dark_mode")
-                    .setValue(enabled)
-            }
-
-            // Apply immediately (if you use ThemeManager)
-            ThemeManager.setDarkMode(requireContext(), enabled, uid)
-        }
 
         // ---- Notifications toggle (SharedPreferences ONLY) ----
         switchNotifications.setOnCheckedChangeListener { _, enabled ->
@@ -210,7 +147,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     try {
                         sendLocalTestNotification()
                     } catch (_: SecurityException) {
-                        // If OEM/device still throws, keep settings persisted but avoid crashing.
+                        // best-effort
                     }
                 }
 
@@ -247,13 +184,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         // ---- Version ----
         txtVersion.text = "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
-
-        // ---- Change password ----
-        val openChangePassword = {
-            findNavController().navigate(R.id.action_settings_to_changePassword)
-        }
-        btnChangePassword.setOnClickListener { openChangePassword() }
-        rowChangePassword?.setOnClickListener { openChangePassword() }
 
         // ---- Load profile (if signed in) ----
         uid?.let { userId ->
@@ -311,28 +241,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
         startActivity(intent)
         activity.finish()
-    }
-
-    // --- Helpers: Biometrics ---
-
-    private fun canUseBiometrics(): Boolean {
-        val authFlags = BiometricManager.Authenticators.BIOMETRIC_STRONG or
-                BiometricManager.Authenticators.BIOMETRIC_WEAK
-        val result = BiometricManager.from(requireContext()).canAuthenticate(authFlags)
-        return result == BiometricManager.BIOMETRIC_SUCCESS
-    }
-
-    private fun launchBiometricEnroll() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val authFlags = BiometricManager.Authenticators.BIOMETRIC_STRONG or
-                    BiometricManager.Authenticators.BIOMETRIC_WEAK
-            val intent = Intent(Settings.ACTION_BIOMETRIC_ENROLL).apply {
-                putExtra(Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED, authFlags)
-            }
-            startActivity(intent)
-        } else {
-            startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
-        }
     }
 
     // --- Helpers: Notifications (permission + channel + test) ---
