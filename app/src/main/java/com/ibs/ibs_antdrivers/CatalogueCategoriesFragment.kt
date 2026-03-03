@@ -9,11 +9,15 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.ibs.ibs_antdrivers.data.CatalogueRepository
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class CatalogueCategoriesFragment : Fragment() {
 
@@ -21,6 +25,8 @@ class CatalogueCategoriesFragment : Fragment() {
     private lateinit var noText: TextView
     private lateinit var recyclerView: RecyclerView
     private val categories = mutableListOf<CatalogueCategory>()
+
+    private val repo = CatalogueRepository()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -32,51 +38,52 @@ class CatalogueCategoriesFragment : Fragment() {
         recyclerView = view.findViewById(R.id.categoriesRecyclerView)
         recyclerView.layoutManager = GridLayoutManager(requireContext(), 2)
 
-        fetchCategories()
+        observeCategories()
 
         return view
     }
 
-    private fun fetchCategories() {
+    private fun observeCategories() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repo.observeActiveCategories(requireContext().applicationContext)
+                .collectLatest { list ->
+                    categories.clear()
+                    categories.addAll(list)
+
+                    if (categories.isNotEmpty()) {
+                        noText.visibility = View.GONE
+                        recyclerView.adapter = CatalogueCategoriesAdapter(categories) { category ->
+                            onCategoryClicked(category)
+                        }
+                    } else {
+                        noText.visibility = View.VISIBLE
+                        // Best-effort: try network fetch once (won't crash if offline).
+                        fetchCategoriesFromNetworkOnce()
+                    }
+                }
+        }
+    }
+
+    private fun fetchCategoriesFromNetworkOnce() {
         database = FirebaseDatabase.getInstance().getReference("catalogueCategories")
 
         database.get().addOnSuccessListener { snapshot ->
-            categories.clear()
+            if (!snapshot.exists()) return@addOnSuccessListener
 
-            Log.d("CatalogueCategories", "Snapshot exists: ${snapshot.exists()}")
+            val list = snapshot.children.mapNotNull { it.getValue(CatalogueCategory::class.java) }
+                .filter { it.IsActive }
 
-            if (snapshot.exists()) {
-                for (child in snapshot.children) {
-                    Log.d("CatalogueCategories", "Child key: ${child.key}, value: ${child.value}")
-
-                    val category = child.getValue(CatalogueCategory::class.java)
-
-                    // Only add if IsActive is true
-                    if (category != null && category.IsActive) {
-                        Log.d("CatalogueCategories", "Adding active category: ${category.Id} - ${category.Name}")
-                        categories.add(category)
-                    } else if (category != null) {
-                        Log.d("CatalogueCategories", "Skipping inactive category: ${category.Id}")
-                    }
+            if (list.isNotEmpty()) {
+                // Immediately show, and worker will persist to Room on next refresh.
+                categories.clear()
+                categories.addAll(list)
+                noText.visibility = View.GONE
+                recyclerView.adapter = CatalogueCategoriesAdapter(categories) { category ->
+                    onCategoryClicked(category)
                 }
-
-                if (categories.isNotEmpty()) {
-                    noText.visibility = View.GONE
-                    recyclerView.adapter = CatalogueCategoriesAdapter(categories) { category ->
-                        onCategoryClicked(category)
-                    }
-                } else {
-                    Log.d("CatalogueCategories", "No active catalogues found")
-                    noText.visibility = View.VISIBLE
-                }
-            } else {
-                Log.d("CatalogueCategories", "Snapshot does not exist")
-                noText.visibility = View.VISIBLE
             }
-        }.addOnFailureListener { error ->
-            Log.e("CatalogueCategories", "Failed to load catalogues", error)
-            Toast.makeText(requireContext(), "Failed to load catalogues: ${error.message}", Toast.LENGTH_SHORT).show()
-            noText.visibility = View.VISIBLE
+        }.addOnFailureListener {
+            // Offline: ignore, Room observer will keep UI stable.
         }
     }
 
@@ -150,4 +157,3 @@ class CatalogueCategoriesFragment : Fragment() {
         findNavController().navigate(R.id.action_catalogueCategories_to_catalogue, bundle)
     }
 }
-

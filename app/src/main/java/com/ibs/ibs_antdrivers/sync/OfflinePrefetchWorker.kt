@@ -45,7 +45,8 @@ class OfflinePrefetchWorker(
             // If there isn't an index on driverId, this can be slow but still works.
             ref.child("orders").orderByChild("driverId").equalTo(uid).get().await()
 
-            // (Optional) other reference data could be added here.
+            // 5) Catalogue categories
+            ref.child("catalogueCategories").get().await()
 
             Result.success()
         } catch (t: Throwable) {
@@ -55,4 +56,3 @@ class OfflinePrefetchWorker(
         }
     }
 }
-

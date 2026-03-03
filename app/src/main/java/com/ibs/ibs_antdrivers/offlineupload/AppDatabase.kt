@@ -5,9 +5,11 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.ibs.ibs_antdrivers.cache.dao.CallCyclesDao
+import com.ibs.ibs_antdrivers.cache.dao.CatalogueDao
 import com.ibs.ibs_antdrivers.cache.dao.OrdersDao
 import com.ibs.ibs_antdrivers.cache.dao.PriceListDao
 import com.ibs.ibs_antdrivers.cache.dao.StoreDao
+import com.ibs.ibs_antdrivers.cache.entities.CatalogueCategoryEntity
 import com.ibs.ibs_antdrivers.cache.entities.CcActiveWeekEntity
 import com.ibs.ibs_antdrivers.cache.entities.CcSpontaneousCallEntity
 import com.ibs.ibs_antdrivers.cache.entities.CcTemplateDayEntity
@@ -46,8 +48,9 @@ import com.ibs.ibs_antdrivers.rtdbqueue.PendingRtdbActionDao
         CcSpontaneousCallEntity::class,
         CcVisitedEntity::class,
         com.ibs.ibs_antdrivers.cache.entities.CcTodayPlannedStoreEntity::class,
+        CatalogueCategoryEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -61,6 +64,8 @@ abstract class AppDatabase : RoomDatabase() {
 
     // Calling cycles DAO
     abstract fun callCyclesDao(): CallCyclesDao
+
+    abstract fun catalogueDao(): CatalogueDao
 
     companion object {
         @Volatile

@@ -14,6 +14,7 @@ object CacheRefreshScheduler {
     private const val ORDERS_WORK = "refresh_orders_cache"
     private const val TODAY_CC_WORK = "refresh_today_call_cycle"
     private const val PLANNED_CC_WORK = "refresh_planned_call_cycles"
+    private const val CATALOGUE_CATS_WORK = "refresh_catalogue_categories_cache"
 
     fun refreshStores(context: Context) {
         val constraints = Constraints.Builder()
@@ -80,11 +81,25 @@ object CacheRefreshScheduler {
             .enqueueUniqueWork(PLANNED_CC_WORK, ExistingWorkPolicy.REPLACE, req)
     }
 
+    fun refreshCatalogueCategories(context: Context) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val req = OneTimeWorkRequestBuilder<RefreshCatalogueCategoriesWorker>()
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(CATALOGUE_CATS_WORK, ExistingWorkPolicy.REPLACE, req)
+    }
+
     fun refreshAll(context: Context) {
         refreshStores(context)
         refreshPriceLists(context)
         refreshOrders(context)
         refreshTodayCallCycle(context)
         refreshPlannedCallCycles(context)
+        refreshCatalogueCategories(context)
     }
 }

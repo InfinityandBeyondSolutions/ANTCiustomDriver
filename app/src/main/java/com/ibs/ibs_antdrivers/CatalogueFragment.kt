@@ -95,7 +95,10 @@ class CatalogueFragment : Fragment() {
     private fun loadPdfFromFirebaseTempPreview() {
         showHint(getString(R.string.catalogue_loading), true)
 
-        val storageRef = Firebase.storage.getReference("catalogue/categories/$categoryId/current.pdf")
+        val storageRef = when {
+            !fileUrl.isNullOrBlank() -> Firebase.storage.getReferenceFromUrl(fileUrl!!)
+            else -> Firebase.storage.getReference("catalogue/categories/$categoryId/current.pdf")
+        }
         val localFile = File.createTempFile("catalogue_$categoryId", "pdf", requireContext().cacheDir)
 
         storageRef.getFile(localFile).addOnSuccessListener {
@@ -113,7 +116,10 @@ class CatalogueFragment : Fragment() {
         showHint(getString(R.string.catalogue_loading), true)
         setShareEnabled(false)
 
-        val storageRef = Firebase.storage.getReference("catalogue/categories/$categoryId/current.pdf")
+        val storageRef = when {
+            !fileUrl.isNullOrBlank() -> Firebase.storage.getReferenceFromUrl(fileUrl!!)
+            else -> Firebase.storage.getReference("catalogue/categories/$categoryId/current.pdf")
+        }
 
         val target = cachedCatalogueFile
         target.parentFile?.mkdirs()

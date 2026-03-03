@@ -11,7 +11,9 @@ import com.ibs.ibs_antdrivers.cache.entities.CcTemplateDayStoreEntity
 import com.ibs.ibs_antdrivers.cache.entities.CcTemplateEntity
 import com.ibs.ibs_antdrivers.cache.entities.CcWeekDayStoreEntity
 import com.ibs.ibs_antdrivers.cache.entities.CcWeekEntity
+import com.ibs.ibs_antdrivers.cache.entities.CcTodayPlannedStoreEntity
 import com.ibs.ibs_antdrivers.offlineupload.AppDatabase
+import java.time.LocalDate
 import kotlinx.coroutines.tasks.await
 
 /**
@@ -117,11 +119,68 @@ class RefreshPlannedCallCyclesWorker(
             if (weeks.isNotEmpty()) dao.upsertWeeks(weeks)
             if (weekDayStores.isNotEmpty()) dao.upsertWeekDayStores(weekDayStores)
 
+            // ALSO precompute and store today's planned stores so Today tab works offline.
+            val todayKey = LocalDate.now().toString()
+            val todayDow = LocalDate.now().dayOfWeek.value
+            val currentWeekKey = currentWeekKey(LocalDate.now())
+
+            val plannedToday = mutableSetOf<String>()
+
+            // Prefer current week override if present in the downloaded weeks
+            val currentWeekNode = weeksSnap.child(currentWeekKey)
+            if (currentWeekNode.exists()) {
+                val daysNode = currentWeekNode.child("days")
+                if (daysNode.exists()) {
+                    for (d in daysNode.children) {
+                        val dow = d.child("dayOfWeek").getValue(Int::class.java) ?: continue
+                        if (dow != todayDow) continue
+                        plannedToday += d.child("storeIds").children.mapNotNull { it.getValue(String::class.java) }
+                    }
+                }
+            }
+
+            // Fallback to active template (from downloaded templates)
+            if (plannedToday.isEmpty()) {
+                val activeTemplateNode = templatesSnap.children.firstOrNull { node ->
+                    node.child("isActive").getValue(Boolean::class.java) == true
+                }
+                if (activeTemplateNode != null) {
+                    val daysNode = activeTemplateNode.child("days")
+                    if (daysNode.exists()) {
+                        for (d in daysNode.children) {
+                            val dow = d.child("dayOfWeek").getValue(Int::class.java) ?: continue
+                            if (dow != todayDow) continue
+                            plannedToday += d.child("storeIds").children.mapNotNull { it.getValue(String::class.java) }
+                        }
+                    }
+                }
+            }
+
+            dao.deleteTodayPlannedForDate(uid, todayKey)
+            if (plannedToday.isNotEmpty()) {
+                dao.upsertTodayPlannedStores(
+                    plannedToday.map { storeId ->
+                        CcTodayPlannedStoreEntity(
+                            driverUid = uid,
+                            dateKey = todayKey,
+                            storeId = storeId,
+                        )
+                    }
+                )
+            }
+
             Result.success()
         } catch (t: Throwable) {
             Log.w("RefreshPlannedCallCycles", "Failed: ${t.message}")
             Result.retry()
         }
+    }
+
+    private fun currentWeekKey(date: LocalDate): String {
+        val wf = java.time.temporal.WeekFields.ISO
+        val week = date.get(wf.weekOfWeekBasedYear())
+        val year = date.get(wf.weekBasedYear())
+        return String.format(java.util.Locale.US, "%d-W%02d", year, week)
     }
 }
 
