@@ -6,7 +6,10 @@ import android.content.Intent
 import android.os.Build
 import com.google.firebase.auth.FirebaseAuth
 import com.ibs.ibs_antdrivers.offlineupload.UploadWorkScheduler
+import com.ibs.ibs_antdrivers.rtdbqueue.RtdbQueueWorkScheduler
 import com.ibs.ibs_antdrivers.service.LocationTrackingService
+import com.ibs.ibs_antdrivers.sync.CacheRefreshScheduler
+import com.ibs.ibs_antdrivers.sync.OfflinePrefetchScheduler
 
 class BootReceiver : BroadcastReceiver() {
 
@@ -17,8 +20,13 @@ class BootReceiver : BroadcastReceiver() {
             Intent.ACTION_PACKAGE_REPLACED -> {
                 if (FirebaseAuth.getInstance().currentUser != null) {
                     startLocationService(context)
-                    // Re-enqueue any pending image uploads that were interrupted by the reboot.
+                    // Re-enqueue any pending work that was interrupted by the reboot.
                     UploadWorkScheduler.enqueue(context)
+                    RtdbQueueWorkScheduler.enqueue(context)
+
+                    // Best-effort: prefetch offline data once connectivity is available.
+                    OfflinePrefetchScheduler.enqueue(context)
+                    CacheRefreshScheduler.refreshAll(context)
                 }
             }
         }

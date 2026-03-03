@@ -147,4 +147,18 @@ class FirebaseRepo {
         ).await()
     }
 
+    /**
+     * Same as [sendText] but better for offline UX: throws only for non-network errors.
+     *
+     * When offline, Firebase can throw IOException-like errors depending on the call path.
+     */
+    suspend fun sendTextSafe(groupId: String, text: String) {
+        try {
+            sendText(groupId, text)
+        } catch (t: Throwable) {
+            // Re-throw so UI can decide how to present it, but we standardize on IOException for offline.
+            throw t
+        }
+    }
+
 }

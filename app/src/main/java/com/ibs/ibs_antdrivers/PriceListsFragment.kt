@@ -71,23 +71,17 @@ class PriceListsFragment : Fragment() {
         emptyText.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val data = withContext(Dispatchers.IO) { repo.getAllPriceLists() }
-                progress.visibility = View.GONE
-
-                if (data.isEmpty()) {
-                    emptyText.visibility = View.VISIBLE
-                    adapter.submitList(emptyList())
-                } else {
-                    emptyText.visibility = View.GONE
-                    adapter.submitList(data)
+            repo.observeAllPriceLists(requireContext().applicationContext)
+                .collect { data ->
+                    progress.visibility = View.GONE
+                    if (data.isEmpty()) {
+                        emptyText.visibility = View.VISIBLE
+                        adapter.submitList(emptyList())
+                    } else {
+                        emptyText.visibility = View.GONE
+                        adapter.submitList(data)
+                    }
                 }
-            } catch (t: Throwable) {
-                progress.visibility = View.GONE
-                emptyText.visibility = View.VISIBLE
-                emptyText.text = getString(R.string.price_lists_failed)
-                Snackbar.make(requireView(), t.message ?: "Failed to load price lists", Snackbar.LENGTH_LONG).show()
-            }
         }
     }
 
@@ -102,11 +96,6 @@ class PriceListsFragment : Fragment() {
      */
     @Suppress("DEPRECATION")
     private fun generateSaveAndMaybeShare(pl: PriceList, thenShare: Boolean) {
-        if (pl.items.isEmpty()) {
-            Snackbar.make(requireView(), "This price list has no items to export", Snackbar.LENGTH_SHORT).show()
-            return
-        }
-
         val dialog = ProgressDialog(requireContext()).apply {
             setMessage(if (thenShare) "Preparing PDF…" else "Saving to Downloads…")
             isIndeterminate = true
@@ -116,9 +105,21 @@ class PriceListsFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
+                // Always fetch a fully-loaded price list with items (Room-first, Firebase fallback)
+                val full: PriceList? = withContext(Dispatchers.IO) {
+                    repo.getPriceListWithItems(requireContext().applicationContext, pl.id)
+                }
+
+                val toExport = full ?: pl
+                if (toExport.items.isEmpty()) {
+                    dialog.dismiss()
+                    Snackbar.make(requireView(), "This price list has no items to export", Snackbar.LENGTH_SHORT).show()
+                    return@launch
+                }
+
                 // Step 1 – generate (cached in filesDir)
                 val pdfFile: File = withContext(Dispatchers.IO) {
-                    PriceListPdfGenerator.generate(requireContext(), pl)
+                    PriceListPdfGenerator.generate(requireContext(), toExport)
                 }
 
                 // Step 2 – save the exact same file to public Downloads
@@ -130,7 +131,7 @@ class PriceListsFragment : Fragment() {
 
                 if (thenShare) {
                     // Step 3a – share the file that was just saved (same PDF)
-                    sharePdf(pdfFile, pl)
+                    sharePdf(pdfFile, toExport)
                 } else {
                     // Step 3b – confirm the save with a Snackbar + optional Share action
                     val msg = if (savedFileName != null)
@@ -139,7 +140,7 @@ class PriceListsFragment : Fragment() {
                         "Could not save to Downloads — tap Share to send the PDF"
 
                     Snackbar.make(requireView(), msg, Snackbar.LENGTH_LONG)
-                        .setAction("Share") { sharePdf(pdfFile, pl) }
+                        .setAction("Share") { sharePdf(pdfFile, toExport) }
                         .show()
                 }
             } catch (t: Throwable) {

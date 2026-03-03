@@ -573,6 +573,7 @@ class CreateOrderFragment : Fragment() {
         }
 
         // Show loading state
+        btnSubmitOrder.isEnabled = false
         btnSubmitOrder.visibility = View.INVISIBLE
         submitProgress.visibility = View.VISIBLE
 
@@ -619,12 +620,28 @@ class CreateOrderFragment : Fragment() {
                 )
 
                 withContext(Dispatchers.IO) {
-                    ordersRepo.createOrder(order)
+                    ordersRepo.createOrder(order, requireContext().applicationContext)
                 }
 
-                Snackbar.make(requireView(), "Order submitted successfully!", Snackbar.LENGTH_SHORT).show()
-                findNavController().popBackStack()
+                // Always end loading state before navigating.
+                btnSubmitOrder.isEnabled = true
+                btnSubmitOrder.visibility = View.VISIBLE
+                submitProgress.visibility = View.GONE
+
+                Snackbar.make(requireView(), "Order captured. It will upload when you're online.", Snackbar.LENGTH_SHORT).show()
+
+                // Prefer returning to the Order Dashboard explicitly.
+                val popped = findNavController().popBackStack(R.id.orderDashboardFragment, false)
+                if (!popped) {
+                    // If we can't pop to dashboard, fall back to Create->Dashboard action if it exists,
+                    // else just close this screen to avoid offline navigation crashes.
+                    val poppedAny = findNavController().popBackStack()
+                    if (!poppedAny) {
+                        activity?.finish()
+                    }
+                }
             } catch (t: Throwable) {
+                btnSubmitOrder.isEnabled = true
                 btnSubmitOrder.visibility = View.VISIBLE
                 submitProgress.visibility = View.GONE
                 Snackbar.make(requireView(), t.message ?: "Failed to submit order", Snackbar.LENGTH_LONG).show()
@@ -730,4 +747,3 @@ class CreateOrderFragment : Fragment() {
         }
     }
 }
-

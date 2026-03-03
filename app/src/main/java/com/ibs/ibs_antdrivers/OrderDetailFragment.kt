@@ -81,45 +81,41 @@ class OrderDetailFragment : Fragment() {
         emptyText.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val order = withContext(Dispatchers.IO) { repo.getOrderById(orderId) }
-                progress.visibility = View.GONE
+            repo.observeOrderWithItems(requireContext().applicationContext, orderId)
+                .collect { order ->
+                    progress.visibility = View.GONE
 
-                if (order == null) {
-                    showError("Order not found")
-                    return@launch
-                }
-
-                // Safety: driver can only view their own orders
-                if (order.driverId.isNotBlank() && order.driverId != currentUser.uid) {
-                    showError("You don't have permission to view this order")
-                    return@launch
-                }
-
-                bindHeader(order)
-
-                if (order.items.isEmpty()) {
-                    emptyText.visibility = View.VISIBLE
-                    emptyText.text = "No items found for this order"
-                    adapter.submitList(emptyList())
-                    tvGrandTotal.text = "Grand Total: ${currencyFormat.format(0)}"
-                } else {
-                    emptyText.visibility = View.GONE
-
-                    val rows = order.items.map { item ->
-                        val lineTotal = item.quantity * item.casePriceExVat
-                        OrderDetailItemRow(item, lineTotal)
+                    if (order == null) {
+                        showError("Order not found")
+                        return@collect
                     }
-                    adapter.submitList(rows)
 
-                    val grandTotal = rows.sumOf { it.lineTotal }
-                    tvGrandTotal.text = "Grand Total: ${currencyFormat.format(grandTotal)}"
+                    // Safety: driver can only view their own orders
+                    if (order.driverId.isNotBlank() && order.driverId != currentUser.uid) {
+                        showError("You don't have permission to view this order")
+                        return@collect
+                    }
+
+                    bindHeader(order)
+
+                    if (order.items.isEmpty()) {
+                        emptyText.visibility = View.VISIBLE
+                        emptyText.text = "No items found for this order"
+                        adapter.submitList(emptyList())
+                        tvGrandTotal.text = "Grand Total: ${currencyFormat.format(0)}"
+                    } else {
+                        emptyText.visibility = View.GONE
+
+                        val rows = order.items.map { item ->
+                            val lineTotal = item.quantity * item.casePriceExVat
+                            OrderDetailItemRow(item, lineTotal)
+                        }
+                        adapter.submitList(rows)
+
+                        val grandTotal = rows.sumOf { it.lineTotal }
+                        tvGrandTotal.text = "Grand Total: ${currencyFormat.format(grandTotal)}"
+                    }
                 }
-            } catch (t: Throwable) {
-                progress.visibility = View.GONE
-                Snackbar.make(requireView(), t.message ?: "Failed to load order", Snackbar.LENGTH_LONG).show()
-                showError("Failed to load order")
-            }
         }
     }
 

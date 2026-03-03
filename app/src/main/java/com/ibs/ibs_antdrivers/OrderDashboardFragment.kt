@@ -85,26 +85,19 @@ class OrderDashboardFragment : Fragment() {
         emptyText.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val data = withContext(Dispatchers.IO) {
-                    repo.getOrdersByDriver(currentUser.uid)
-                }
-                progress.visibility = View.GONE
+            repo.observeOrdersByDriver(requireContext().applicationContext, currentUser.uid)
+                .collect { data ->
+                    progress.visibility = View.GONE
 
-                if (data.isEmpty()) {
-                    emptyText.visibility = View.VISIBLE
-                    emptyText.text = "No orders yet.\nTap the button below to create your first order."
-                    adapter.submitList(emptyList())
-                } else {
-                    emptyText.visibility = View.GONE
-                    adapter.submitList(data)
+                    if (data.isEmpty()) {
+                        emptyText.visibility = View.VISIBLE
+                        emptyText.text = "No orders yet.\nTap the button below to create your first order."
+                        adapter.submitList(emptyList())
+                    } else {
+                        emptyText.visibility = View.GONE
+                        adapter.submitList(data)
+                    }
                 }
-            } catch (t: Throwable) {
-                progress.visibility = View.GONE
-                emptyText.visibility = View.VISIBLE
-                emptyText.text = "Failed to load orders"
-                Snackbar.make(requireView(), t.message ?: "Failed to load orders", Snackbar.LENGTH_LONG).show()
-            }
         }
     }
 }

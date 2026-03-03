@@ -28,6 +28,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
+import com.ibs.ibs_antdrivers.offline.ConnectivityObserver
+import kotlinx.coroutines.launch
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -41,6 +44,8 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.ibs.ibs_antdrivers.data.TopicSubscriber
 import com.ibs.ibs_antdrivers.service.LocationTrackingService
+import com.ibs.ibs_antdrivers.rtdbqueue.RtdbPath
+import com.ibs.ibs_antdrivers.rtdbqueue.RtdbWriteQueue
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -208,14 +213,26 @@ class MainActivity : AppCompatActivity() {
         // Deep link from FCM
         handleIntent(intent)
 
+        // ---- Offline banner / connectivity awareness ----
+        val offlineBanner = findViewById<View>(R.id.offlineBanner)
+        val connectivity = ConnectivityObserver.getInstance(applicationContext)
+        lifecycleScope.launch {
+            connectivity.isOnline
+                .collect { online ->
+                    offlineBanner.visibility = if (online) View.GONE else View.VISIBLE
+                    // Don't aggressively force Firebase online when we're offline.
+                    if (online) {
+                        try { FirebaseDatabase.getInstance().goOnline() } catch (_: Exception) { }
+                    }
+                }
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
         ) {
             notificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-
-        FirebaseDatabase.getInstance().goOnline()
 
         cleanupOldShifts()
         ensureDriverInfoBase()
@@ -532,6 +549,8 @@ class MainActivity : AppCompatActivity() {
             .child("shifts").child(dateKey)
             .push()
 
+        val sessionId = sessionRef.key
+
         val record = mapOf(
             "clockIn" to now,
             "active" to true
@@ -557,7 +576,35 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Clocked in", Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to clock in: ${e.message}", Toast.LENGTH_LONG).show()
+                // Offline fallback: queue the shift creation.
+                val sid = sessionId
+                if (sid != null) {
+                    val path = RtdbPath.child("users", uid, "shifts", dateKey, sid)
+                    lifecycleScope.launch {
+                        runCatching {
+                            RtdbWriteQueue.enqueueSetMap(
+                                context = applicationContext,
+                                path = path,
+                                value = record + ("sessionId" to sid),
+                                priority = 0,
+                                dedupeKey = "shift:$uid:$dateKey:$sid"
+                            )
+                        }
+                    }
+
+                    // Update local prefs so UI reflects clock-in even while offline.
+                    prefs.edit()
+                        .putBoolean(KEY_TRACKING_ACTIVE, true)
+                        .putString(KEY_ACTIVE_SHIFT_DATE, dateKey)
+                        .putString(KEY_ACTIVE_SHIFT_SESSION, sid)
+                        .putLong(KEY_CLOCK_IN_AT, now)
+                        .apply()
+
+                    startTrackingIfEnabledAndAllowed()
+                    Toast.makeText(this, "Clocked in (queued - offline)", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this, "Failed to clock in: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
     }
 
@@ -588,7 +635,28 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this, "Clocked out", Toast.LENGTH_SHORT).show()
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(this, "Failed to clock out: ${e.message}", Toast.LENGTH_LONG).show()
+                    // Offline fallback: queue clockOut update.
+                    val path = RtdbPath.child("users", uid, "shifts", dateKey, sessionId)
+                    lifecycleScope.launch {
+                        runCatching {
+                            RtdbWriteQueue.enqueueUpdateMap(
+                                context = applicationContext,
+                                path = path,
+                                updates = mapOf("clockOut" to now, "active" to false),
+                                priority = 0,
+                                dedupeKey = "shiftEnd:$uid:$dateKey:$sessionId"
+                            )
+                        }
+                    }
+
+                    prefs.edit()
+                        .putBoolean(KEY_TRACKING_ACTIVE, false)
+                        .remove(KEY_ACTIVE_SHIFT_DATE)
+                        .remove(KEY_ACTIVE_SHIFT_SESSION)
+                        .remove(KEY_CLOCK_IN_AT)
+                        .apply()
+
+                    Toast.makeText(this, "Clocked out (queued - offline)", Toast.LENGTH_LONG).show()
                 }
         } else {
             updateDriverSessionInfo(false)

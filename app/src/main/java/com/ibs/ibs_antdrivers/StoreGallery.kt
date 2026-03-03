@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.ibs.ibs_antdrivers.offline.ConnectivityObserver
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
@@ -132,6 +133,18 @@ class StoreGallery : Fragment(), GalleryPreviewDialogFragment.Listener {
                 }
             }
         })
+
+        // Only load gallery items online.
+        val isOnline = ConnectivityObserver.getInstance(requireContext().applicationContext).isOnline.value
+        if (!isOnline) {
+            isLoading = false
+            progressBar.visibility = View.GONE
+            Toast.makeText(requireContext(), "Connect to the internet to view gallery items", Toast.LENGTH_LONG).show()
+            tvEmpty.visibility = View.VISIBLE
+            tvEmpty.text = "Connect to the internet to view gallery items"
+            updateCountAndEmpty()
+            return view
+        }
 
         fetchImagesFromFirebase()
 

@@ -21,6 +21,9 @@ import com.google.firebase.database.*
 import com.ibs.ibs_antdrivers.R
 import com.ibs.ibs_antdrivers.data.FirebaseRepo
 import com.ibs.ibs_antdrivers.data.Message
+import com.ibs.ibs_antdrivers.offline.Offline
+import com.ibs.ibs_antdrivers.rtdbqueue.RtdbPath
+import com.ibs.ibs_antdrivers.rtdbqueue.RtdbWriteQueue
 import com.ibs.ibs_antdrivers.viewer.FileViewerActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -161,7 +164,28 @@ class ChatHomeFragment : Fragment() {
                     input.setText("")
                     // Message sent successfully - listener will handle display
                 } catch (e: Exception) {
-                    showErrorModal("Failed to send message: ${e.message}")
+                    // Offline/network errors should be friendly + non-blocking.
+                    val msg = Offline.userMessage(e)
+
+                    // If we appear offline, queue it for retry.
+                    if (Offline.isOfflineError(e)) {
+                        runCatching {
+                            val me = repo.uid() ?: return@runCatching
+                            val now = System.currentTimeMillis()
+
+                            // Minimal payload (stored as a string for SET). If you want richer fields,
+                            // we'll switch the queue to proper JSON serialization of the Message object.
+                            val path = RtdbPath.child("pendingChat", groupId, "$now-$me")
+                            RtdbWriteQueue.enqueueSet(
+                                context = requireContext().applicationContext,
+                                path = path,
+                                valueAsString = t,
+                                priority = 0
+                            )
+                        }
+                    }
+
+                    Toast.makeText(requireContext(), msg, Toast.LENGTH_LONG).show()
                 } finally {
                     send.isEnabled = true
                 }

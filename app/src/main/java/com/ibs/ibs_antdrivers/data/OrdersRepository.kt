@@ -1,8 +1,17 @@
 package com.ibs.ibs_antdrivers.data
 
+import android.content.Context
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.ibs.ibs_antdrivers.cache.entities.OrderEntity
+import com.ibs.ibs_antdrivers.cache.entities.OrderItemEntity
+import com.ibs.ibs_antdrivers.cache.entities.OrderWithItems
+import com.ibs.ibs_antdrivers.offlineupload.AppDatabase
+import com.ibs.ibs_antdrivers.rtdbqueue.RtdbPath
+import com.ibs.ibs_antdrivers.rtdbqueue.RtdbWriteQueue
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 
 class OrdersRepository(
@@ -58,9 +67,18 @@ class OrdersRepository(
     }
 
     /**
-     * Create a new order
+     * Create a new order.
+     *
+     * Offline behavior:
+     * - If the write fails (no internet), queue it for background upload.
      */
-    suspend fun createOrder(order: Order): String {
+    suspend fun createOrder(order: Order, appContext: Context? = null): String {
+        val ctx = appContext?.applicationContext
+        if (ctx == null) {
+            // Without context we can't cache/queue safely.
+            throw IllegalArgumentException("App context is required for offline order submission")
+        }
+
         val orderRef = db.child("orders").push()
         val orderId = orderRef.key ?: throw Exception("Failed to generate order ID")
 
@@ -72,7 +90,30 @@ class OrdersRepository(
             items = order.items.map { it.copy(orderId = orderId) },
         )
 
-        orderRef.setValue(orderToMap(orderWithId)).await()
+        // 1) Always write to Room cache immediately so the order appears offline.
+        runCatching {
+            val db = AppDatabase.get(ctx)
+            db.ordersDao().upsertOrders(listOf(orderWithId.toEntity()))
+            db.ordersDao().upsertItems(orderWithId.items.map { it.toEntity(orderId) })
+        }
+
+        val map = orderToMap(orderWithId)
+
+        // 2) Try network write; if it fails, enqueue for later and return success.
+        try {
+            orderRef.setValue(map).await()
+        } catch (_: Throwable) {
+            val path = RtdbPath.child("orders", orderId)
+            val dedupeKey = "order:$orderId"
+            RtdbWriteQueue.enqueueSetMap(
+                context = ctx,
+                path = path,
+                value = map.filterKeys { it != "id" } + ("id" to orderId),
+                priority = 1,
+                dedupeKey = dedupeKey
+            )
+        }
+
         return orderId
     }
 
@@ -89,6 +130,68 @@ class OrdersRepository(
      */
     suspend fun deleteOrder(orderId: String) {
         db.child("orders").child(orderId).removeValue().await()
+    }
+
+    fun observeOrdersByDriver(context: Context, driverId: String): Flow<List<Order>> {
+        return AppDatabase.get(context).ordersDao()
+            .observeOrdersByDriver(driverId)
+            .map { list -> list.map { it.toDomain(emptyList()) } }
+    }
+
+    fun observeOrderWithItems(context: Context, orderId: String): Flow<Order?> {
+        return AppDatabase.get(context).ordersDao()
+            .observeOrderWithItems(orderId)
+            .map { rel -> rel?.toDomain() }
+    }
+
+    private fun OrderEntity.toDomain(items: List<OrderItemEntity>): Order {
+        return Order(
+            id = orderId,
+            orderNumber = orderNumber,
+            notes = notes,
+            storeId = storeId,
+            storeName = storeName,
+            priceListId = priceListId,
+            priceListName = priceListName,
+            driverId = driverId,
+            driverName = driverName,
+            createdByUserId = createdByUserId,
+            createdByUserName = createdByUserName,
+            createdByFirstName = createdByFirstName,
+            createdByLastName = createdByLastName,
+            completedByUserId = completedByUserId,
+            completedByUserName = completedByUserName,
+            completedByFirstName = completedByFirstName,
+            completedByLastName = completedByLastName,
+            priority = priority,
+            status = status,
+            totalAmount = totalAmount,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+            items = items.map { it.toDomain() },
+        )
+    }
+
+    private fun OrderWithItems.toDomain(): Order {
+        return order.toDomain(items)
+    }
+
+    private fun OrderItemEntity.toDomain(): OrderItem {
+        return OrderItem(
+            id = itemId,
+            orderId = orderId,
+            productId = productId,
+            productCode = productCode,
+            productName = productName,
+            brand = brand,
+            size = size,
+            unitBarcode = unitBarcode,
+            outerBarcode = outerBarcode,
+            unitPriceExVat = unitPriceExVat,
+            casePriceExVat = casePriceExVat,
+            quantity = quantity,
+            totalPrice = totalPrice,
+        )
     }
 
     private fun orderToMap(order: Order): Map<String, Any?> {
@@ -255,6 +358,51 @@ class OrdersRepository(
 
             quantity = numIntNode(this, "quantity"),
             totalPrice = numDoubleNode(this, "totalPrice"),
+        )
+    }
+
+    private fun Order.toEntity(): OrderEntity {
+        return OrderEntity(
+            orderId = id,
+            orderNumber = orderNumber,
+            notes = notes,
+            storeId = storeId,
+            storeName = storeName,
+            priceListId = priceListId,
+            priceListName = priceListName,
+            driverId = driverId,
+            driverName = driverName,
+            createdByUserId = createdByUserId,
+            createdByUserName = createdByUserName,
+            createdByFirstName = createdByFirstName,
+            createdByLastName = createdByLastName,
+            completedByUserId = completedByUserId,
+            completedByUserName = completedByUserName,
+            completedByFirstName = completedByFirstName,
+            completedByLastName = completedByLastName,
+            priority = priority,
+            status = status,
+            totalAmount = totalAmount,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+        )
+    }
+
+    private fun OrderItem.toEntity(orderId: String): OrderItemEntity {
+        return OrderItemEntity(
+            orderId = orderId,
+            itemId = id,
+            productId = productId,
+            productCode = productCode,
+            productName = productName,
+            brand = brand,
+            size = size,
+            unitBarcode = unitBarcode,
+            outerBarcode = outerBarcode,
+            unitPriceExVat = unitPriceExVat,
+            casePriceExVat = casePriceExVat,
+            quantity = quantity,
+            totalPrice = totalPrice,
         )
     }
 }

@@ -1,8 +1,16 @@
 package com.ibs.ibs_antdrivers.data
 
+import android.content.Context
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.ibs.ibs_antdrivers.cache.dao.PriceListWithCount
+import com.ibs.ibs_antdrivers.cache.entities.PriceListEntity
+import com.ibs.ibs_antdrivers.cache.entities.PriceListItemEntity
+import com.ibs.ibs_antdrivers.offlineupload.AppDatabase
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 
 data class PriceListItem(
@@ -33,12 +41,62 @@ data class PriceList(
 class PriceListsRepository(
     private val db: DatabaseReference = FirebaseDatabase.getInstance().reference,
 ) {
+
+    fun observeAllPriceLists(context: Context): Flow<List<PriceList>> {
+        return AppDatabase.get(context).priceListDao().observeAllWithItemCount()
+            .map { list ->
+                list.map { it.toDomainWithCount() }
+            }
+    }
+
+    /**
+     * Returns the price list with items from Room if cached, otherwise falls back to Firebase.
+     * Used for PDF generation/share/download so we always have real items.
+     */
+    suspend fun getPriceListWithItems(context: Context, id: String): PriceList? {
+        val rel = AppDatabase.get(context).priceListDao().observeWithItems(id).first()
+        if (rel != null) {
+            return rel.priceList.toDomain(rel.items)
+        }
+        // fallback to Firebase (best effort)
+        return runCatching { getAllPriceLists().firstOrNull { it.id == id } }.getOrNull()
+    }
+
     suspend fun getAllPriceLists(): List<PriceList> {
         val snap = db.child("priceLists").get().await()
         if (!snap.exists()) return emptyList()
 
         return snap.children.mapNotNull { it.toPriceListOrNull() }
             .sortedBy { it.title.ifBlank { it.name } }
+    }
+
+    private fun PriceListEntity.toDomain(items: List<PriceListItemEntity>): PriceList {
+        return PriceList(
+            id = priceListId,
+            title = title,
+            name = name,
+            companyName = companyName,
+            effectiveDate = effectiveDate,
+            status = status,
+            includeVat = includeVat,
+            updatedAt = updatedAt,
+            createdAt = createdAt,
+            items = items.map { it.toDomain() },
+        )
+    }
+
+    private fun PriceListItemEntity.toDomain(): PriceListItem {
+        return PriceListItem(
+            id = itemId,
+            itemNo = itemNo,
+            description = description,
+            brand = brand,
+            size = size,
+            unitBarcode = unitBarcode,
+            outerBarcode = outerBarcode,
+            unitPrice = unitPrice,
+            casePrice = casePrice,
+        )
     }
 
     private fun DataSnapshot.toPriceListOrNull(): PriceList? {
@@ -78,6 +136,24 @@ class PriceListsRepository(
             outerBarcode = child("outerBarcode").getValue(String::class.java) ?: "",
             unitPrice = child("unitPrice").getValue(String::class.java) ?: "",
             casePrice = child("casePrice").getValue(String::class.java) ?: "",
+        )
+    }
+
+    private fun PriceListWithCount.toDomainWithCount(): PriceList {
+        // NOTE: list screen needs a count, not the full items.
+        // We create a placeholder list sized to itemCount so existing UI using items.size works.
+        val placeholderItems = if (itemCount <= 0) emptyList() else List(itemCount) { PriceListItem() }
+        return PriceList(
+            id = priceListId,
+            title = title,
+            name = name,
+            companyName = companyName,
+            effectiveDate = effectiveDate,
+            status = status,
+            includeVat = includeVat,
+            updatedAt = updatedAt,
+            createdAt = createdAt,
+            items = placeholderItems,
         )
     }
 }

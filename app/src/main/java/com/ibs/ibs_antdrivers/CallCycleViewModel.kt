@@ -1,5 +1,6 @@
 package com.ibs.ibs_antdrivers
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -15,6 +16,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -27,6 +30,7 @@ class CallCycleViewModel(
     private val storesRepo: StoresRepository = StoresRepository(),
     private val completedCallsRepo: CompletedCallsRepository = CompletedCallsRepository(),
     private val visitedRepo: VisitedStoresRepository = VisitedStoresRepository(),
+    private val app: Application,
 ) : ViewModel() {
 
     // Simple in-memory store cache to avoid re-fetching the same store repeatedly.
@@ -104,30 +108,11 @@ class CallCycleViewModel(
             _state.value = _state.value.copy(isLoading = true, driverUid = uid, error = null)
 
             try {
-                val weekKeys = repo.getAvailableWeeks(uid)
-                val plannedOptions = listOf(CallCyclesRepository.WEEKLY_CYCLE_LABEL) + weekKeys
-
-                val selection = when {
-                    !initialPlannedSelection.isNullOrBlank() && plannedOptions.contains(initialPlannedSelection) -> initialPlannedSelection
-                    else -> _state.value.selectedPlannedOption
-                }
-
-                val plannedCycle = repo.resolvePlannedCycle(uid, selection)
-                val plannedStoresById = loadStoresForPlannedCycle(plannedCycle)
+                // Start offline-first Planned options observer (Room)
+                startPlannedOptionsObserver(uid, initialPlannedSelection)
 
                 val today = LocalDate.now()
                 val todayTitle = buildTodayTitle(today)
-                val todayCycle = repo.resolvePlannedCycle(uid, currentWeekKey(today))
-
-                // Load persisted visited state from Firebase for today.
-                val todayKey = today.toString()
-                val visitedIds: Set<String> = runCatching { visitedRepo.getVisitedIds(uid, todayKey) }.getOrElse { emptySet() }
-                val persistedStoreIds = visitedIds.filter { !it.startsWith("sc_") }.toSet()
-                val persistedSpontaneousIds = visitedIds.filter { it.startsWith("sc_") }.toSet()
-
-                val todayStores = buildTodayStores(todayCycle, persistedStoreIds)
-                val todaySpontaneous = repo.getSpontaneousCallsForDate(uid, today.toString())
-                val todaySpontaneousItems = buildTodaySpontaneousItems(todaySpontaneous, persistedSpontaneousIds)
 
                 val date = _state.value.spontaneousDate.ifBlank { LocalDate.now().toString() }
                 val spontaneous = repo.getSpontaneousCallsForDate(uid, date)
@@ -135,26 +120,142 @@ class CallCycleViewModel(
                 _state.value = _state.value.copy(
                     isLoading = false,
                     driverUid = uid,
-                    plannedOptions = plannedOptions,
-                    selectedPlannedOption = selection,
-                    plannedCycle = plannedCycle,
-                    plannedStoresById = plannedStoresById,
                     todayTitle = todayTitle,
-                    todayStores = todayStores,
-                    todaySpontaneous = todaySpontaneous,
-                    todaySpontaneousItems = todaySpontaneousItems,
                     spontaneousDate = date,
                     spontaneous = spontaneous,
-                    checkedTodayStoreIds = persistedStoreIds,
-                    checkedTodaySpontaneousCallIds = persistedSpontaneousIds,
                     error = null,
                 )
+
+                // Start offline-first Today observers (Room).
+                startTodayObservers(uid)
+
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
                     error = e.message ?: "Failed to load call cycle",
                 )
             }
+        }
+    }
+
+    private fun startPlannedOptionsObserver(uid: String, initialPlannedSelection: String?) {
+        viewModelScope.launch {
+            repo.observePlannedOptions(app.applicationContext, uid)
+                .distinctUntilChanged()
+                .collect { options ->
+                    val selection = when {
+                        !initialPlannedSelection.isNullOrBlank() && options.contains(initialPlannedSelection) -> initialPlannedSelection
+                        options.contains(_state.value.selectedPlannedOption) -> _state.value.selectedPlannedOption
+                        else -> CallCyclesRepository.WEEKLY_CYCLE_LABEL
+                    }
+
+                    val plannedCycle = repo.resolvePlannedCycleRoomFirst(app.applicationContext, uid, selection)
+                    val plannedStoresById = loadStoresForPlannedCycle(plannedCycle)
+
+                    _state.value = _state.value.copy(
+                        plannedOptions = options,
+                        selectedPlannedOption = selection,
+                        plannedCycle = plannedCycle,
+                        plannedStoresById = plannedStoresById,
+                    )
+                }
+        }
+    }
+
+    private fun startTodayObservers(uid: String) {
+        val todayKey = LocalDate.now().toString()
+
+        viewModelScope.launch {
+            val todayPlannedFlow = repo.observeTodayPlannedStoreIds(app.applicationContext, uid)
+                .distinctUntilChanged()
+
+            val visitedFlow = repo.observeVisitedIdsForDate(app.applicationContext, uid, todayKey)
+                .distinctUntilChanged()
+
+            val spontFlow = repo.observeSpontaneousCallsForDate(app.applicationContext, uid, todayKey)
+                .distinctUntilChanged()
+
+            combine(todayPlannedFlow, visitedFlow, spontFlow) { plannedStoreIds, visitedIds, spontCalls ->
+                Triple(plannedStoreIds, visitedIds, spontCalls)
+            }.collect { (plannedStoreIds, visitedIds, spontCalls) ->
+                val persistedStoreIds = visitedIds.filter { !it.startsWith("sc_") }.toSet()
+                val persistedSpontaneousIds = visitedIds.filter { it.startsWith("sc_") }.toSet()
+
+                val effectivePlannedIds = if (plannedStoreIds.isNotEmpty()) {
+                    plannedStoreIds
+                } else {
+                    // Fallback to whatever plannedCycle is currently selected (week override/template)
+                    // so Today still renders offline if only planned cache was populated.
+                    val cycle = _state.value.plannedCycle
+                    val todayDow = LocalDate.now().dayOfWeek.value
+                    val sourceDays = when (cycle?.source) {
+                        "WEEK" -> cycle.week?.days
+                        "TEMPLATE" -> cycle.template?.days
+                        else -> null
+                    }.orEmpty()
+                    sourceDays.firstOrNull { it.dayOfWeek == todayDow }?.storeIds.orEmpty()
+                }
+
+                // Build Today planned store rows from storeIds.
+                val todayStores = buildTodayStoresFromIds(effectivePlannedIds, persistedStoreIds)
+                val todaySpontaneousItems = buildTodaySpontaneousItems(spontCalls, persistedSpontaneousIds)
+
+                _state.value = _state.value.copy(
+                    todayStores = todayStores,
+                    checkedTodayStoreIds = persistedStoreIds,
+                    todaySpontaneous = spontCalls,
+                    todaySpontaneousItems = todaySpontaneousItems,
+                    checkedTodaySpontaneousCallIds = persistedSpontaneousIds,
+                )
+            }
+        }
+    }
+
+    // Replaces the old resolvePlannedCycle based today builder.
+    private suspend fun buildTodayStoresFromIds(
+        storeIds: List<String>,
+        checkedIds: Set<String>,
+    ): List<TodayStore> {
+        if (storeIds.isEmpty()) return emptyList()
+
+        // Preload store details concurrently (and cache them), then build the rows.
+        val storesById = coroutineScope {
+            storeIds.distinct().map { id ->
+                async {
+                    val cached = storeCache[id]
+                    if (cached != null) return@async id to cached
+                    val store = runCatching { storesRepo.getStoreById(id, context = app.applicationContext) }.getOrNull()
+                    if (store != null) storeCache[id] = store
+                    id to store
+                }
+            }.awaitAll().toMap()
+        }
+
+        val activeById = coroutineScope {
+            storeIds.distinct().map { id ->
+                async {
+                    id to (runCatching { completedCallsRepo.isCallActiveForStore(id) }.getOrNull() ?: false)
+                }
+            }.awaitAll().toMap()
+        }
+
+        return storeIds.map { id ->
+            val store = storesById[id]
+            TodayStore(
+                storeId = id,
+                storeName = store?.StoreName?.takeIf { it.isNotBlank() } ?: id,
+                storeAddress = store?.StoreAddress?.takeIf { it.isNotBlank() },
+                checked = checkedIds.contains(id),
+                isCallActive = activeById[id] ?: false,
+            )
+        }
+    }
+
+    fun refreshToday() {
+        // Room observers are always live; we just update title for the day.
+        viewModelScope.launch {
+            val today = LocalDate.now()
+            _state.value = _state.value.copy(todayTitle = buildTodayTitle(today))
         }
     }
 
@@ -165,7 +266,7 @@ class CallCycleViewModel(
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, selectedPlannedOption = option, error = null)
             try {
-                val plannedCycle = repo.resolvePlannedCycle(uid, option)
+                val plannedCycle = repo.resolvePlannedCycleRoomFirst(app.applicationContext, uid, option)
                 val plannedStoresById = loadStoresForPlannedCycle(plannedCycle)
                 _state.value = _state.value.copy(
                     isLoading = false,
@@ -226,52 +327,6 @@ class CallCycleViewModel(
         return out
     }
 
-    fun refreshToday() {
-        val uid = _state.value.driverUid ?: return
-        viewModelScope.launch {
-            try {
-                val today = LocalDate.now()
-                val todayTitle = buildTodayTitle(today)
-                val todayCycle = repo.resolvePlannedCycle(uid, currentWeekKey(today))
-
-                // Always re-read from Firebase so persisted state is respected.
-                val todayKey = today.toString()
-                val visitedIds: Set<String> = runCatching { visitedRepo.getVisitedIds(uid, todayKey) }.getOrElse { emptySet() }
-                val persistedStoreIds = visitedIds.filter { !it.startsWith("sc_") }.toSet()
-                val persistedSpontaneousIds = visitedIds.filter { it.startsWith("sc_") }.toSet()
-
-                val todayStores = buildTodayStores(todayCycle, persistedStoreIds)
-                val todaySpontaneous = repo.getSpontaneousCallsForDate(uid, today.toString())
-                val todaySpontaneousItems = buildTodaySpontaneousItems(todaySpontaneous, persistedSpontaneousIds)
-                _state.value = _state.value.copy(
-                    todayTitle = todayTitle,
-                    todayStores = todayStores,
-                    todaySpontaneous = todaySpontaneous,
-                    todaySpontaneousItems = todaySpontaneousItems,
-                    checkedTodayStoreIds = persistedStoreIds,
-                    checkedTodaySpontaneousCallIds = persistedSpontaneousIds,
-                )
-            } catch (_: Exception) {
-                // Silent refresh; errors are shown by primary load paths.
-            }
-        }
-    }
-
-    fun selectSpontaneousDate(dateKey: String) {
-        val uid = _state.value.driverUid ?: return
-        if (dateKey == _state.value.spontaneousDate) return
-
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, spontaneousDate = dateKey, error = null)
-            try {
-                val calls = repo.getSpontaneousCallsForDate(uid, dateKey)
-                _state.value = _state.value.copy(isLoading = false, spontaneous = calls, error = null)
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(isLoading = false, error = e.message ?: "Failed to load spontaneous calls")
-            }
-        }
-    }
-
     fun toggleTodayStoreChecked(storeId: String) {
         val current = _state.value
         val nowChecked = !current.checkedTodayStoreIds.contains(storeId)
@@ -289,7 +344,7 @@ class CallCycleViewModel(
         val uid = current.driverUid ?: return
         val dateKey = LocalDate.now().toString()
         viewModelScope.launch {
-            runCatching { visitedRepo.setVisited(uid, dateKey, storeId, nowChecked) }
+            runCatching { visitedRepo.setVisited(uid, dateKey, storeId, nowChecked, appContext = app.applicationContext) }
         }
     }
 
@@ -313,7 +368,7 @@ class CallCycleViewModel(
         val uid = current.driverUid ?: return
         val dateKey = LocalDate.now().toString()
         viewModelScope.launch {
-            runCatching { visitedRepo.setVisited(uid, dateKey, callId, nowChecked) }
+            runCatching { visitedRepo.setVisited(uid, dateKey, callId, nowChecked, appContext = app.applicationContext) }
         }
     }
 
@@ -342,7 +397,7 @@ class CallCycleViewModel(
         viewModelScope.launch {
             try {
                 val storeName = _state.value.todayStores.firstOrNull { it.storeId == storeId }?.storeName
-                completedCallsRepo.startCall(storeId, storeName, "planned")
+                completedCallsRepo.startCall(storeId, storeName, "planned", appContext = app.applicationContext)
                 _events.emit(UiEvent.ShowSuccess("Call started for $storeName"))
 
                 // Refresh the today list to update the button state
@@ -365,7 +420,7 @@ class CallCycleViewModel(
             try {
                 val activeCall = completedCallsRepo.getActiveCallForStore(storeId)
                 if (activeCall != null) {
-                    completedCallsRepo.endCall(activeCall.callId, activeCall.date)
+                    completedCallsRepo.endCall(activeCall.callId, activeCall.date, appContext = app.applicationContext)
                     _events.emit(UiEvent.ShowSuccess("Call ended for ${activeCall.storeName}"))
 
                     // Refresh the today list to update the button state
@@ -491,11 +546,12 @@ class CallCycleViewModel(
         private val storesRepo: StoresRepository = StoresRepository(),
         private val completedCallsRepo: CompletedCallsRepository = CompletedCallsRepository(),
         private val visitedRepo: VisitedStoresRepository = VisitedStoresRepository(),
+        private val app: Application,
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(CallCycleViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
-                return CallCycleViewModel(repo, storesRepo, completedCallsRepo, visitedRepo) as T
+                return CallCycleViewModel(repo, storesRepo, completedCallsRepo, visitedRepo, app) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

@@ -42,7 +42,8 @@ class CallCycleFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        vm = ViewModelProvider(this, CallCycleViewModel.Factory())[CallCycleViewModel::class.java]
+        val app = requireActivity().application
+        vm = ViewModelProvider(this, CallCycleViewModel.Factory(app = app))[CallCycleViewModel::class.java]
     }
 
     override fun onCreateView(

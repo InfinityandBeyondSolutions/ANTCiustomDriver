@@ -1,8 +1,11 @@
 package com.ibs.ibs_antdrivers.data
 
+import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.ibs.ibs_antdrivers.rtdbqueue.RtdbPath
+import com.ibs.ibs_antdrivers.rtdbqueue.RtdbWriteQueue
 import kotlinx.coroutines.tasks.await
 
 /**
@@ -41,24 +44,49 @@ class VisitedStoresRepository(
     }
 
     /** Marks or unmarks a single [id] as visited for today on Firebase. */
-    suspend fun setVisited(driverUid: String, dateKey: String, id: String, visited: Boolean) {
+    suspend fun setVisited(driverUid: String, dateKey: String, id: String, visited: Boolean, appContext: Context? = null) {
         val ref = db.child("callingCycles")
             .child("visited")
             .child(driverUid)
             .child(dateKey)
             .child(id)
 
-        if (visited) {
-            ref.setValue(
-                mapOf(
-                    "visited" to true,
-                    "updatedAt" to System.currentTimeMillis(),
-                )
-            ).await()
-        } else {
-            // Remove the node entirely when unchecked to keep the DB tidy.
-            ref.removeValue().await()
+        val path = RtdbPath.child("callingCycles", "visited", driverUid, dateKey, id)
+        val dedupeKey = "visited:$driverUid:$dateKey:$id"
+
+        try {
+            if (visited) {
+                ref.setValue(
+                    mapOf(
+                        "visited" to true,
+                        "updatedAt" to System.currentTimeMillis(),
+                    )
+                ).await()
+            } else {
+                ref.removeValue().await()
+            }
+        } catch (t: Throwable) {
+            val ctx = appContext?.applicationContext
+            if (ctx != null) {
+                if (visited) {
+                    RtdbWriteQueue.enqueueSetMap(
+                        context = ctx,
+                        path = path,
+                        value = mapOf("visited" to true, "updatedAt" to System.currentTimeMillis()),
+                        priority = 1,
+                        dedupeKey = dedupeKey
+                    )
+                } else {
+                    RtdbWriteQueue.enqueueDelete(
+                        context = ctx,
+                        path = path,
+                        priority = 1,
+                        dedupeKey = dedupeKey
+                    )
+                }
+            } else {
+                throw t
+            }
         }
     }
 }
-

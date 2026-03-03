@@ -1,10 +1,18 @@
 package com.ibs.ibs_antdrivers.data
 
+import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.ibs.ibs_antdrivers.cache.entities.CcTemplateEntity
+import com.ibs.ibs_antdrivers.cache.entities.CcWeekEntity
+import com.ibs.ibs_antdrivers.offlineupload.AppDatabase
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
+import java.time.LocalDate
 
 /**
  * Reads calling cycle data for the logged-in driver.
@@ -162,6 +170,115 @@ class CallCyclesRepository(
             }
         }
         return out.sortedByDescending { it.createdAt ?: 0L }
+    }
+
+    /**
+     * Today-first offline reader:
+     * returns today's planned store IDs, preferring current-week override if present, else active template.
+     */
+    fun observeTodayPlannedStoreIds(context: Context, driverUid: String): Flow<List<String>> {
+        val dao = AppDatabase.get(context).callCyclesDao()
+        val todayKey = LocalDate.now().toString()
+        return dao.observeTodayPlannedStoreIds(driverUid, todayKey)
+    }
+
+    fun observeVisitedIdsForDate(context: Context, driverUid: String, dateKey: String): Flow<Set<String>> {
+        val dao = AppDatabase.get(context).callCyclesDao()
+        return dao.observeVisitedIds(driverUid, dateKey).map { it.toSet() }
+    }
+
+    fun observeSpontaneousCallsForDate(context: Context, driverUid: String, dateKey: String): Flow<List<SpontaneousCall>> {
+        val dao = AppDatabase.get(context).callCyclesDao()
+        return dao.observeSpontaneousCalls(driverUid, dateKey)
+            .map { list ->
+                list.map {
+                    SpontaneousCall(
+                        callId = it.callId,
+                        storeId = it.storeId,
+                        createdAt = it.createdAt,
+                        dayOfWeek = it.dayOfWeek,
+                        type = it.type,
+                    )
+                }
+            }
+    }
+
+    /** Planned options for dropdown, from Room. Works offline. */
+    fun observePlannedOptions(context: Context, driverUid: String): Flow<List<String>> {
+        val dao = AppDatabase.get(context).callCyclesDao()
+        return dao.observeWeekKeys(driverUid)
+            .map { list -> listOf(WEEKLY_CYCLE_LABEL) + list }
+    }
+
+    /**
+     * Room-first planned cycle resolver.
+     * - If selection == Weekly Cycle => uses active template from Room
+     * - Else treats selection as weekKey and uses week override from Room
+     * - If missing, falls back to active template
+     */
+    suspend fun resolvePlannedCycleRoomFirst(context: Context, driverUid: String, selection: String?): DisplayCycle? {
+        val dao = AppDatabase.get(context).callCyclesDao()
+
+        if (selection.isNullOrBlank() || selection == WEEKLY_CYCLE_LABEL) {
+            val tmpl: CcTemplateEntity = dao.observeActiveTemplate(driverUid).first() ?: return null
+            val days = buildDaysFromTemplateDayStores(context, driverUid, tmpl.templateId)
+            val t = Template(
+                templateId = tmpl.templateId,
+                templateName = tmpl.templateName,
+                isActive = tmpl.isActive,
+                createdAt = tmpl.createdAt,
+                days = days,
+            )
+            return DisplayCycle(
+                title = t.templateName?.ifBlank { WEEKLY_CYCLE_LABEL } ?: WEEKLY_CYCLE_LABEL,
+                source = "TEMPLATE",
+                template = t,
+            )
+        }
+
+        val weekKey = selection
+        val week: CcWeekEntity? = dao.observeWeek(driverUid, weekKey).first()
+        if (week != null) {
+            val days = buildDaysFromWeekDayStores(context, driverUid, weekKey)
+            val w = Week(
+                weekKey = week.weekKey,
+                weekStart = week.weekStart,
+                weekEnd = week.weekEnd,
+                createdAt = week.createdAt,
+                days = days,
+            )
+            return DisplayCycle(title = weekKey, source = "WEEK", week = w)
+        }
+
+        // fall back to template
+        return resolvePlannedCycleRoomFirst(context, driverUid, WEEKLY_CYCLE_LABEL)
+    }
+
+    private suspend fun buildDaysFromWeekDayStores(context: Context, driverUid: String, weekKey: String): List<WeekDay> {
+        val dao = AppDatabase.get(context).callCyclesDao()
+        val out = ArrayList<WeekDay>(7)
+        for (dow in 1..7) {
+            val ids = dao.observeWeekStoreIdsForDay(driverUid, weekKey, dow).first()
+            if (ids.isNotEmpty()) out += WeekDay(dayOfWeek = dow, storeIds = ids)
+        }
+        return out
+    }
+
+    private suspend fun buildDaysFromTemplateDayStores(context: Context, driverUid: String, templateId: String): List<WeekDay> {
+        val dao = AppDatabase.get(context).callCyclesDao()
+        val out = ArrayList<WeekDay>(7)
+        for (dow in 1..7) {
+            val ids = dao.observeTemplateStoreIdsForDay(driverUid, templateId, dow).first()
+            if (ids.isNotEmpty()) out += WeekDay(dayOfWeek = dow, storeIds = ids)
+        }
+        return out
+    }
+
+    private fun currentWeekKey(date: LocalDate): String {
+        val wf = java.time.temporal.WeekFields.ISO
+        val week = date.get(wf.weekOfWeekBasedYear())
+        val year = date.get(wf.weekBasedYear())
+        return String.format(java.util.Locale.US, "%d-W%02d", year, week)
     }
 
     private fun DataSnapshot.toWeek(): Week {

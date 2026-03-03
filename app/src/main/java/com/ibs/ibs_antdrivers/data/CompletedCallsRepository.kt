@@ -1,9 +1,12 @@
 package com.ibs.ibs_antdrivers.data
 
+import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.ibs.ibs_antdrivers.rtdbqueue.RtdbPath
+import com.ibs.ibs_antdrivers.rtdbqueue.RtdbWriteQueue
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 
@@ -53,7 +56,8 @@ class CompletedCallsRepository(
     suspend fun startCall(
         storeId: String,
         storeName: String?,
-        callType: String = "planned"
+        callType: String = "planned",
+        appContext: Context? = null
     ): String {
         val uid = uid() ?: throw IllegalStateException("Not signed in")
         val now = System.currentTimeMillis()
@@ -75,12 +79,29 @@ class CompletedCallsRepository(
             "driverUid" to uid,
         )
 
-        db.child("completedCalls")
-            .child(uid)
-            .child(dateKey)
-            .child(callId)
-            .setValue(callData)
-            .await()
+        val path = RtdbPath.child("completedCalls", uid, dateKey, callId)
+
+        try {
+            db.child("completedCalls")
+                .child(uid)
+                .child(dateKey)
+                .child(callId)
+                .setValue(callData)
+                .await()
+        } catch (t: Throwable) {
+            val ctx = appContext?.applicationContext
+            if (ctx != null) {
+                RtdbWriteQueue.enqueueSetMap(
+                    context = ctx,
+                    path = path,
+                    value = callData,
+                    priority = 1,
+                    dedupeKey = "callStart:$uid:$dateKey:$callId"
+                )
+            } else {
+                throw t
+            }
+        }
 
         return callId
     }
@@ -88,17 +109,34 @@ class CompletedCallsRepository(
     /**
      * End a call by setting the endTime.
      */
-    suspend fun endCall(callId: String, dateKey: String) {
+    suspend fun endCall(callId: String, dateKey: String, appContext: Context? = null) {
         val uid = uid() ?: throw IllegalStateException("Not signed in")
         val now = System.currentTimeMillis()
 
-        db.child("completedCalls")
-            .child(uid)
-            .child(dateKey)
-            .child(callId)
-            .child("endTime")
-            .setValue(now)
-            .await()
+        val path = RtdbPath.child("completedCalls", uid, dateKey, callId)
+
+        try {
+            db.child("completedCalls")
+                .child(uid)
+                .child(dateKey)
+                .child(callId)
+                .child("endTime")
+                .setValue(now)
+                .await()
+        } catch (t: Throwable) {
+            val ctx = appContext?.applicationContext
+            if (ctx != null) {
+                RtdbWriteQueue.enqueueUpdateMap(
+                    context = ctx,
+                    path = path,
+                    updates = mapOf("endTime" to now),
+                    priority = 1,
+                    dedupeKey = "callEnd:$uid:$dateKey:$callId"
+                )
+            } else {
+                throw t
+            }
+        }
     }
 
     /**
@@ -173,5 +211,4 @@ class CompletedCallsRepository(
         )
     }
 }
-
 

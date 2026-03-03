@@ -7,9 +7,12 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.google.firebase.auth.FirebaseAuth
 import com.ibs.ibs_antdrivers.offlineupload.UploadWorkScheduler
+import com.ibs.ibs_antdrivers.rtdbqueue.RtdbQueueWorkScheduler
+import com.ibs.ibs_antdrivers.sync.CacheRefreshScheduler
+import com.ibs.ibs_antdrivers.sync.OfflinePrefetchScheduler
 
 /**
- * Listens for connectivity changes and re-enqueues any pending image uploads
+ * Listens for connectivity changes and re-enqueues any pending work
  * the moment the device comes back online — even when the app is not running.
  */
 class NetworkChangeReceiver : BroadcastReceiver() {
@@ -22,6 +25,9 @@ class NetworkChangeReceiver : BroadcastReceiver() {
         if (!isConnected(context)) return
 
         UploadWorkScheduler.enqueue(context)
+        RtdbQueueWorkScheduler.enqueue(context)
+        OfflinePrefetchScheduler.enqueue(context)
+        CacheRefreshScheduler.refreshAll(context)
     }
 
     private fun isConnected(context: Context): Boolean {
@@ -31,4 +37,3 @@ class NetworkChangeReceiver : BroadcastReceiver() {
         return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 }
-
