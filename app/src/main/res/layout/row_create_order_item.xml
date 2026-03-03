@@ -3,178 +3,231 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/itemCard"
-    android:layout_width="wrap_content"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginVertical="2dp"
-    android:layout_marginHorizontal="0dp"
+    android:layout_marginBottom="8dp"
     android:clickable="true"
     android:focusable="true"
-    app:cardCornerRadius="4dp"
-    app:cardElevation="0dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
     app:cardBackgroundColor="@color/white"
-    app:strokeWidth="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="#E8ECF0"
     app:rippleColor="@color/weblightgold">
 
-<LinearLayout
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
-    android:paddingVertical="12dp"
-    android:paddingHorizontal="8dp"
-    android:background="@color/white">
-
-    <!-- Product Code -->
-    <TextView
-        android:id="@+id/colItemNo"
-        android:layout_width="100dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@color/webnavy"
-        android:textStyle="bold"
-        android:textSize="13sp"
-        android:paddingEnd="8dp" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp">
 
-    <!-- Product Name -->
-    <TextView
-        android:id="@+id/colDescription"
-        android:layout_width="180dp"
-        android:layout_height="wrap_content"
-        android:textColor="@color/webnavy"
-        android:textSize="13sp"
-        android:maxLines="2"
-        android:ellipsize="end"
-        android:paddingEnd="8dp" />
-
-    <!-- Brand -->
-    <TextView
-        android:id="@+id/colBrand"
-        android:layout_width="100dp"
-        android:layout_height="wrap_content"
-        android:textColor="#667788"
-        android:textSize="12sp"
-        android:paddingEnd="8dp" />
-
-    <!-- Size -->
-    <TextView
-        android:id="@+id/colSize"
-        android:layout_width="80dp"
-        android:layout_height="wrap_content"
-        android:textColor="#667788"
-        android:textSize="12sp"
-        android:paddingEnd="8dp" />
-
-    <!-- Unit Price -->
-    <TextView
-        android:id="@+id/colUnitPrice"
-        android:layout_width="90dp"
-        android:layout_height="wrap_content"
-        android:gravity="end"
-        android:textColor="@color/webnavy"
-        android:textSize="12sp"
-        android:paddingEnd="8dp" />
-
-    <!-- Case Price -->
-    <TextView
-        android:id="@+id/colCasePrice"
-        android:layout_width="90dp"
-        android:layout_height="wrap_content"
-        android:gravity="end"
-        android:textColor="@color/webnavy"
-        android:textStyle="bold"
-        android:textSize="13sp"
-        android:paddingEnd="8dp" />
-
-    <!-- Improved Quantity Control -->
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="140dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="4dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="2dp"
-        app:cardBackgroundColor="@color/background">
-
+        <!-- LEFT: Product details -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:padding="4dp">
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingEnd="8dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnDecrease"
-                style="@style/Widget.Material3.Button.IconButton"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:backgroundTint="@color/webgold"
-                android:contentDescription="Decrease quantity"
-                android:insetLeft="0dp"
-                android:insetTop="0dp"
-                android:insetRight="0dp"
-                android:insetBottom="0dp"
-                app:icon="@drawable/ic_remove"
-                app:iconGravity="textStart"
-                app:iconPadding="0dp"
-                app:iconSize="20dp"
-                app:iconTint="@color/webnavy"
-                app:cornerRadius="18dp" />
-
-            <TextView
-                android:id="@+id/tvQuantity"
-                android:layout_width="0dp"
+            <!-- Product Code + Brand row -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/colItemNo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/webgold"
+                    android:textStyle="bold"
+                    android:textSize="11sp"
+                    android:background="@drawable/bg_quick_action_card_navy"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp" />
+
+                <TextView
+                    android:id="@+id/colBrand"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:textColor="#667788"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/colSize"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:textColor="#667788"
+                    android:textSize="11sp" />
+
+            </LinearLayout>
+
+            <!-- Product Name -->
+            <TextView
+                android:id="@+id/colDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/webnavy"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:maxLines="2"
+                android:ellipsize="end" />
+
+            <!-- Unit Price / Case Price row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="6dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Unit"
+                        android:textColor="#9BA8B5"
+                        android:textSize="10sp"
+                        android:textAllCaps="true" />
+
+                    <TextView
+                        android:id="@+id/colUnitPrice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/webnavy"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Case"
+                        android:textColor="#9BA8B5"
+                        android:textSize="10sp"
+                        android:textAllCaps="true" />
+
+                    <TextView
+                        android:id="@+id/colCasePrice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/webnavy"
+                        android:textStyle="bold"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- RIGHT: Quantity + Line Total -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+            <!-- Quantity controls -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_quantity_pill"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDecrease"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:backgroundTint="@color/webgold"
+                    android:contentDescription="Decrease quantity"
+                    android:insetLeft="0dp"
+                    android:insetTop="0dp"
+                    android:insetRight="0dp"
+                    android:insetBottom="0dp"
+                    app:icon="@drawable/ic_remove"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconSize="20dp"
+                    app:iconTint="@color/webnavy"
+                    app:cornerRadius="18dp" />
+
+                <TextView
+                    android:id="@+id/tvQuantity"
+                    android:layout_width="36dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="0"
+                    android:textColor="@color/webnavy"
+                    android:textStyle="bold"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnIncrease"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:backgroundTint="@color/webgold"
+                    android:contentDescription="Increase quantity"
+                    android:insetLeft="0dp"
+                    android:insetTop="0dp"
+                    android:insetRight="0dp"
+                    android:insetBottom="0dp"
+                    app:icon="@android:drawable/ic_input_add"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconSize="20dp"
+                    app:iconTint="@color/webnavy"
+                    app:cornerRadius="18dp" />
+
+            </LinearLayout>
+
+            <!-- Line Total -->
+            <TextView
+                android:id="@+id/colLineTotal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
                 android:gravity="center"
-                android:text="0"
+                android:text="-"
                 android:textColor="@color/webnavy"
                 android:textStyle="bold"
-                android:textSize="16sp"
-                android:minWidth="40dp" />
+                android:textSize="13sp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnIncrease"
-                style="@style/Widget.Material3.Button.IconButton"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:backgroundTint="@color/webgold"
-                android:contentDescription="Increase quantity"
-                android:insetLeft="0dp"
-                android:insetTop="0dp"
-                android:insetRight="0dp"
-                android:insetBottom="0dp"
-                app:icon="@android:drawable/ic_input_add"
-                app:iconGravity="textStart"
-                app:iconPadding="0dp"
-                app:iconSize="20dp"
-                app:iconTint="@color/webnavy"
-                app:cornerRadius="18dp" />
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
 
-    <!-- Line Total -->
-    <TextView
-        android:id="@+id/colLineTotal"
-        android:layout_width="110dp"
-        android:layout_height="wrap_content"
-        android:gravity="end"
-        android:text="-"
-        android:textColor="@color/webnavy"
-        android:textStyle="bold"
-        android:textSize="14sp"
-        android:paddingStart="8dp" />
+        <!-- Hidden fields for data retention -->
+        <TextView
+            android:id="@+id/colUnitBarcode"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
 
-    <!-- Hidden fields (for data retention) -->
-    <TextView
-        android:id="@+id/colUnitBarcode"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:visibility="gone" />
+        <TextView
+            android:id="@+id/colOuterBarcode"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
 
-    <TextView
-        android:id="@+id/colOuterBarcode"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:visibility="gone" />
-
-</LinearLayout>
+    </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
-

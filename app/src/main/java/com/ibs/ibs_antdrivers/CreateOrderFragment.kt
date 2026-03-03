@@ -48,6 +48,12 @@ class CreateOrderFragment : Fragment() {
     private lateinit var tvCustomerAccount: TextView
     private lateinit var tvPriceListName: TextView
 
+    // Selected-state chip cards
+    private lateinit var cardStoreSelected: MaterialCardView
+    private lateinit var tvStoreSelectedLabel: TextView
+    private lateinit var cardPriceListSelected: MaterialCardView
+    private lateinit var tvPriceListSelectedLabel: TextView
+
     // Order Details UI
     private lateinit var tilOrderNumber: TextInputLayout
     private lateinit var etOrderNumber: TextInputEditText
@@ -127,6 +133,12 @@ class CreateOrderFragment : Fragment() {
         actvStore = view.findViewById(R.id.actvStore)
         actvPriceList = view.findViewById(R.id.actvPriceList)
 
+        // Selected-state chips
+        cardStoreSelected = view.findViewById(R.id.cardStoreSelected)
+        tvStoreSelectedLabel = view.findViewById(R.id.tvStoreSelectedLabel)
+        cardPriceListSelected = view.findViewById(R.id.cardPriceListSelected)
+        tvPriceListSelectedLabel = view.findViewById(R.id.tvPriceListSelectedLabel)
+
         // Selection Header Card
         headerCard = view.findViewById(R.id.selectionHeaderCard)
         tvCustomerName = view.findViewById(R.id.tvCustomerName)
@@ -151,8 +163,10 @@ class CreateOrderFragment : Fragment() {
         btnSubmitOrder = view.findViewById(R.id.btnSubmitOrder)
         submitProgress = view.findViewById(R.id.submitProgress)
 
-        // Initially hide the selection header card
+        // Initially hide the selection header card and chip cards
         headerCard.visibility = View.GONE
+        cardStoreSelected.visibility = View.GONE
+        cardPriceListSelected.visibility = View.GONE
 
         // Make the dropdowns filter immediately
         actvStore.threshold = 0
@@ -172,25 +186,62 @@ class CreateOrderFragment : Fragment() {
             if (selectedPriceList == null) actvPriceList.showDropDown()
         }
 
-        // Clear icon resets store selection
+        // Tapping the store chip → re-open the search dropdown
+        cardStoreSelected.setOnClickListener {
+            selectedStore = null
+            actvStore.setText("")
+            actvStore.threshold = 0
+            cardStoreSelected.visibility = View.GONE
+            tilStore.visibility = View.VISIBLE
+            updateSelectionHeader()
+            actvStore.isFocusableInTouchMode = true
+            actvStore.isFocusable = true
+            actvStore.requestFocus()
+            actvStore.post { actvStore.showDropDown() }
+        }
+
+        // Tapping the price list chip → re-open the search dropdown
+        cardPriceListSelected.setOnClickListener {
+            selectedPriceList = null
+            actvPriceList.setText("")
+            actvPriceList.threshold = 0
+            cardPriceListSelected.visibility = View.GONE
+            tilPriceList.visibility = View.VISIBLE
+            // Clear items
+            tilItemSearch.visibility = View.GONE
+            etItemSearch.setText("")
+            orderItemsAdapter.submitList(emptyList())
+            updateGrandTotal()
+            updateSelectionHeader()
+            actvPriceList.isFocusableInTouchMode = true
+            actvPriceList.isFocusable = true
+            actvPriceList.requestFocus()
+            actvPriceList.post { actvPriceList.showDropDown() }
+        }
+
+        // Clear icon resets store selection (fallback)
         tilStore.setEndIconOnClickListener {
             selectedStore = null
             actvStore.setText("")
-            actvStore.isEnabled = true
+            actvStore.threshold = 0
             actvStore.isFocusableInTouchMode = true
-            tilStore.hint = "Search Store"
+            actvStore.isFocusable = true
+            cardStoreSelected.visibility = View.GONE
+            tilStore.visibility = View.VISIBLE
             updateSelectionHeader()
             actvStore.requestFocus()
-            actvStore.showDropDown()
+            actvStore.post { actvStore.showDropDown() }
         }
 
-        // Clear icon resets price list selection
+        // Clear icon resets price list selection (fallback)
         tilPriceList.setEndIconOnClickListener {
             selectedPriceList = null
             actvPriceList.setText("")
-            actvPriceList.isEnabled = true
+            actvPriceList.threshold = 0
             actvPriceList.isFocusableInTouchMode = true
-            tilPriceList.hint = "Search Price List"
+            actvPriceList.isFocusable = true
+            cardPriceListSelected.visibility = View.GONE
+            tilPriceList.visibility = View.VISIBLE
             // Hide and clear the item search bar
             tilItemSearch.visibility = View.GONE
             etItemSearch.setText("")
@@ -198,7 +249,7 @@ class CreateOrderFragment : Fragment() {
             updateGrandTotal()
             updateSelectionHeader()
             actvPriceList.requestFocus()
-            actvPriceList.showDropDown()
+            actvPriceList.post { actvPriceList.showDropDown() }
         }
     }
 
@@ -216,19 +267,21 @@ class CreateOrderFragment : Fragment() {
             val selectedText = storeAdapter?.getItem(position)
             selectedStore = storeList.firstOrNull { displayStore(it) == selectedText }
             if (selectedStore != null) {
-                // Lock the field — show only the selected value, no more dropdown
                 actvStore.dismissDropDown()
                 actvStore.clearFocus()
-                actvStore.isFocusable = false
-                actvStore.isFocusableInTouchMode = false
-                tilStore.hint = "Store"
+                // Prevent the auto-complete from re-opening the dropdown
+                actvStore.threshold = Int.MAX_VALUE
+                // Swap: hide dropdown, show chip
+                tilStore.visibility = View.GONE
+                tvStoreSelectedLabel.text = displayStore(selectedStore!!)
+                cardStoreSelected.visibility = View.VISIBLE
             }
             updateSelectionHeader()
         }
 
         // If user types something that doesn't match, clear selection
         actvStore.doAfterTextChanged {
-            // Don't interfere while the field is locked (store already selected)
+            // Don't interfere while a store is already selected
             if (selectedStore != null) return@doAfterTextChanged
 
             val t = it?.toString()?.trim().orEmpty()
@@ -237,9 +290,6 @@ class CreateOrderFragment : Fragment() {
                 updateSelectionHeader()
                 return@doAfterTextChanged
             }
-
-            // Keep dropdown open while typing to emphasize search
-            actvStore.post { actvStore.showDropDown() }
 
             // if text isn't exactly one of the list items, don't keep a stale selectedStore
             val exact = storeDisplayListAll.any { d -> d.equals(t, ignoreCase = true) }
@@ -254,12 +304,14 @@ class CreateOrderFragment : Fragment() {
             val selectedText = priceListAdapter?.getItem(position)
             selectedPriceList = priceListList.firstOrNull { displayPriceList(it) == selectedText }
             if (selectedPriceList != null) {
-                // Lock the field — show only the selected value, no more dropdown
                 actvPriceList.dismissDropDown()
                 actvPriceList.clearFocus()
-                actvPriceList.isFocusable = false
-                actvPriceList.isFocusableInTouchMode = false
-                tilPriceList.hint = "Price List"
+                // Prevent the auto-complete from re-opening the dropdown
+                actvPriceList.threshold = Int.MAX_VALUE
+                // Swap: hide dropdown, show chip
+                tilPriceList.visibility = View.GONE
+                tvPriceListSelectedLabel.text = displayPriceList(selectedPriceList!!)
+                cardPriceListSelected.visibility = View.VISIBLE
                 loadPriceListItems()
             } else {
                 orderItemsAdapter.submitList(emptyList())
@@ -282,8 +334,6 @@ class CreateOrderFragment : Fragment() {
                 updateSelectionHeader()
                 return@doAfterTextChanged
             }
-
-            actvPriceList.post { actvPriceList.showDropDown() }
 
             val exact = priceListDisplayList.any { d -> d.equals(t, ignoreCase = true) }
             if (!exact) {
@@ -660,18 +710,16 @@ class CreateOrderFragment : Fragment() {
     private fun autoSelectStore(storeId: String) {
         val store = storeList.firstOrNull { it.StoreID.equals(storeId, ignoreCase = true) }
         if (store != null) {
-            val displayText = displayStore(store)
-            actvStore.setText(displayText, false)
             selectedStore = store
+            actvStore.threshold = Int.MAX_VALUE
 
-            // Lock the field after auto-selection
-            actvStore.isFocusable = false
-            actvStore.isFocusableInTouchMode = false
-            tilStore.hint = "Store"
+            // Swap: hide dropdown, show chip
+            tilStore.visibility = View.GONE
+            tvStoreSelectedLabel.text = displayStore(store)
+            cardStoreSelected.visibility = View.VISIBLE
 
             updateSelectionHeader()
 
-            // Show a toast to confirm the store was selected
             Toast.makeText(requireContext(), "Store ${store.StoreName} selected", Toast.LENGTH_SHORT).show()
 
             // Focus on price list field next

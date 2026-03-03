@@ -95,6 +95,7 @@
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
+                <!-- Store search field (shown until a store is selected) -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilStore"
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
@@ -117,6 +118,66 @@
                         android:textSize="14sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Store selected chip (shown after a store is selected) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardStoreSelected"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:strokeColor="@color/weblightgold"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Store"
+                                android:textColor="#6B7280"
+                                android:textSize="11sp"
+                                android:textAllCaps="true" />
+
+                            <TextView
+                                android:id="@+id/tvStoreSelectedLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textColor="@color/webnavy"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                tools:text="Store Name (ID)" />
+                        </LinearLayout>
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:padding="6dp"
+                            android:src="@drawable/ic_edit"
+                            android:contentDescription="Change store"
+                            app:tint="@color/webnavy"
+                            android:background="?attr/selectableItemBackgroundBorderless" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Price list search field (shown until a price list is selected) -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilPriceList"
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
@@ -138,6 +199,66 @@
                         android:completionThreshold="0"
                         android:textSize="14sp" />
                 </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Price list selected chip (shown after a price list is selected) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardPriceListSelected"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:strokeColor="@color/weblightgold"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Price List"
+                                android:textColor="#6B7280"
+                                android:textSize="11sp"
+                                android:textAllCaps="true" />
+
+                            <TextView
+                                android:id="@+id/tvPriceListSelectedLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textColor="@color/webnavy"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                tools:text="Wholesale Pricelist" />
+                        </LinearLayout>
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:padding="6dp"
+                            android:src="@drawable/ic_edit"
+                            android:contentDescription="Change price list"
+                            app:tint="@color/webnavy"
+                            android:background="?attr/selectableItemBackgroundBorderless" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
             </LinearLayout>
 
             <!-- Selection Header Card (shown after store + pricelist selected) -->
@@ -339,113 +460,15 @@
                 android:textColor="#667788"
                 android:textSize="14sp" />
 
-            <HorizontalScrollView
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/orderItemsRecycler"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
                 android:layout_marginTop="12dp"
                 android:layout_marginEnd="16dp"
-                android:fillViewport="true"
-                android:scrollbars="horizontal">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <!-- Table Header -->
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_quick_action_card_navy"
-                        android:orientation="horizontal"
-                        android:paddingVertical="14dp"
-                        android:paddingHorizontal="12dp">
-
-                        <TextView
-                            android:layout_width="100dp"
-                            android:layout_height="wrap_content"
-                            android:text="Product Code"
-                            android:textColor="@color/webgold"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:paddingEnd="8dp" />
-
-                        <TextView
-                            android:layout_width="180dp"
-                            android:layout_height="wrap_content"
-                            android:text="Product Name"
-                            android:textColor="@color/webgold"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:paddingEnd="8dp" />
-
-                        <TextView
-                            android:layout_width="100dp"
-                            android:layout_height="wrap_content"
-                            android:text="Brand"
-                            android:textColor="@color/webgold"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:paddingEnd="8dp" />
-
-                        <TextView
-                            android:layout_width="80dp"
-                            android:layout_height="wrap_content"
-                            android:text="Size"
-                            android:textColor="@color/webgold"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:paddingEnd="8dp" />
-
-                        <TextView
-                            android:layout_width="90dp"
-                            android:layout_height="wrap_content"
-                            android:text="Unit Price"
-                            android:textColor="@color/webgold"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:gravity="end"
-                            android:paddingEnd="8dp" />
-
-                        <TextView
-                            android:layout_width="90dp"
-                            android:layout_height="wrap_content"
-                            android:text="Case Price"
-                            android:textColor="@color/webgold"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:gravity="end"
-                            android:paddingEnd="8dp" />
-
-                        <TextView
-                            android:layout_width="140dp"
-                            android:layout_height="wrap_content"
-                            android:text="Quantity"
-                            android:textColor="@color/webgold"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:gravity="center"
-                            android:paddingHorizontal="4dp" />
-
-                        <TextView
-                            android:layout_width="110dp"
-                            android:layout_height="wrap_content"
-                            android:text="Line Total"
-                            android:textColor="@color/webgold"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:gravity="end"
-                            android:paddingStart="8dp" />
-                    </LinearLayout>
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/orderItemsRecycler"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:nestedScrollingEnabled="false" />
-                </LinearLayout>
-            </HorizontalScrollView>
+                android:nestedScrollingEnabled="false"
+                android:clipToPadding="false" />
 
             <!-- Grand Total Section -->
             <com.google.android.material.card.MaterialCardView
