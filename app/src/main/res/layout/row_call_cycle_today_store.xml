@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
-    android:layout_marginVertical="8dp"
+    android:layout_marginVertical="6dp"
     app:cardCornerRadius="20dp"
     app:cardElevation="4dp"
     app:strokeWidth="1.5dp"
@@ -14,108 +14,61 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="16dp">
+        android:orientation="vertical"
+        android:padding="12dp">
 
-        <!-- Checkbox matching button size -->
-        <CheckBox
-            android:id="@+id/check"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            android:button="@null"
-            android:background="@drawable/custom_checkbox_selector"
-            android:gravity="center"
-            android:clickable="true"
-            android:focusable="true" />
-
+        <!-- Row 1: Checkbox + Store Info -->
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Store"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:textColor="@color/webnavy" />
-
-            <TextView
-                android:id="@+id/subtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Address"
-                android:textSize="14sp"
-                android:textColor="#6B7280"
-                android:maxLines="2"
-                android:ellipsize="end" />
-
-        </LinearLayout>
-
-        <!-- Action Buttons Container -->
-        <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginStart="8dp">
+            android:gravity="center_vertical">
 
-            <!-- Start/End Call Button -->
+            <CheckBox
+                android:id="@+id/check"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:button="@null"
+                android:background="@drawable/custom_checkbox_selector"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Store"
+                    android:textStyle="bold"
+                    android:textSize="15sp"
+                    android:textColor="@color/webnavy" />
+
+                <TextView
+                    android:id="@+id/subtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Address"
+                    android:textSize="12sp"
+                    android:textColor="#6B7280"
+                    android:maxLines="2"
+                    android:ellipsize="end" />
+
+            </LinearLayout>
+
+            <!-- Eye / View Details (compact, stays in top-right) -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/callButton"
-                android:layout_width="42dp"
-                android:layout_height="42dp"
-                android:layout_marginEnd="8dp"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="#0A1F44"
-                app:strokeColor="#30D4AF37"
-                app:strokeWidth="1dp">
-
-                <ImageView
-                    android:id="@+id/callIcon"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:padding="10dp"
-                    android:contentDescription="Start or end call"
-                    android:src="@android:drawable/ic_menu_call"
-                    app:tint="@color/webgold" />
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Make Order Button -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/orderButton"
-                android:layout_width="42dp"
-                android:layout_height="42dp"
-                android:layout_marginEnd="8dp"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="#0A1F44"
-                app:strokeColor="#30D4AF37"
-                app:strokeWidth="1dp">
-
-                <ImageView
-                    android:id="@+id/orderIcon"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:padding="10dp"
-                    android:contentDescription="Make order"
-                    android:src="@android:drawable/ic_menu_add"
-                    app:tint="@color/webgold" />
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- View Details Button -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="42dp"
-                android:layout_height="42dp"
-                app:cardCornerRadius="14dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                app:cardCornerRadius="10dp"
                 app:cardElevation="2dp"
                 app:cardBackgroundColor="#0A1F44"
                 app:strokeColor="#30D4AF37"
@@ -125,7 +78,7 @@
                     android:id="@+id/eye"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:padding="10dp"
+                    android:padding="6dp"
                     android:contentDescription="View store details"
                     android:src="@android:drawable/ic_menu_view"
                     app:tint="@color/webgold" />
@@ -134,7 +87,61 @@
 
         </LinearLayout>
 
+        <!-- Row 2: Action Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical">
+
+            <!-- Start Visit Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/callButton"
+                android:layout_width="0dp"
+                android:layout_height="34dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:text="Start Visit"
+                android:textSize="11sp"
+                android:textAllCaps="false"
+                android:textColor="@color/webgold"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:icon="@android:drawable/ic_menu_directions"
+                app:iconTint="@color/webgold"
+                app:iconSize="14dp"
+                app:iconPadding="4dp"
+                app:backgroundTint="#0A1F44"
+                app:strokeColor="#30D4AF37"
+                app:strokeWidth="1dp"
+                app:cornerRadius="12dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+            <!-- Create Order Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/orderButton"
+                android:layout_width="0dp"
+                android:layout_height="34dp"
+                android:layout_weight="1"
+                android:text="Create Order"
+                android:textSize="11sp"
+                android:textAllCaps="false"
+                android:textColor="@color/webgold"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:icon="@android:drawable/ic_menu_add"
+                app:iconTint="@color/webgold"
+                app:iconSize="14dp"
+                app:iconPadding="4dp"
+                app:backgroundTint="#0A1F44"
+                app:strokeColor="#30D4AF37"
+                app:strokeWidth="1dp"
+                app:cornerRadius="12dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>
-

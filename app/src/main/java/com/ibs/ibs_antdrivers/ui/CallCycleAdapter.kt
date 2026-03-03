@@ -7,6 +7,7 @@ import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.button.MaterialButton
 import com.ibs.ibs_antdrivers.R
 
 sealed class CallCycleRowItem {
@@ -127,9 +128,8 @@ class CallCycleAdapter(
         private val title: TextView = v.findViewById(R.id.title)
         private val subtitle: TextView = v.findViewById(R.id.subtitle)
         private val eye: ImageView = v.findViewById(R.id.eye)
-        private val callButton: View = v.findViewById(R.id.callButton)
-        private val callIcon: ImageView = v.findViewById(R.id.callIcon)
-        private val orderButton: View = v.findViewById(R.id.orderButton)
+        private val callButton: MaterialButton = v.findViewById(R.id.callButton)
+        private val orderButton: MaterialButton = v.findViewById(R.id.orderButton)
 
         fun bind(item: CallCycleRowItem.TodayStore) {
             title.text = item.title
@@ -148,14 +148,14 @@ class CallCycleAdapter(
                 onChecked?.invoke(item.storeId, isChecked)
             }
 
-            // Update call button based on active state
+            // Update call button label/icon based on active state
             if (item.isCallActive) {
-                // Show End Call icon (stop/check icon)
-                callIcon.setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+                callButton.text = "End Visit"
+                callButton.setIconResource(android.R.drawable.ic_menu_close_clear_cancel)
                 callButton.setOnClickListener { onEndCall?.invoke(item.storeId) }
             } else {
-                // Show Start Call icon
-                callIcon.setImageResource(android.R.drawable.ic_menu_call)
+                callButton.text = "Start Visit"
+                callButton.setIconResource(android.R.drawable.ic_menu_directions)
                 callButton.setOnClickListener { onStartCall?.invoke(item.storeId) }
             }
 
