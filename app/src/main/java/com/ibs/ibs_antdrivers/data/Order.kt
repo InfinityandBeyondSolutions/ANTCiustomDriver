@@ -48,6 +48,9 @@ data class Order(
     val completedByFirstName: String = "",
     val completedByLastName: String = "",
 
+    /** ISO-8601 string from Firebase completedOrders.completedAt */
+    val completedAt: String = "",
+
     val priority: String = "normal",
     val status: String = "pending",
 

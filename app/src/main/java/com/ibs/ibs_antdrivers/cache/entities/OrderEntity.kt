@@ -27,6 +27,10 @@ data class OrderEntity(
     val completedByUserName: String,
     val completedByFirstName: String,
     val completedByLastName: String,
+
+    /** ISO-8601 string from Firebase completedOrders.completedAt */
+    val completedAt: String,
+
     val priority: String,
     val status: String,
     val totalAmount: Double,

@@ -163,6 +163,7 @@ class OrdersRepository(
             completedByUserName = completedByUserName,
             completedByFirstName = completedByFirstName,
             completedByLastName = completedByLastName,
+            completedAt = completedAt,
             priority = priority,
             status = status,
             totalAmount = totalAmount,
@@ -218,6 +219,8 @@ class OrdersRepository(
             "completedByUserName" to order.completedByUserName,
             "completedByFirstName" to order.completedByFirstName,
             "completedByLastName" to order.completedByLastName,
+
+            "completedAt" to order.completedAt,
 
             "priority" to order.priority,
             "status" to order.status,
@@ -307,6 +310,8 @@ class OrdersRepository(
             completedByFirstName = child("completedByFirstName").getValue(String::class.java) ?: "",
             completedByLastName = child("completedByLastName").getValue(String::class.java) ?: "",
 
+            completedAt = child("completedAt").getValue(String::class.java) ?: "",
+
             priority = child("priority").getValue(String::class.java) ?: "normal",
             status = child("status").getValue(String::class.java) ?: "pending",
 
@@ -380,6 +385,7 @@ class OrdersRepository(
             completedByUserName = completedByUserName,
             completedByFirstName = completedByFirstName,
             completedByLastName = completedByLastName,
+            completedAt = completedAt,
             priority = priority,
             status = status,
             totalAmount = totalAmount,

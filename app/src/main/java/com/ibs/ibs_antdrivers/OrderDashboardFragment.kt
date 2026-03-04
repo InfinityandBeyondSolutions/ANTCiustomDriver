@@ -15,9 +15,8 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.ibs.ibs_antdrivers.data.OrdersRepository
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class OrderDashboardFragment : Fragment() {
 
@@ -30,6 +29,8 @@ class OrderDashboardFragment : Fragment() {
     private lateinit var adapter: OrdersAdapter
 
     private val auth by lazy { FirebaseAuth.getInstance() }
+
+    private var ordersJob: Job? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -71,7 +72,15 @@ class OrderDashboardFragment : Fragment() {
         loadOrders()
     }
 
+    override fun onDestroyView() {
+        ordersJob?.cancel()
+        ordersJob = null
+        super.onDestroyView()
+    }
+
     private fun loadOrders() {
+        ordersJob?.cancel()
+
         val currentUser = auth.currentUser
         if (currentUser == null) {
             emptyText.visibility = View.VISIBLE
@@ -84,7 +93,7 @@ class OrderDashboardFragment : Fragment() {
         progress.visibility = View.VISIBLE
         emptyText.visibility = View.GONE
 
-        viewLifecycleOwner.lifecycleScope.launch {
+        ordersJob = viewLifecycleOwner.lifecycleScope.launch {
             repo.observeOrdersByDriver(requireContext().applicationContext, currentUser.uid)
                 .collect { data ->
                     progress.visibility = View.GONE

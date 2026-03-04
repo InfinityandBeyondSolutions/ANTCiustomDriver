@@ -11,6 +11,8 @@ import com.google.android.material.button.MaterialButton
 import com.ibs.ibs_antdrivers.data.Order
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
@@ -20,6 +22,16 @@ class OrdersAdapter(
 
     private val dateFormat = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
     private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("en", "ZA"))
+
+    private fun formatCompletedAtOrNull(iso: String): String? {
+        val v = iso.trim()
+        if (v.isBlank()) return null
+        return runCatching {
+            // Example: 2026-03-03T22:05:56.9990134+02:00
+            val odt = OffsetDateTime.parse(v)
+            odt.format(DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm", Locale.getDefault()))
+        }.getOrNull()
+    }
 
     object Diff : DiffUtil.ItemCallback<Order>() {
         override fun areItemsTheSame(oldItem: Order, newItem: Order): Boolean = oldItem.id == newItem.id
@@ -40,15 +52,24 @@ class OrdersAdapter(
             storeName.text = item.storeName.ifBlank { "Unknown Store" }
             storeId.text = if (item.storeId.isNotBlank()) "Store ID: ${item.storeId}" else ""
 
-            orderDate.text = if (item.createdAt > 0) {
-                dateFormat.format(Date(item.createdAt))
-            } else {
-                "Date not available"
-            }
-            orderTotal.text = currencyFormat.format(item.totalAmount)
-
             val normalizedStatus = item.status.trim().ifBlank { "pending" }
             val isCompleted = normalizedStatus.equals("completed", ignoreCase = true) || item.completedByUserId.isNotBlank()
+
+            orderDate.text = if (isCompleted) {
+                val completedText = formatCompletedAtOrNull(item.completedAt)
+                if (completedText != null) {
+                    "Completed: $completedText"
+                } else if (item.createdAt > 0) {
+                    // Fallback if completedAt wasn't present (should be rare once synced)
+                    "Completed"
+                } else {
+                    "Completed"
+                }
+            } else {
+                if (item.createdAt > 0) dateFormat.format(Date(item.createdAt)) else "Date not available"
+            }
+
+            orderTotal.text = currencyFormat.format(item.totalAmount)
 
             orderStatus.text = if (isCompleted) {
                 "Completed"

@@ -59,18 +59,20 @@ class RefreshOrdersWorker(
 
             val orders = merged.values.toList()
 
+            val db = AppDatabase.get(applicationContext)
+            // Replace driver's orders cache.
+            // Important: even if Firebase returns 0 orders, we clear the driver's cache so deleted
+            // orders don't keep showing in the dashboard.
+            db.ordersDao().deleteItemsForDriver(uid)
+            db.ordersDao().deleteOrdersForDriver(uid)
+
             if (orders.isEmpty()) {
-                // Keep existing cache; don't clear on empty to avoid accidental data loss.
                 return Result.success()
             }
 
             val orderEntities = orders.map { it.toEntity() }
             val itemEntities = orders.flatMap { o -> o.items.map { it.toEntity(o.id) } }
 
-            val db = AppDatabase.get(applicationContext)
-            // Replace driver's orders cache.
-            db.ordersDao().deleteItemsForDriver(uid)
-            db.ordersDao().deleteOrdersForDriver(uid)
             db.ordersDao().upsertOrders(orderEntities)
             db.ordersDao().upsertItems(itemEntities)
 
@@ -100,6 +102,7 @@ class RefreshOrdersWorker(
             completedByUserName = completedByUserName,
             completedByFirstName = completedByFirstName,
             completedByLastName = completedByLastName,
+            completedAt = completedAt,
             priority = priority,
             status = status,
             totalAmount = totalAmount,
@@ -172,6 +175,7 @@ class RefreshOrdersWorker(
             completedByUserName = child("completedByUserName").getValue(String::class.java) ?: "",
             completedByFirstName = child("completedByFirstName").getValue(String::class.java) ?: "",
             completedByLastName = child("completedByLastName").getValue(String::class.java) ?: "",
+            completedAt = child("completedAt").getValue(String::class.java) ?: "",
             priority = child("priority").getValue(String::class.java) ?: "normal",
             status = child("status").getValue(String::class.java) ?: "pending",
             totalAmount = numDouble("totalAmount"),
