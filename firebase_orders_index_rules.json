@@ -6,7 +6,13 @@
         ".read": "auth != null",
         ".write": "auth != null"
       }
+    },
+    "completedOrders": {
+      ".indexOn": ["driverId"],
+      "$orderId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
     }
   }
 }
-

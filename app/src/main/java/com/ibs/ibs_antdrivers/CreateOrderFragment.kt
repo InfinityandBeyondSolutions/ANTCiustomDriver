@@ -126,6 +126,12 @@ class CreateOrderFragment : Fragment() {
         }
     }
 
+    override fun onDestroyView() {
+        // Safety: never leave this screen with a stuck loading state.
+        runCatching { setSubmitLoading(false) }
+        super.onDestroyView()
+    }
+
     private fun initViews(view: View) {
         // Exposed dropdowns
         tilStore = view.findViewById(R.id.tilStore)
@@ -442,7 +448,7 @@ class CreateOrderFragment : Fragment() {
 
             override fun onCancelled(error: DatabaseError) {
                 if (isAdded) {
-                    Snackbar.make(requireView(), "Failed to load stores", Snackbar.LENGTH_SHORT).show()
+                    showSnack("Failed to load stores")
                 }
             }
         })
@@ -462,8 +468,8 @@ class CreateOrderFragment : Fragment() {
 
                 priceListAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, priceListDisplayList)
                 actvPriceList.setAdapter(priceListAdapter)
-            } catch (t: Throwable) {
-                Snackbar.make(requireView(), "Failed to load price lists", Snackbar.LENGTH_SHORT).show()
+            } catch (_: Throwable) {
+                showSnack("Failed to load price lists")
             }
         }
     }
@@ -536,14 +542,14 @@ class CreateOrderFragment : Fragment() {
         // Validate inputs with auto-focus
         val store = selectedStore
         if (store == null) {
-            Snackbar.make(requireView(), "Please select a store", Snackbar.LENGTH_SHORT).show()
+            showSnack("Please select a store")
             focusAndScrollTo(actvStore)
             return
         }
 
         val priceList = selectedPriceList
         if (priceList == null) {
-            Snackbar.make(requireView(), "Please select a price list", Snackbar.LENGTH_SHORT).show()
+            showSnack("Please select a price list")
             focusAndScrollTo(actvPriceList)
             return
         }
@@ -558,7 +564,7 @@ class CreateOrderFragment : Fragment() {
 
         val itemsWithQuantity = orderItemsAdapter.getItemsWithQuantity()
         if (itemsWithQuantity.isEmpty()) {
-            Snackbar.make(requireView(), "Please add at least one item to the order", Snackbar.LENGTH_SHORT).show()
+            showSnack("Please add at least one item to the order")
             // Scroll to the items table
             view?.findViewById<View>(R.id.orderItemsRecycler)?.let { recycler ->
                 scrollToView(recycler)
@@ -568,14 +574,11 @@ class CreateOrderFragment : Fragment() {
 
         val currentUser = auth.currentUser
         if (currentUser == null) {
-            Snackbar.make(requireView(), "Please sign in to submit orders", Snackbar.LENGTH_SHORT).show()
+            showSnack("Please sign in to submit orders")
             return
         }
 
-        // Show loading state
-        btnSubmitOrder.isEnabled = false
-        btnSubmitOrder.visibility = View.INVISIBLE
-        submitProgress.visibility = View.VISIBLE
+        setSubmitLoading(true)
 
         val notes = etOrderNotes.text?.toString()?.trim().orEmpty()
         val totalAmount = orderItemsAdapter.getGrandTotal()
@@ -623,30 +626,49 @@ class CreateOrderFragment : Fragment() {
                     ordersRepo.createOrder(order, requireContext().applicationContext)
                 }
 
-                // Always end loading state before navigating.
-                btnSubmitOrder.isEnabled = true
-                btnSubmitOrder.visibility = View.VISIBLE
-                submitProgress.visibility = View.GONE
+                if (!isAdded || view == null) return@launch
 
-                Snackbar.make(requireView(), "Order captured. It will upload when you're online.", Snackbar.LENGTH_SHORT).show()
+                showSnack("Order captured. It will upload when you're online.")
 
-                // Prefer returning to the Order Dashboard explicitly.
-                val popped = findNavController().popBackStack(R.id.orderDashboardFragment, false)
-                if (!popped) {
-                    // If we can't pop to dashboard, fall back to Create->Dashboard action if it exists,
-                    // else just close this screen to avoid offline navigation crashes.
-                    val poppedAny = findNavController().popBackStack()
-                    if (!poppedAny) {
-                        activity?.finish()
-                    }
-                }
+                // Pop back to dashboard. Post to next UI tick to avoid navigation/state issues.
+                view?.post { navigateBackToOrderDashboard() }
             } catch (t: Throwable) {
-                btnSubmitOrder.isEnabled = true
-                btnSubmitOrder.visibility = View.VISIBLE
-                submitProgress.visibility = View.GONE
-                Snackbar.make(requireView(), t.message ?: "Failed to submit order", Snackbar.LENGTH_LONG).show()
+                if (!isAdded || view == null) return@launch
+                showSnack(t.message ?: "Failed to submit order", long = true)
+            } finally {
+                if (isAdded && view != null) {
+                    setSubmitLoading(false)
+                }
             }
         }
+    }
+
+    private fun setSubmitLoading(loading: Boolean) {
+        btnSubmitOrder.isEnabled = !loading
+        btnSubmitOrder.visibility = if (loading) View.INVISIBLE else View.VISIBLE
+        submitProgress.visibility = if (loading) View.VISIBLE else View.GONE
+    }
+
+    private fun showSnack(message: String, long: Boolean = false) {
+        val v = view ?: return
+        Snackbar.make(v, message, if (long) Snackbar.LENGTH_LONG else Snackbar.LENGTH_SHORT).show()
+    }
+
+    private fun navigateBackToOrderDashboard() {
+        if (!isAdded) return
+
+        val nav = runCatching { findNavController() }.getOrNull() ?: return
+
+        val poppedToDashboard = runCatching {
+            nav.popBackStack(R.id.orderDashboardFragment, false)
+        }.getOrDefault(false)
+
+        if (poppedToDashboard) return
+
+        runCatching { nav.navigateUp() }
+            .onFailure {
+                activity?.finish()
+            }
     }
 
     private fun updateSelectionHeader() {

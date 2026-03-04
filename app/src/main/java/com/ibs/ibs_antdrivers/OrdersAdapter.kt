@@ -47,14 +47,21 @@ class OrdersAdapter(
             }
             orderTotal.text = currencyFormat.format(item.totalAmount)
 
-            orderStatus.text = item.status.replaceFirstChar { it.uppercase() }
+            val normalizedStatus = item.status.trim().ifBlank { "pending" }
+            val isCompleted = normalizedStatus.equals("completed", ignoreCase = true) || item.completedByUserId.isNotBlank()
+
+            orderStatus.text = if (isCompleted) {
+                "Completed"
+            } else {
+                normalizedStatus.replaceFirstChar { it.uppercase() }
+            }
 
             // Set status badge background based on status
-            val statusBg = when (item.status.lowercase()) {
-                "pending" -> R.drawable.bg_chip_status_neutral
-                "submitted" -> R.drawable.bg_chip_status_online
-                "processed" -> R.drawable.bg_greeting_badge
-                "completed" -> R.drawable.bg_chip_status_online
+            val statusBg = when {
+                isCompleted -> R.drawable.bg_chip_status_online
+                normalizedStatus.equals("pending", true) || normalizedStatus.equals("new", true) -> R.drawable.bg_chip_status_neutral
+                normalizedStatus.equals("submitted", true) -> R.drawable.bg_chip_status_online
+                normalizedStatus.equals("processed", true) -> R.drawable.bg_greeting_badge
                 else -> R.drawable.bg_chip_status_neutral
             }
             orderStatus.setBackgroundResource(statusBg)

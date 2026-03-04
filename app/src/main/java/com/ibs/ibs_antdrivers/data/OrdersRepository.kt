@@ -405,4 +405,62 @@ class OrdersRepository(
             totalPrice = totalPrice,
         )
     }
+
+    /**
+     * Get all orders (pending + completed) submitted by a specific driver.
+     *
+     * Data sources:
+     * - /orders (recent / open)
+     * - /completedOrders (historic completed)
+     */
+    suspend fun getAllOrdersByDriver(driverId: String): List<Order> {
+        val pending = getOrdersByDriverFromNode(nodeName = "orders", driverId = driverId)
+        val completed = getOrdersByDriverFromNode(nodeName = "completedOrders", driverId = driverId)
+
+        // Merge by order id. If an order exists in both nodes, prefer the completed version.
+        // Sort newest first using updatedAt fallback to createdAt.
+        val merged = LinkedHashMap<String, Order>()
+        pending.forEach { o ->
+            if (o.id.isNotBlank()) merged[o.id] = o
+        }
+        completed.forEach { o ->
+            if (o.id.isNotBlank()) merged[o.id] = o.copy(
+                // Ensure completed orders show as completed in the UI even if status is stale.
+                status = o.status.ifBlank { "completed" }.let { s -> if (s.equals("new", true) || s.equals("pending", true) || s.equals("submitted", true)) "completed" else s }
+            )
+        }
+
+        return merged.values
+            .sortedByDescending { if (it.updatedAt > 0) it.updatedAt else it.createdAt }
+    }
+
+    private suspend fun getOrdersByDriverFromNode(nodeName: String, driverId: String): List<Order> {
+        return try {
+            val snap = db.child(nodeName)
+                .orderByChild("driverId")
+                .equalTo(driverId)
+                .get()
+                .await()
+
+            if (!snap.exists()) return emptyList()
+
+            snap.children.mapNotNull { it.toOrderOrNull() }
+                .sortedByDescending { if (it.updatedAt > 0) it.updatedAt else it.createdAt }
+        } catch (t: Throwable) {
+            // Resilience fallback when missing indexes.
+            val message = t.message.orEmpty()
+            if (message.contains("Index not defined", ignoreCase = true) ||
+                message.contains(".indexOn", ignoreCase = true)
+            ) {
+                val snap = db.child(nodeName).get().await()
+                if (!snap.exists()) return emptyList()
+
+                snap.children.mapNotNull { it.toOrderOrNull() }
+                    .filter { it.driverId == driverId }
+                    .sortedByDescending { if (it.updatedAt > 0) it.updatedAt else it.createdAt }
+            } else {
+                throw t
+            }
+        }
+    }
 }

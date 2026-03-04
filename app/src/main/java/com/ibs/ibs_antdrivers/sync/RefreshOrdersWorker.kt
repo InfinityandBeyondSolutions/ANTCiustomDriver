@@ -27,27 +27,42 @@ class RefreshOrdersWorker(
         return try {
             val ref = FirebaseDatabase.getInstance().reference
 
-            val snap = try {
-                ref.child("orders")
-                    .orderByChild("driverId")
-                    .equalTo(uid)
-                    .get()
-                    .await()
-            } catch (t: Throwable) {
-                // Fallback: if index missing, download orders and filter client-side.
-                val all = ref.child("orders").get().await()
-                // store all in memory; fine for typical size.
-                all
+            suspend fun fetchNode(nodeName: String): List<Order> {
+                val snap = try {
+                    ref.child(nodeName)
+                        .orderByChild("driverId")
+                        .equalTo(uid)
+                        .get()
+                        .await()
+                } catch (_: Throwable) {
+                    // Fallback: if index missing, download all and filter client-side.
+                    ref.child(nodeName).get().await()
+                }
+
+                if (!snap.exists()) return emptyList()
+
+                return snap.children.mapNotNull { node ->
+                    node.toOrderOrNull()
+                }.filter { it.driverId == uid }
             }
 
-            if (!snap.exists()) {
-                // Keep existing cache; don't clear on empty snap to avoid accidental data loss.
+            val pending = fetchNode("orders")
+            val completed = fetchNode("completedOrders").map { o ->
+                // Force a consistent completed status for dashboard display.
+                if (o.status.equals("completed", ignoreCase = true)) o else o.copy(status = "completed")
+            }
+
+            // Merge by id; completed overwrites pending when duplicates exist.
+            val merged = LinkedHashMap<String, Order>()
+            pending.forEach { if (it.id.isNotBlank()) merged[it.id] = it }
+            completed.forEach { if (it.id.isNotBlank()) merged[it.id] = it }
+
+            val orders = merged.values.toList()
+
+            if (orders.isEmpty()) {
+                // Keep existing cache; don't clear on empty to avoid accidental data loss.
                 return Result.success()
             }
-
-            val orders = snap.children.mapNotNull { node ->
-                node.toOrderOrNull()
-            }.filter { it.driverId == uid }
 
             val orderEntities = orders.map { it.toEntity() }
             val itemEntities = orders.flatMap { o -> o.items.map { it.toEntity(o.id) } }
@@ -204,4 +219,3 @@ class RefreshOrdersWorker(
         )
     }
 }
-
