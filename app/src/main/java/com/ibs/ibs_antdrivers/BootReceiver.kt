@@ -19,7 +19,15 @@ class BootReceiver : BroadcastReceiver() {
             Intent.ACTION_MY_PACKAGE_REPLACED,
             Intent.ACTION_PACKAGE_REPLACED -> {
                 if (FirebaseAuth.getInstance().currentUser != null) {
-                    startLocationService(context)
+                    // Only resume tracking if the user explicitly enabled it earlier AND all permissions are still granted.
+                    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                    val trackingEnabled = prefs.getBoolean("tracking_active", false)
+                    val disclosureAccepted = prefs.getBoolean("location_disclosure_accepted", false)
+
+                    if (trackingEnabled && disclosureAccepted && hasRequiredLocationPermissions(context)) {
+                        startLocationService(context)
+                    }
+
                     // Re-enqueue any pending work that was interrupted by the reboot.
                     UploadWorkScheduler.enqueue(context)
                     RtdbQueueWorkScheduler.enqueue(context)
@@ -30,6 +38,29 @@ class BootReceiver : BroadcastReceiver() {
                 }
             }
         }
+    }
+
+    private fun hasRequiredLocationPermissions(context: Context): Boolean {
+        val fine = androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+        val coarse = androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+        val bgOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+
+        return (fine || coarse) && bgOk
     }
 
     private fun startLocationService(context: Context) {

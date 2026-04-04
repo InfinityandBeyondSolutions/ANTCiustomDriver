@@ -88,6 +88,7 @@ class MainActivity : AppCompatActivity() {
         private const val KEY_ACTIVE_SHIFT_DATE = "active_shift_date"
         private const val KEY_ACTIVE_SHIFT_SESSION = "active_shift_session"
         private const val KEY_BATTERY_DIALOG_SHOWN = "battery_dialog_shown"
+        private const val KEY_LOCATION_DISCLOSURE_ACCEPTED = "location_disclosure_accepted"
         private val RETENTION_MS = TimeUnit.DAYS.toMillis(90)
     }
 
@@ -98,7 +99,19 @@ class MainActivity : AppCompatActivity() {
         val coarse = res[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
         if (fine || coarse) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !hasBackground()) {
-                backgroundLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                // Background location requires an in-app prominent disclosure *before* the OS prompt.
+                // If user already accepted disclosure, we can proceed to the system prompt.
+                if (hasAcceptedLocationDisclosure()) {
+                    backgroundLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                } else {
+                    showBackgroundLocationDisclosure { accepted ->
+                        if (accepted) {
+                            backgroundLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                        } else {
+                            pendingClockIn = false
+                        }
+                    }
+                }
             } else if (pendingClockIn) {
                 pendingClockIn = false
                 createShiftAndStartTracking()
@@ -113,7 +126,16 @@ class MainActivity : AppCompatActivity() {
 
     private val backgroundLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { _ ->
+    ) { granted ->
+        if (!granted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            Toast.makeText(
+                this,
+                "Background location is required to track during your shift when the app isn't open. Enable it in Settings.",
+                Toast.LENGTH_LONG
+            ).show()
+            // Some Android versions guide users to Settings for 'Allow all the time'.
+            openAppSettings()
+        }
         if (pendingClockIn) {
             pendingClockIn = false
             createShiftAndStartTracking()
@@ -408,6 +430,31 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Not signed in", Toast.LENGTH_SHORT).show()
             return
         }
+
+        // Prominent disclosure must be shown BEFORE requesting ACCESS_BACKGROUND_LOCATION.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !hasBackground() && !hasAcceptedLocationDisclosure()) {
+            pendingClockIn = true
+            showBackgroundLocationDisclosure { accepted ->
+                if (!accepted) {
+                    pendingClockIn = false
+                    return@showBackgroundLocationDisclosure
+                }
+
+                // After acceptance, continue into the normal permission sequence.
+                if (!hasFineOrCoarse()) {
+                    fineCoarseLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                } else {
+                    backgroundLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                }
+            }
+            return
+        }
+
         if (!hasFineOrCoarse()) {
             pendingClockIn = true
             fineCoarseLauncher.launch(
@@ -938,5 +985,28 @@ class MainActivity : AppCompatActivity() {
         SessionPrefs.clear(this)
         startActivity(Intent(this, Login::class.java))
         finish()
+    }
+
+    private fun hasAcceptedLocationDisclosure(): Boolean =
+        prefs.getBoolean(KEY_LOCATION_DISCLOSURE_ACCEPTED, false)
+
+    private fun showBackgroundLocationDisclosure(onResult: (accepted: Boolean) -> Unit) {
+        // This is the "prominent disclosure" Play policy wants: clear, in-app, before the permission prompt.
+        // Keep the language aligned with what you submit in Play Console (Data Safety + background location form).
+        AlertDialog.Builder(this)
+            .setTitle("Background location disclosure")
+            .setMessage(
+                "This app collects location data to enable shift tracking (route and arrival/departure) even when the app is closed or not in use. " +
+                    "We only track location while your shift is active. You can stop tracking anytime by clocking out, and you can change this permission in Settings."
+            )
+            .setPositiveButton("Continue") { _, _ ->
+                prefs.edit().putBoolean(KEY_LOCATION_DISCLOSURE_ACCEPTED, true).apply()
+                onResult(true)
+            }
+            .setNegativeButton("Not now") { _, _ ->
+                onResult(false)
+            }
+            .setCancelable(false)
+            .show()
     }
 }
