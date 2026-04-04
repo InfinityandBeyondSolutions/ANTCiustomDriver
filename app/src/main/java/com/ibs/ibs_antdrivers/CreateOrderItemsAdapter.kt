@@ -1,7 +1,5 @@
 package com.ibs.ibs_antdrivers
 
-import android.animation.ArgbEvaluator
-import android.animation.ValueAnimator
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
@@ -23,6 +21,8 @@ class CreateOrderItemsAdapter(
 
     // We need to track quantities separately since the list is immutable
     private val quantityMap = mutableMapOf<String, Int>()
+    // Track unit quantities separately
+    private val unitQuantityMap = mutableMapOf<String, Int>()
 
     // Full unfiltered list so filtering never loses items or quantities
     private val masterList = mutableListOf<OrderItem>()
@@ -47,9 +47,14 @@ class CreateOrderItemsAdapter(
         val colOuterBarcode: TextView = itemView.findViewById(R.id.colOuterBarcode)
         val colUnitPrice: TextView = itemView.findViewById(R.id.colUnitPrice)
         val colCasePrice: TextView = itemView.findViewById(R.id.colCasePrice)
+        // Cases quantity controls
         val tvQuantity: TextView = itemView.findViewById(R.id.tvQuantity)
         val btnDecrease: View = itemView.findViewById(R.id.btnDecrease)
         val btnIncrease: View = itemView.findViewById(R.id.btnIncrease)
+        // Unit quantity controls
+        val tvUnitQuantity: TextView = itemView.findViewById(R.id.tvUnitQuantity)
+        val btnUnitDecrease: View = itemView.findViewById(R.id.btnUnitDecrease)
+        val btnUnitIncrease: View = itemView.findViewById(R.id.btnUnitIncrease)
         val colLineTotal: TextView = itemView.findViewById(R.id.colLineTotal)
 
         fun bind(item: OrderItem) {
@@ -72,7 +77,10 @@ class CreateOrderItemsAdapter(
             val quantity = quantityMap[item.id] ?: 0
             tvQuantity.text = quantity.toString()
 
-            val lineTotal = item.casePriceExVat * quantity
+            val unitQuantity = unitQuantityMap[item.id] ?: 0
+            tvUnitQuantity.text = unitQuantity.toString()
+
+            val lineTotal = (item.casePriceExVat * quantity) + (item.unitPriceExVat * unitQuantity)
             colLineTotal.text = if (lineTotal > 0) currencyFormat.format(lineTotal) else "-"
 
             // Get colors from context
@@ -93,7 +101,7 @@ class CreateOrderItemsAdapter(
                     itemCard.strokeColor = goldColor
                     itemCard.setCardBackgroundColor(highlightColor)
                 }
-                quantity > 0 -> {
+                quantity > 0 || unitQuantity > 0 -> {
                     // Has quantity - subtle highlight
                     itemCard.elevation = 4f
                     itemCard.strokeWidth = 2
@@ -146,6 +154,30 @@ class CreateOrderItemsAdapter(
                 notifyItemChanged(bindingAdapterPosition)
                 onQuantityChanged()
             }
+
+            // Units decrease
+            btnUnitDecrease.setOnClickListener {
+                val currentUnitQty = unitQuantityMap[item.id] ?: 0
+                if (currentUnitQty > 0) {
+                    highlightRow(bindingAdapterPosition)
+                    it.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+                    unitQuantityMap[item.id] = currentUnitQty - 1
+                    notifyItemChanged(bindingAdapterPosition)
+                    onQuantityChanged()
+                }
+            }
+            btnUnitDecrease.isEnabled = unitQuantity > 0
+            btnUnitDecrease.alpha = if (unitQuantity > 0) 1f else 0.5f
+
+            // Units increase
+            btnUnitIncrease.setOnClickListener {
+                highlightRow(bindingAdapterPosition)
+                it.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+                val currentUnitQty = unitQuantityMap[item.id] ?: 0
+                unitQuantityMap[item.id] = currentUnitQty + 1
+                notifyItemChanged(bindingAdapterPosition)
+                onQuantityChanged()
+            }
         }
     }
 
@@ -187,11 +219,13 @@ class CreateOrderItemsAdapter(
     }
 
     override fun submitList(list: List<OrderItem>?) {
-        // Reset quantity map and master list when a completely new price-list is loaded
+        // Reset quantity maps and master list when a completely new price-list is loaded
         quantityMap.clear()
+        unitQuantityMap.clear()
         masterList.clear()
         list?.forEach { item ->
             quantityMap[item.id] = item.quantity
+            unitQuantityMap[item.id] = item.unitQuantity
             masterList.add(item)
         }
         super.submitList(list)
@@ -219,7 +253,8 @@ class CreateOrderItemsAdapter(
         // Always calculate from master list so filtered-out items with qty still count
         masterList.forEach { item ->
             val quantity = quantityMap[item.id] ?: 0
-            total += item.casePriceExVat * quantity
+            val unitQuantity = unitQuantityMap[item.id] ?: 0
+            total += (item.casePriceExVat * quantity) + (item.unitPriceExVat * unitQuantity)
         }
         return total
     }
@@ -227,10 +262,12 @@ class CreateOrderItemsAdapter(
     fun getItemsWithQuantity(): List<OrderItem> {
         return masterList.mapNotNull { item ->
             val quantity = quantityMap[item.id] ?: 0
-            if (quantity > 0) {
+            val unitQuantity = unitQuantityMap[item.id] ?: 0
+            if (quantity > 0 || unitQuantity > 0) {
                 item.copy(
                     quantity = quantity,
-                    totalPrice = item.casePriceExVat * quantity
+                    unitQuantity = unitQuantity,
+                    totalPrice = (item.casePriceExVat * quantity) + (item.unitPriceExVat * unitQuantity)
                 )
             } else null
         }

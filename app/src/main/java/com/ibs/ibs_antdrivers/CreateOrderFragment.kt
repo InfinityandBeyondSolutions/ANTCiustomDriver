@@ -517,6 +517,7 @@ class CreateOrderFragment : Fragment() {
                     unitPriceExVat = parseMoney(item.unitPrice),
                     casePriceExVat = parseMoney(item.casePrice),
                     quantity = 0,
+                    unitQuantity = 0,
                     totalPrice = 0.0,
                 )
             }
