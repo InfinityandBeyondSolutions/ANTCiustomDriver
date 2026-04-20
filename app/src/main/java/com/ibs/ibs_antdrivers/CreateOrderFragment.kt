@@ -1,11 +1,14 @@
 package com.ibs.ibs_antdrivers
 
+import android.app.Dialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.ArrayAdapter
 import android.widget.Filter
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -373,7 +376,7 @@ class CreateOrderFragment : Fragment() {
         }
 
         btnSubmitOrder.setOnClickListener {
-            submitOrder()
+            showOrderPreviewDialog()
         }
 
         // Live product search — filter the items table as the user types
@@ -537,6 +540,167 @@ class CreateOrderFragment : Fragment() {
         } catch (_: Throwable) {
             UserProfile()
         }
+    }
+
+    private fun showOrderPreviewDialog() {
+        // Run all validations first — only open dialog if everything is valid
+        val store = selectedStore
+        if (store == null) {
+            showSnack("Please select a store")
+            focusAndScrollTo(actvStore)
+            return
+        }
+
+        val priceList = selectedPriceList
+        if (priceList == null) {
+            showSnack("Please select a price list")
+            focusAndScrollTo(actvPriceList)
+            return
+        }
+
+        val orderNumber = etOrderNumber.text?.toString()?.trim() ?: ""
+        if (orderNumber.isBlank()) {
+            tilOrderNumber.error = "Order number is required"
+            focusAndScrollTo(etOrderNumber)
+            return
+        }
+        tilOrderNumber.error = null
+
+        val itemsWithQuantity = orderItemsAdapter.getItemsWithQuantity()
+        if (itemsWithQuantity.isEmpty()) {
+            showSnack("Please add at least one item to the order")
+            view?.findViewById<View>(R.id.orderItemsRecycler)?.let { scrollToView(it) }
+            return
+        }
+
+        if (auth.currentUser == null) {
+            showSnack("Please sign in to submit orders")
+            return
+        }
+
+        // Build and show the preview dialog
+        val dialog = Dialog(requireContext())
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_order_preview, null)
+        dialog.setContentView(dialogView)
+        dialog.window?.apply {
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, (resources.displayMetrics.heightPixels * 0.88).toInt())
+            setBackgroundDrawableResource(android.R.color.transparent)
+        }
+
+        // Populate order details
+        dialogView.findViewById<TextView>(R.id.tvPreviewStore).text = store.StoreName
+        dialogView.findViewById<TextView>(R.id.tvPreviewOrderNumber).text = orderNumber
+        dialogView.findViewById<TextView>(R.id.tvPreviewPriceList).text =
+            priceList.title.ifBlank { priceList.name }
+
+        val notes = etOrderNotes.text?.toString()?.trim().orEmpty()
+        val notesLayout = dialogView.findViewById<View>(R.id.layoutPreviewNotes)
+        if (notes.isNotBlank()) {
+            notesLayout.visibility = View.VISIBLE
+            dialogView.findViewById<TextView>(R.id.tvPreviewNotes).text = notes
+        } else {
+            notesLayout.visibility = View.GONE
+        }
+
+        // Populate items
+        val itemCount = itemsWithQuantity.size
+        dialogView.findViewById<TextView>(R.id.tvPreviewItemCount).text =
+            "$itemCount line${if (itemCount != 1) "s" else ""}"
+
+        val container = dialogView.findViewById<LinearLayout>(R.id.previewItemsContainer)
+        container.removeAllViews()
+
+        val dp = resources.displayMetrics.density
+        itemsWithQuantity.forEachIndexed { index, item ->
+            val row = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding((4 * dp).toInt(), (7 * dp).toInt(), (4 * dp).toInt(), (7 * dp).toInt())
+                // Alternate row background for readability
+                setBackgroundColor(if (index % 2 == 0) 0xFFFFFFFF.toInt() else 0xFFFAFAFA.toInt())
+            }
+
+            val tvDesc = TextView(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 3f)
+                text = item.productName.ifBlank { item.productCode }
+                textSize = 11.5f
+                setTextColor(0xFF1A1A1A.toInt())
+                maxLines = 2
+            }
+
+            val tvSize = TextView(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    (40 * dp).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                text = item.size.ifBlank { "—" }
+                textSize = 11f
+                gravity = android.view.Gravity.CENTER_HORIZONTAL
+                setTextColor(0xFF555555.toInt())
+            }
+
+            val tvCases = TextView(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    (38 * dp).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                text = if (item.quantity > 0) item.quantity.toString() else "—"
+                textSize = 11f
+                gravity = android.view.Gravity.CENTER_HORIZONTAL
+                setTextColor(if (item.quantity > 0) 0xFF1A1A1A.toInt() else 0xFFBBBBBB.toInt())
+                if (item.quantity > 0) setTypeface(null, android.graphics.Typeface.BOLD)
+            }
+
+            val tvUnits = TextView(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    (38 * dp).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                text = if (item.unitQuantity > 0) item.unitQuantity.toString() else "—"
+                textSize = 11f
+                gravity = android.view.Gravity.CENTER_HORIZONTAL
+                setTextColor(if (item.unitQuantity > 0) 0xFF1A1A1A.toInt() else 0xFFBBBBBB.toInt())
+                if (item.unitQuantity > 0) setTypeface(null, android.graphics.Typeface.BOLD)
+            }
+
+            val tvLineTotal = TextView(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    (68 * dp).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                text = currencyFormat.format(item.totalPrice)
+                textSize = 11f
+                gravity = android.view.Gravity.END
+                setTextColor(0xFF1A1A1A.toInt())
+                setTypeface(null, android.graphics.Typeface.BOLD)
+            }
+
+            row.addView(tvDesc)
+            row.addView(tvSize)
+            row.addView(tvCases)
+            row.addView(tvUnits)
+            row.addView(tvLineTotal)
+            container.addView(row)
+
+            // Light divider
+            val divider = View(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
+                setBackgroundColor(0xFFEEEEEE.toInt())
+            }
+            container.addView(divider)
+        }
+
+        // Grand total
+        dialogView.findViewById<TextView>(R.id.tvPreviewGrandTotal).text =
+            currencyFormat.format(orderItemsAdapter.getGrandTotal())
+
+        // Buttons
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnPreviewCancel)
+            .setOnClickListener { dialog.dismiss() }
+
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnPreviewSubmit)
+            .setOnClickListener {
+                dialog.dismiss()
+                submitOrder()
+            }
+
+        dialog.show()
     }
 
     private fun submitOrder() {
