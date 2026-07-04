@@ -24,14 +24,14 @@
     <style name="BottomNavTextAppearanceActive" parent="TextAppearance.Material3.LabelSmall">
         <item name="android:textSize">11sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:letterSpacing">0.02</item>
+        <item name="android:letterSpacing">0</item>
     </style>
 
     <!-- Text style for inactive bottom nav labels - Smaller and normal weight -->
     <style name="BottomNavTextAppearanceInactive" parent="TextAppearance.Material3.LabelSmall">
         <item name="android:textSize">10sp</item>
         <item name="android:textStyle">normal</item>
-        <item name="android:letterSpacing">0.01</item>
+        <item name="android:letterSpacing">0</item>
     </style>
 
     <!-- Custom Alert Dialog to match app theme -->

@@ -3,4 +3,16 @@
     <dimen name="screen_pad_h">32dp</dimen>
     <dimen name="screen_pad_v">20dp</dimen>
     <dimen name="card_margin_h">16dp</dimen>
+    <dimen name="status_bar_content_gap">8dp</dimen>
+    <dimen name="offline_banner_top_margin">16dp</dimen>
+    <dimen name="bottom_nav_height">64dp</dimen>
+    <dimen name="bottom_nav_corner_radius">32dp</dimen>
+    <dimen name="bottom_nav_horizontal_margin">32dp</dimen>
+    <dimen name="bottom_nav_bottom_gap">12dp</dimen>
+    <dimen name="bottom_nav_max_width">560dp</dimen>
+    <dimen name="home_scroll_bottom_padding">160dp</dimen>
+    <dimen name="bottom_overlay_action_clearance">104dp</dimen>
+    <dimen name="orders_list_bottom_padding">184dp</dimen>
+    <dimen name="fragment_scroll_bottom_padding">168dp</dimen>
+    <dimen name="bottom_overlay_fab_clearance">104dp</dimen>
 </resources>

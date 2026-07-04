@@ -10,10 +10,11 @@
 
     <!-- Scrollable main content -->
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/captureImagesScroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true"
-        android:paddingBottom="88dp"
+        android:paddingBottom="@dimen/fragment_scroll_bottom_padding"
         android:clipToPadding="false">
 
         <LinearLayout

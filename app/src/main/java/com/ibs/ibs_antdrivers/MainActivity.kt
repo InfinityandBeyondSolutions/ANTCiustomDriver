@@ -10,15 +10,14 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
-import android.os.SystemClock
 import android.provider.Settings
 import android.view.View
-import android.view.WindowInsets
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -26,7 +25,6 @@ import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.ibs.ibs_antdrivers.offline.ConnectivityObserver
@@ -34,9 +32,9 @@ import kotlinx.coroutines.launch
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.ui.NavigationUI
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -57,11 +55,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var prefs: SharedPreferences
 
-    private lateinit var bottomNavView: BottomNavigationView
+    private lateinit var bottomNavItems: List<Pair<Int, ImageButton>>
     private lateinit var navController: NavController
     private lateinit var btnDismissKeyboard: ImageButton
-
-    private var lastNavClickAtMs: Long = 0L
 
     private var authStateListener: FirebaseAuth.AuthStateListener? = null
    // private var tokenCheckRunnable: Runnable? = null
@@ -164,31 +160,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initializeApp() {
-        // Allow insets (including IME/keyboard) to dispatch through the view tree
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        // Make system nav bar fully transparent so nothing shows behind the floating nav card
-        @Suppress("DEPRECATION")
+        enableEdgeToEdge()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
         }
-        window.navigationBarColor = android.graphics.Color.TRANSPARENT
         setContentView(R.layout.activity_main)
-        hideStatusBar()
+        hideActionBar()
 
         ensureNotificationChannel()
         requestPostNotificationIfNeeded()
 
         // ---- Navigation Component wiring (nav_graph.xml only) ----
-        bottomNavView = findViewById(R.id.bottom_navigation)
         val navHost = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHost.navController
 
-        // Bottom nav: connect to NavController.
-        NavigationUI.setupWithNavController(bottomNavView, navController)
-
-        // Setup bottom navigation animations + robust tab switching
-        setupBottomNavAnimations()
+        setupBottomNavigation()
 
         // Keep bottom nav highlight in sync even when we navigate programmatically
         navController.addOnDestinationChangedListener { _, destination, _ ->
@@ -200,17 +187,56 @@ class MainActivity : AppCompatActivity() {
         btnDismissKeyboard.setOnClickListener { hideKeyboard() }
 
         // ---- Insets: float the dismiss button just above the keyboard ----
+        val navHostView = findViewById<View>(R.id.nav_host_fragment)
+        val offlineBanner = findViewById<View>(R.id.offlineBanner)
         val bottomNavContainer = findViewById<View>(R.id.bottomNavContainer)
+        val bottomNavHorizontalMargin = resources.getDimensionPixelSize(R.dimen.bottom_nav_horizontal_margin)
+        val bottomNavBottomGap = resources.getDimensionPixelSize(R.dimen.bottom_nav_bottom_gap)
+        val offlineBannerTopMargin = resources.getDimensionPixelSize(R.dimen.offline_banner_top_margin)
+        val statusBarContentGap = resources.getDimensionPixelSize(R.dimen.status_bar_content_gap)
 
-        // Keep bottom nav floating just above the system gesture/home bar
-        ViewCompat.setOnApplyWindowInsetsListener(bottomNavContainer) { view, insets ->
-            val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            val gap = (8 * resources.displayMetrics.density).toInt()
+        ViewCompat.setOnApplyWindowInsetsListener(navHostView) { view, insets ->
+            val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             val params = view.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
-            params.bottomMargin = navBarInsets.bottom + gap
+            params.topMargin = statusBars.top + statusBarContentGap
             view.layoutParams = params
             insets
         }
+
+        ViewCompat.setOnApplyWindowInsetsListener(offlineBanner) { view, insets ->
+            val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            val params = view.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            params.topMargin = statusBars.top + offlineBannerTopMargin
+            view.layoutParams = params
+            insets
+        }
+
+        // Keep bottom nav floating just above the system gesture/home bar
+        ViewCompat.setOnApplyWindowInsetsListener(bottomNavContainer) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val navBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            val params = view.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            params.marginStart = bottomNavHorizontalMargin + systemBars.left
+            params.marginEnd = bottomNavHorizontalMargin + systemBars.right
+            params.bottomMargin = navBars.bottom + bottomNavBottomGap
+            view.layoutParams = params
+            insets
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(btnDismissKeyboard) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val margin = (16 * resources.displayMetrics.density).toInt()
+            val params = view.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            params.marginEnd = systemBars.right + margin
+            params.bottomMargin = systemBars.bottom + margin
+            view.layoutParams = params
+            insets
+        }
+
+        ViewCompat.requestApplyInsets(navHostView)
+        ViewCompat.requestApplyInsets(offlineBanner)
+        ViewCompat.requestApplyInsets(bottomNavContainer)
+        ViewCompat.requestApplyInsets(btnDismissKeyboard)
 
         // Animate the dismiss button so it always sits just above the keyboard.
         // Use window.decorView for reliable keyboard height detection with adjustPan.
@@ -236,7 +262,6 @@ class MainActivity : AppCompatActivity() {
         handleIntent(intent)
 
         // ---- Offline banner / connectivity awareness ----
-        val offlineBanner = findViewById<View>(R.id.offlineBanner)
         val connectivity = ConnectivityObserver.getInstance(applicationContext)
         lifecycleScope.launch {
             connectivity.isOnline
@@ -335,89 +360,88 @@ class MainActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun hideStatusBar() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.hide(WindowInsets.Type.statusBars())
-        } else {
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
-        }
+    private fun hideActionBar() {
         supportActionBar?.hide()
     }
 
     private fun syncBottomNavSelection(destination: NavDestination) {
-        // Pick the first bottom-nav item that matches the destination hierarchy.
-        val matchId = bottomNavView.menu
-            .let { menu ->
-                (0 until menu.size())
-                    .map { menu.getItem(it).itemId }
-                    .firstOrNull { itemId -> destination.hierarchy.any { it.id == itemId } }
-            }
+        val matchId = bottomNavItemForDestination(destination) ?: return
 
-        if (matchId != null && bottomNavView.selectedItemId != matchId) {
-            bottomNavView.selectedItemId = matchId
+        val activeTint = ContextCompat.getColor(this, R.color.antyellow)
+        val inactiveTint = android.graphics.Color.parseColor("#8899AABB")
+        bottomNavItems.forEach { (destinationId, button) ->
+            val selected = destinationId == matchId
+            button.isSelected = selected
+            button.imageTintList = android.content.res.ColorStateList.valueOf(
+                if (selected) activeTint else inactiveTint
+            )
+            button.alpha = if (selected) 1f else 0.72f
         }
     }
 
-    /**
-     * Sets up smooth scale animations for bottom navigation items.
-     * Selected items scale up slightly for emphasis, while deselected items scale back to normal.
-     */
-    private fun setupBottomNavAnimations() {
-        // Scale values for animation
-        val scaleSelected = 1.15f
-        val scaleDefault = 1.0f
-        val animDuration = 200L
+    private fun bottomNavItemForDestination(destination: NavDestination): Int? {
+        val directMatch = bottomNavItems
+            .map { it.first }
+            .firstOrNull { itemId -> destination.hierarchy.any { it.id == itemId } }
 
-        bottomNavView.post {
-            animateNavItemSelection(bottomNavView.selectedItemId, scaleSelected, scaleDefault, 0L)
+        if (directMatch != null) return directMatch
+
+        return when (destination.id) {
+            R.id.driverCaptureProductImages,
+            R.id.storeGallery -> R.id.navStore
+
+            R.id.createOrderFragment,
+            R.id.orderDetailFragment -> R.id.orderDashboardFragment
+
+            R.id.vehicleTrackingFragment,
+            R.id.groupListFragment,
+            R.id.chatHomeFragment,
+            R.id.adminPhonebookFragment,
+            R.id.navPriceLists,
+            R.id.priceListDetailFragment,
+            R.id.navCatalogue,
+            R.id.catalogueViewerFragment,
+            R.id.settingsFragment,
+            R.id.changePasswordFragment -> R.id.navHomeDriver
+
+            else -> null
         }
-
-        bottomNavView.setOnItemSelectedListener { item ->
-            val now = SystemClock.elapsedRealtime()
-            if (now - lastNavClickAtMs < 350L) return@setOnItemSelectedListener false
-            lastNavClickAtMs = now
-
-            val handled = NavigationUI.onNavDestinationSelected(item, navController)
-
-            if (handled) {
-                animateNavItemSelection(item.itemId, scaleSelected, scaleDefault, animDuration)
-            }
-
-            handled
-        }
-
-        bottomNavView.setOnItemReselectedListener { /* no-op */ }
     }
 
-    /**
-     * Animates the scale of nav item icons based on selection state.
-     */
-    private fun animateNavItemSelection(
-        selectedItemId: Int,
-        scaleSelected: Float,
-        scaleDefault: Float,
-        duration: Long
-    ) {
-        val menu = bottomNavView.menu
-        for (i in 0 until menu.size()) {
-            val menuItem = menu.getItem(i)
-            val itemView = bottomNavView.findViewById<View>(menuItem.itemId) ?: continue
+    private fun setupBottomNavigation() {
+        bottomNavItems = listOf(
+            R.id.navCallCycle to findViewById(R.id.navButtonCycles),
+            R.id.navStore to findViewById(R.id.navButtonStores),
+            R.id.navHomeDriver to findViewById(R.id.navButtonHome),
+            R.id.orderDashboardFragment to findViewById(R.id.navButtonOrders),
+            R.id.navAnnouncementsDriver to findViewById(R.id.navButtonNews)
+        )
 
-            val targetScale = if (menuItem.itemId == selectedItemId) scaleSelected else scaleDefault
+        bottomNavItems.forEach { (destinationId, button) ->
+            button.setOnClickListener {
+                val currentDestination = navController.currentDestination
+                if (currentDestination != null && bottomNavItemForDestination(currentDestination) == destinationId) {
+                    return@setOnClickListener
+                }
 
-            if (duration > 0) {
-                itemView.animate()
-                    .scaleX(targetScale)
-                    .scaleY(targetScale)
-                    .setDuration(duration)
-                    .setInterpolator(android.view.animation.OvershootInterpolator(1.5f))
-                    .start()
-            } else {
-                itemView.scaleX = targetScale
-                itemView.scaleY = targetScale
+                val navOptions = NavOptions.Builder()
+                    .setLaunchSingleTop(true)
+                    .setRestoreState(true)
+                    .setPopUpTo(navController.graph.findStartDestination().id, false, true)
+                    .build()
+
+                runCatching {
+                    navController.navigate(destinationId, null, navOptions)
+                }.onFailure {
+                    Toast.makeText(this, "Unable to open tab", Toast.LENGTH_SHORT).show()
+                }
             }
+            button.imageTintList = android.content.res.ColorStateList.valueOf(
+                android.graphics.Color.parseColor("#8899AABB")
+            )
         }
+
+        navController.currentDestination?.let(::syncBottomNavSelection)
     }
 
     // --- Public API ---

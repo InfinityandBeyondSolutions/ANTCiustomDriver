@@ -45,7 +45,6 @@ import java.util.concurrent.TimeUnit
 
 class HomeFragment : Fragment() {
 
-    private var vehicleTrackingBtn: ImageButton? = null
     private var confetti: LottieAnimationView? = null
     private lateinit var btnMsg: ImageButton
 
@@ -75,6 +74,8 @@ class HomeFragment : Fragment() {
     private lateinit var currentDate: TextView
     private lateinit var currentTime: TextView
     private lateinit var userAvatar: ImageView
+    private lateinit var clockText: TextView
+    private lateinit var clockSubtitle: TextView
     private var clockStatusBadge: TextView? = null
 
     private val auth by lazy { FirebaseAuth.getInstance() }
@@ -129,6 +130,8 @@ class HomeFragment : Fragment() {
         currentDate = view.findViewById(R.id.currentDate)
         currentTime = view.findViewById(R.id.currentTime)
         userAvatar = view.findViewById(R.id.userAvatar)
+        clockText = view.findViewById(R.id.clockText)
+        clockSubtitle = view.findViewById(R.id.clockSubtitle)
         clockStatusBadge = view.findViewById(R.id.clockStatusBadge)
 
 
@@ -139,20 +142,6 @@ class HomeFragment : Fragment() {
         updateGreeting()
         updateDateTimeDisplay()
         loadUserProfile()
-
-        // Vehicle tracking quick toggle
-        vehicleTrackingBtn = view.findViewById<ImageButton?>(R.id.vehicleTrackingBtn)?.apply {
-            setOnClickListener {
-                val act = activity as? MainActivity ?: return@setOnClickListener
-                animate().rotationBy(360f).setDuration(400L).start()
-
-                val wasActive = act.isTrackingActive()
-                if (wasActive) act.clockOut() else act.clockIn()
-
-                animateStateChange(!wasActive)
-                refreshUi()
-            }
-        }
 
         settingsBtn.setOnClickListener {
             findNavController().navigate(R.id.action_home_to_settings)
@@ -241,8 +230,19 @@ class HomeFragment : Fragment() {
         // Only one button visible at a time
         btnClockIn.visibility = if (active) View.GONE else View.VISIBLE
         btnClockOut.visibility = if (active) View.VISIBLE else View.GONE
+        updateClockCard(active)
 
         tweenButtonTint(active)
+    }
+
+    private fun updateClockCard(active: Boolean) {
+        clockText.text = if (active) "Clock Out" else "Clock In"
+        clockSubtitle.text = if (active) {
+            "End your shift to stop location tracking"
+        } else {
+            "Start your shift to enable location tracking"
+        }
+        clockStatusBadge?.text = if (active) "Active" else "Ready"
     }
 
     private fun updateStatusUi(active: Boolean) {
@@ -316,32 +316,12 @@ class HomeFragment : Fragment() {
                 )
                 btnClockIn.visibility = if (activeAfter) View.GONE else View.VISIBLE
                 btnClockOut.visibility = if (activeAfter) View.VISIBLE else View.GONE
+                updateClockCard(activeAfter)
                 tweenButtonTint(activeAfter)
 
-                // 3) wiggle the quick toggle; when done, bring the layouts back
-                val btn = vehicleTrackingBtn
-                if (btn != null) {
-                    btn.animate()
-                        .scaleX(0.96f).scaleY(0.96f)
-                        .setDuration(80L)
-                        .withEndAction {
-                            btn.animate()
-                                .scaleX(1f).scaleY(1f)
-                                .setDuration(120L)
-                                .setInterpolator(OvershootInterpolator(2f))
-                                .withEndAction {
-                                    llstatus?.let { fadeIn(it) }
-                                    lldate?.let { fadeIn(it) }
-                                    lltime?.let { fadeIn(it) }
-                                }
-                                .start()
-                        }
-                        .start()
-                } else {
-                    llstatus?.let { fadeIn(it) }
-                    lldate?.let { fadeIn(it) }
-                    lltime?.let { fadeIn(it) }
-                }
+                llstatus?.let { fadeIn(it) }
+                lldate?.let { fadeIn(it) }
+                lltime?.let { fadeIn(it) }
             }
         }
 

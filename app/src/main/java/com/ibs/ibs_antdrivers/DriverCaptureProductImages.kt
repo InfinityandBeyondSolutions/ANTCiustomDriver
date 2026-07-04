@@ -22,6 +22,8 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -158,6 +160,7 @@ class DriverCaptureProductImages : Fragment() {
         btnUploadImages = view.findViewById(R.id.btnUploadImages)
         tvStoreName = view.findViewById(R.id.tvStoreName)
         btnBack = view.findViewById(R.id.ivBackButton)
+        applyBottomInsets(view)
 
         storeIdBadge = view.findViewById(R.id.storeIdBadge)
         imageCountBadge = view.findViewById(R.id.imageCountBadge)
@@ -240,6 +243,32 @@ class DriverCaptureProductImages : Fragment() {
         maybeRequestNotificationPermission()
 
         return view
+    }
+
+    private fun applyBottomInsets(root: View) {
+        val scroll = root.findViewById<View>(R.id.captureImagesScroll)
+        val scrollBottomPadding = resources.getDimensionPixelSize(R.dimen.fragment_scroll_bottom_padding)
+        val fabClearance = resources.getDimensionPixelSize(R.dimen.bottom_overlay_fab_clearance)
+        val fabSideMargin = (20 * resources.displayMetrics.density).toInt()
+
+        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+            val navBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+
+            scroll.setPadding(
+                scroll.paddingLeft,
+                scroll.paddingTop,
+                scroll.paddingRight,
+                scrollBottomPadding + navBars.bottom
+            )
+
+            val params = btnUploadImages.layoutParams as ViewGroup.MarginLayoutParams
+            params.marginEnd = navBars.right + fabSideMargin
+            params.bottomMargin = navBars.bottom + fabClearance
+            btnUploadImages.layoutParams = params
+
+            insets
+        }
+        ViewCompat.requestApplyInsets(root)
     }
 
     private fun maybeRequestNotificationPermission() {

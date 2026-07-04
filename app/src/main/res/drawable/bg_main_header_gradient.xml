@@ -9,8 +9,7 @@
                 android:endColor="#1A3A6B"
                 android:type="linear" />
             <corners 
-                android:bottomLeftRadius="40dp"
-                android:bottomRightRadius="40dp" />
+                android:radius="30dp" />
         </shape>
     </item>
     <item
@@ -24,8 +23,7 @@
                 android:endColor="#08D4AF37"
                 android:type="linear" />
             <corners 
-                android:bottomLeftRadius="40dp"
-                android:bottomRightRadius="40dp" />
+                android:radius="30dp" />
         </shape>
     </item>
 </layer-list>

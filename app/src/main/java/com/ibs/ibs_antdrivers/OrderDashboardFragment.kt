@@ -7,10 +7,13 @@ import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
@@ -46,6 +49,8 @@ class OrderDashboardFragment : Fragment() {
         emptyText = view.findViewById(R.id.ordersEmpty)
         btnCreateOrder = view.findViewById(R.id.btnCreateOrder)
 
+        applyBottomButtonInsets()
+
         adapter = OrdersAdapter(
             onViewClick = { order ->
                 if (order.id.isBlank()) {
@@ -65,6 +70,26 @@ class OrderDashboardFragment : Fragment() {
         }
 
         loadOrders()
+    }
+
+    private fun applyBottomButtonInsets() {
+        val baseClearance = resources.getDimensionPixelSize(R.dimen.bottom_overlay_action_clearance)
+        val listPaddingBottom = resources.getDimensionPixelSize(R.dimen.orders_list_bottom_padding)
+
+        ViewCompat.setOnApplyWindowInsetsListener(btnCreateOrder) { button, insets ->
+            val navBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            val params = button.layoutParams as ConstraintLayout.LayoutParams
+            params.bottomMargin = baseClearance + navBars.bottom
+            button.layoutParams = params
+            recycler.setPadding(
+                recycler.paddingLeft,
+                recycler.paddingTop,
+                recycler.paddingRight,
+                listPaddingBottom + navBars.bottom
+            )
+            insets
+        }
+        ViewCompat.requestApplyInsets(btnCreateOrder)
     }
 
     override fun onResume() {

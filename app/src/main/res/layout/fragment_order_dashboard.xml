@@ -3,6 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/orderDashboardRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
@@ -115,7 +116,7 @@
         android:layout_height="56dp"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="@dimen/bottom_overlay_action_clearance"
         android:backgroundTint="@color/webgold"
         android:text="Create New Order"
         android:textAllCaps="false"
@@ -127,9 +128,9 @@
         app:iconGravity="textStart"
         app:iconPadding="12dp"
         app:iconTint="@color/webnavy"
+        app:layout_constraintWidth_max="480dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-

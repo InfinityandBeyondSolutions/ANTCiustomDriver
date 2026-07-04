@@ -133,7 +133,7 @@
         android:layout_marginTop="12dp"
         android:layout_marginEnd="16dp"
         android:clipToPadding="false"
-        android:paddingBottom="16dp"
+        android:paddingBottom="@dimen/fragment_scroll_bottom_padding"
         android:scrollbars="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
