@@ -21,6 +21,8 @@ data class OrderItemEntity(
     val unitPriceExVat: Double,
     val casePriceExVat: Double,
     val quantity: Int,
+    /** Number of individual units ordered (separate from case quantity). */
+    val unitQuantity: Int = 0,
     val totalPrice: Double,
     val cachedAtMs: Long = System.currentTimeMillis(),
 )

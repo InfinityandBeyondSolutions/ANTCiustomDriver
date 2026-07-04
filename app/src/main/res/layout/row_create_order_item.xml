@@ -142,7 +142,18 @@
             android:orientation="vertical"
             android:gravity="center_horizontal">
 
-            <!-- Quantity controls -->
+            <!-- CASES label -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cases"
+                android:textColor="#9BA8B5"
+                android:textSize="10sp"
+                android:textAllCaps="true"
+                android:gravity="center"
+                android:layout_marginBottom="2dp" />
+
+            <!-- Cases quantity controls -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -189,6 +200,78 @@
                     android:layout_height="36dp"
                     android:backgroundTint="@color/webgold"
                     android:contentDescription="Increase quantity"
+                    android:insetLeft="0dp"
+                    android:insetTop="0dp"
+                    android:insetRight="0dp"
+                    android:insetBottom="0dp"
+                    app:icon="@android:drawable/ic_input_add"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconSize="20dp"
+                    app:iconTint="@color/webnavy"
+                    app:cornerRadius="18dp" />
+
+            </LinearLayout>
+
+            <!-- UNITS label -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Units"
+                android:textColor="#9BA8B5"
+                android:textSize="10sp"
+                android:textAllCaps="true"
+                android:gravity="center"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="2dp" />
+
+            <!-- Units quantity controls -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_quantity_pill"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnUnitDecrease"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:backgroundTint="@color/webgold"
+                    android:contentDescription="Decrease unit quantity"
+                    android:insetLeft="0dp"
+                    android:insetTop="0dp"
+                    android:insetRight="0dp"
+                    android:insetBottom="0dp"
+                    app:icon="@drawable/ic_remove"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconSize="20dp"
+                    app:iconTint="@color/webnavy"
+                    app:cornerRadius="18dp" />
+
+                <TextView
+                    android:id="@+id/tvUnitQuantity"
+                    android:layout_width="36dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="0"
+                    android:textColor="@color/webnavy"
+                    android:textStyle="bold"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnUnitIncrease"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:backgroundTint="@color/webgold"
+                    android:contentDescription="Increase unit quantity"
                     android:insetLeft="0dp"
                     android:insetTop="0dp"
                     android:insetRight="0dp"

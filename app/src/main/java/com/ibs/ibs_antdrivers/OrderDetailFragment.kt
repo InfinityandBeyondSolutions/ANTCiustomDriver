@@ -107,7 +107,8 @@ class OrderDetailFragment : Fragment() {
                         emptyText.visibility = View.GONE
 
                         val rows = order.items.map { item ->
-                            val lineTotal = item.quantity * item.casePriceExVat
+                            val lineTotal = (item.quantity * item.casePriceExVat) +
+                                           (item.unitQuantity * item.unitPriceExVat)
                             OrderDetailItemRow(item, lineTotal)
                         }
                         adapter.submitList(rows)

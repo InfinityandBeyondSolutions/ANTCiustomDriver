@@ -20,6 +20,8 @@ data class OrderItem(
     val casePriceExVat: Double = 0.0,
 
     val quantity: Int = 0,
+    /** Number of individual units ordered (separate from case quantity). */
+    val unitQuantity: Int = 0,
     val totalPrice: Double = 0.0,
 )
 

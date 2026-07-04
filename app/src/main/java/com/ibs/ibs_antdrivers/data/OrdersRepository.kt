@@ -191,6 +191,7 @@ class OrdersRepository(
             unitPriceExVat = unitPriceExVat,
             casePriceExVat = casePriceExVat,
             quantity = quantity,
+            unitQuantity = unitQuantity,
             totalPrice = totalPrice,
         )
     }
@@ -254,6 +255,7 @@ class OrdersRepository(
             "casePriceExVat" to item.casePriceExVat,
 
             "quantity" to item.quantity,
+            "unitQuantity" to item.unitQuantity,
             "totalPrice" to item.totalPrice,
         )
     }
@@ -362,6 +364,7 @@ class OrdersRepository(
             casePriceExVat = numDoubleNode(this, "casePriceExVat"),
 
             quantity = numIntNode(this, "quantity"),
+            unitQuantity = numIntNode(this, "unitQuantity"),
             totalPrice = numDoubleNode(this, "totalPrice"),
         )
     }
@@ -408,6 +411,7 @@ class OrdersRepository(
             unitPriceExVat = unitPriceExVat,
             casePriceExVat = casePriceExVat,
             quantity = quantity,
+            unitQuantity = unitQuantity,
             totalPrice = totalPrice,
         )
     }
