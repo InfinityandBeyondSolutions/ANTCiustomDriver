@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.ibs.ibs_antdrivers"
-    compileSdk = 35
+    compileSdk = 36
 
     // Use NDK r27+ for 16 KB alignment capable native build/tooling
     ndkVersion = "27.1.12297006"
@@ -20,9 +20,9 @@ android {
     defaultConfig {
         applicationId = "com.ibs.ibs_antdrivers"
         minSdk = 27
-        targetSdk = 35
-        versionCode = 10
-        versionName = "5.0.0"
+        targetSdk = 36
+        versionCode = 11
+        versionName = "6.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

@@ -9,6 +9,7 @@
     <dimen name="bottom_nav_horizontal_margin">22dp</dimen>
     <dimen name="bottom_nav_bottom_gap">10dp</dimen>
     <dimen name="bottom_nav_max_width">500dp</dimen>
+    <dimen name="chat_composer_nav_gap">8dp</dimen>
     <dimen name="home_scroll_bottom_padding">150dp</dimen>
     <dimen name="bottom_overlay_action_clearance">96dp</dimen>
     <dimen name="orders_list_bottom_padding">168dp</dimen>

@@ -196,8 +196,11 @@ class MainActivity : AppCompatActivity() {
         val statusBarContentGap = resources.getDimensionPixelSize(R.dimen.status_bar_content_gap)
 
         ViewCompat.setOnApplyWindowInsetsListener(navHostView) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             val params = view.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            params.marginStart = systemBars.left
+            params.marginEnd = systemBars.right
             params.topMargin = statusBars.top + statusBarContentGap
             view.layoutParams = params
             insets

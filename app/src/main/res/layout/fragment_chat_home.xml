@@ -35,7 +35,7 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler"
         android:layout_width="match_parent"
-        android:layout_height="920dp"
+        android:layout_height="0dp"
         android:layout_weight="1"
         android:padding="8dp"
         android:background="@drawable/chat_bg_tile"/>
@@ -48,6 +48,7 @@
         android:layout_height="wrap_content" />
 
     <LinearLayout
+        android:id="@+id/messageComposer"
         android:orientation="horizontal"
         android:padding="8dp"
         android:layout_width="match_parent"
