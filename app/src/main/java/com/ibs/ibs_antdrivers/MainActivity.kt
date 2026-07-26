@@ -549,7 +549,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun startLocationService() {
         val intent = Intent(this, LocationTrackingService::class.java).apply {
-            action = "ACTION_START"
+            action = LocationTrackingService.ACTION_START
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
@@ -561,7 +561,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopLocationService() {
         val intent = Intent(this, LocationTrackingService::class.java).apply {
-            action = "ACTION_STOP"
+            action = LocationTrackingService.ACTION_STOP
         }
         startService(intent)
         Toast.makeText(this, "Location tracking stopped", Toast.LENGTH_SHORT).show()

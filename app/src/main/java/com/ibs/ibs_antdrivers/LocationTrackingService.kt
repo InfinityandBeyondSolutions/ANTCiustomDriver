@@ -1,14 +1,19 @@
 package com.ibs.ibs_antdrivers.service
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.location.Location
+import android.location.LocationManager
 import android.os.*
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import com.google.android.gms.location.*
 import com.google.firebase.database.*
 import com.google.firebase.auth.FirebaseAuth
@@ -32,10 +37,14 @@ class LocationTrackingService : Service() {
     }
 
     companion object {
+        const val ACTION_START = "com.ibs.ibs_antdrivers.action.START_LOCATION_TRACKING"
+        const val ACTION_STOP = "com.ibs.ibs_antdrivers.action.STOP_LOCATION_TRACKING"
+
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "location_tracking_channel"
         private const val LOCATION_UPDATE_INTERVAL = 30000L // 30 seconds
         private const val STATUS_UPDATE_INTERVAL = 60000L // 1 minute
+        private const val TAG = "LocationTracking"
     }
 
     override fun onCreate() {
@@ -56,20 +65,25 @@ class LocationTrackingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-            when (intent?.action) {
-                "ACTION_STOP" -> {
-                    stopForeground(true)
-                    stopSelf()
-                    return START_NOT_STICKY
-                }
-                "ACTION_START" -> {
-                    startForeground(NOTIFICATION_ID, createNotification())
-                    startLocationUpdates()
-                    return START_STICKY // Restart if killed
-                }
+        return when (intent?.action) {
+            ACTION_STOP -> {
+                stopLocationUpdates()
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf(startId)
+                START_NOT_STICKY
             }
-            return START_STICKY
+
+            // A sticky service is restarted with a null intent. Treat that restart
+            // exactly like an explicit start so it is promoted within the system deadline.
+            ACTION_START, null -> startTrackingOrStop(startId)
+
+            else -> {
+                Log.w(TAG, "Ignoring unsupported service action: ${intent.action}")
+                stopSelf(startId)
+                START_NOT_STICKY
+            }
         }
+    }
 
 
 
@@ -104,14 +118,64 @@ class LocationTrackingService : Service() {
         }
     }
 
-    private fun startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
+    private fun startTrackingOrStop(startId: Int): Int {
+        if (!hasLocationPermission() || !isLocationEnabled()) {
+            Log.w(TAG, "Location tracking not started: permission or location services unavailable")
+            stopSelf(startId)
+            return START_NOT_STICKY
         }
+
+        return try {
+            val foregroundType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+            } else {
+                0
+            }
+            ServiceCompat.startForeground(
+                this,
+                NOTIFICATION_ID,
+                createNotification(),
+                foregroundType
+            )
+            startLocationUpdates()
+            START_STICKY
+        } catch (e: SecurityException) {
+            // Android 14+ validates location foreground-service prerequisites at runtime.
+            // A revoked permission or disabled location must not crash the app process.
+            Log.e(TAG, "Unable to start location foreground service", e)
+            stopSelf(startId)
+            START_NOT_STICKY
+        }
+    }
+
+    private fun hasLocationPermission(): Boolean {
+        val fine = ActivityCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val coarse = ActivityCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        return fine || coarse
+    }
+
+    private fun isLocationEnabled(): Boolean {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            locationManager.isLocationEnabled
+        } else {
+            @Suppress("DEPRECATION")
+            locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun startLocationUpdates() {
+        // Permission is checked immediately before this method is called and again here
+        // to handle runtime revocation between service starts.
+        if (!hasLocationPermission()) return
 
         fusedLocationClient.requestLocationUpdates(
             locationRequest,
@@ -255,12 +319,6 @@ class LocationTrackingService : Service() {
     private fun getBatteryLevel(): Int {
         val batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
         return batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-    }
-
-    private fun isLocationEnabled(): Boolean {
-        val locationManager = getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
-        return locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ||
-                locationManager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)
     }
 
     private fun isMobileDataEnabled(): Boolean {

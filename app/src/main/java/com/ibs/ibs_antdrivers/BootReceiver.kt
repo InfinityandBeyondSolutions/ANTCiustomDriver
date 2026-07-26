@@ -3,7 +3,9 @@ package com.ibs.ibs_antdrivers.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.location.LocationManager
 import android.os.Build
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.ibs.ibs_antdrivers.offlineupload.UploadWorkScheduler
 import com.ibs.ibs_antdrivers.rtdbqueue.RtdbQueueWorkScheduler
@@ -24,7 +26,12 @@ class BootReceiver : BroadcastReceiver() {
                     val trackingEnabled = prefs.getBoolean("tracking_active", false)
                     val disclosureAccepted = prefs.getBoolean("location_disclosure_accepted", false)
 
-                    if (trackingEnabled && disclosureAccepted && hasRequiredLocationPermissions(context)) {
+                    if (
+                        trackingEnabled &&
+                        disclosureAccepted &&
+                        hasRequiredLocationPermissions(context) &&
+                        isLocationEnabled(context)
+                    ) {
                         startLocationService(context)
                     }
 
@@ -64,12 +71,32 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     private fun startLocationService(context: Context) {
-        val serviceIntent = Intent(context, LocationTrackingService::class.java)
+        val serviceIntent = Intent(context, LocationTrackingService::class.java).apply {
+            action = LocationTrackingService.ACTION_START
+        }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(serviceIntent)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+        } catch (e: RuntimeException) {
+            // Background-start and foreground-service prerequisites vary by OS/OEM.
+            // A rejected automatic restart should not crash the whole app process.
+            Log.e("BootReceiver", "Unable to resume location tracking", e)
+        }
+    }
+
+    private fun isLocationEnabled(context: Context): Boolean {
+        val locationManager =
+            context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            locationManager.isLocationEnabled
         } else {
-            context.startService(serviceIntent)
+            @Suppress("DEPRECATION")
+            locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
         }
     }
 }
