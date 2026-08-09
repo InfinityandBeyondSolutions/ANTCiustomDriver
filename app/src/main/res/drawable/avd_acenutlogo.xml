@@ -6,14 +6,8 @@
             android:name="vector"
             android:width="288dp"
             android:height="288dp"
-            android:viewportWidth="400"
-            android:viewportHeight="400">
-            <!-- Android sizes system splash icons itself. The translated 288-unit logo inside
-                 a 400-unit viewport supplies consistent white space and a smaller visual mark. -->
-            <group
-                android:name="logo_inset"
-                android:translateX="56"
-                android:translateY="56">
+            android:viewportWidth="288"
+            android:viewportHeight="288">
             <group android:name="blue_apple">
                 <path
                     android:name="blueapple"
@@ -43,7 +37,6 @@
                     android:pathData="M 128.374 78.31 C 133.615 63.91 147.267 55.658 147.267 55.658 C 147.267 55.658 152.421 70.754 147.18 85.154 C 141.938 99.554 128.287 107.806 128.287 107.806 C 128.287 107.806 123.133 92.71 128.374 78.31 Z"
                     android:fillColor="#709c07"
                     android:strokeWidth="1"/>
-            </group>
             </group>
         </vector>
     </aapt:attr>
