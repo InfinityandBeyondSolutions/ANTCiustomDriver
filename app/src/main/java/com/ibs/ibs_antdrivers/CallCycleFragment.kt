@@ -196,7 +196,7 @@ class CallCycleFragment : Fragment() {
         // Planned dropdown
         if (isPlannedTab) {
             val opt = state.plannedOptions
-            val weekAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, opt)
+            val weekAdapter = ArrayAdapter(requireContext(), R.layout.item_dropdown_white, opt)
             weekDropdown.setAdapter(weekAdapter)
 
             suppressWeekSelectionCallback = true

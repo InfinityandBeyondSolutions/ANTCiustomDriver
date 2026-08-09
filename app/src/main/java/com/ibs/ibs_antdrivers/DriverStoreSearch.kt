@@ -16,6 +16,9 @@ class DriverStoreSearch : Fragment() {
         const val ARG_PREFILL_STORE_QUERY = "prefillStoreQuery"
         const val ARG_RETURN_TO = "returnTo"
         const val RETURN_TO_CALL_CYCLE = "callCycle"
+
+        private const val STORE_PAGE_SIZE = 20
+        private const val LOAD_MORE_THRESHOLD = 4
     }
 
     private lateinit var btnBack: ImageView
@@ -28,6 +31,10 @@ class DriverStoreSearch : Fragment() {
     private var storeCountView: TextView? = null
 
     private val storeList = ArrayList<StoreData>()
+    private var filteredStores: List<StoreData> = emptyList()
+    private var visibleStoreCount = 0
+    private var nextPagePending = false
+    private var filterGeneration = 0
 
     private var pendingPrefillQuery: String? = null
     private var returnTo: String? = null
@@ -65,10 +72,11 @@ class DriverStoreSearch : Fragment() {
             }
         }
 
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        val storeLayoutManager = LinearLayoutManager(requireContext())
+        recyclerView.layoutManager = storeLayoutManager
 
         storeAdapter = StoreAdapter(
-            storeList,
+            emptyList(),
             onCameraCapture = { store ->
                 val bundle = Bundle().apply {
                     putString("storeId", store.StoreID)
@@ -84,6 +92,24 @@ class DriverStoreSearch : Fragment() {
         )
 
         recyclerView.adapter = storeAdapter
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                if (dy <= 0 || visibleStoreCount >= filteredStores.size) return
+
+                val lastVisiblePosition = storeLayoutManager.findLastVisibleItemPosition()
+                if (!nextPagePending && lastVisiblePosition >= storeAdapter.itemCount - LOAD_MORE_THRESHOLD) {
+                    nextPagePending = true
+                    val requestedGeneration = filterGeneration
+                    recyclerView.post {
+                        nextPagePending = false
+                        if (requestedGeneration == filterGeneration) {
+                            loadNextStorePage()
+                        }
+                    }
+                }
+            }
+        })
 
         fetchStoresFromFirebase()
         setupSpinners()
@@ -128,17 +154,15 @@ class DriverStoreSearch : Fragment() {
                     }
                 }
 
-                storeAdapter.updateList(storeList)
-                storeCountView?.text = storeList.size.toString()
+                storeList.sortWith(
+                    compareBy(
+                        { it.StoreName.lowercase() },
+                        { it.StoreID.lowercase() }
+                    )
+                )
                 setupSpinnerData(spinnerFranchise, franchises)
                 setupSpinnerData(spinnerRegion, regions)
-
-                // Re-apply the deep-link query once data is loaded.
-                pendingPrefillQuery?.let {
-                    filterStores()
-                    // Scroll to top so the match is immediately visible.
-                    recyclerView.scrollToPosition(0)
-                }
+                filterStores()
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -150,8 +174,8 @@ class DriverStoreSearch : Fragment() {
     private fun setupSpinnerData(spinner: Spinner, data: Set<String>) {
         context?.let {
             val items = listOf("All") + data.sorted()
-            val adapter = ArrayAdapter(it, android.R.layout.simple_spinner_item, items)
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            val adapter = ArrayAdapter(it, R.layout.item_dropdown_white, items)
+            adapter.setDropDownViewResource(R.layout.item_dropdown_white)
             spinner.adapter = adapter
         }
     }
@@ -184,11 +208,12 @@ class DriverStoreSearch : Fragment() {
     }
 
     private fun filterStores() {
+        filterGeneration++
         val query = searchStores.query?.toString()?.lowercase() ?: ""
         val selectedFranchise = spinnerFranchise.selectedItem?.toString() ?: "All"
         val selectedRegion = spinnerRegion.selectedItem?.toString() ?: "All"
 
-        val filtered = storeList.filter { store ->
+        filteredStores = storeList.filter { store ->
             val idMatch = store.StoreID.lowercase().contains(query)
             val nameMatch = store.StoreName.lowercase().contains(query)
             val franchiseMatch = selectedFranchise == "All" || store.StoreFranchise == selectedFranchise
@@ -196,8 +221,30 @@ class DriverStoreSearch : Fragment() {
             (idMatch || nameMatch) && franchiseMatch && regionMatch
         }
 
-        storeCountView?.text = filtered.size.toString()
-        storeAdapter.updateList(filtered)
+        visibleStoreCount = minOf(STORE_PAGE_SIZE, filteredStores.size)
+        renderVisibleStores(scrollToTop = true)
+    }
+
+    private fun loadNextStorePage() {
+        if (visibleStoreCount >= filteredStores.size) return
+
+        visibleStoreCount = minOf(visibleStoreCount + STORE_PAGE_SIZE, filteredStores.size)
+        renderVisibleStores(scrollToTop = false)
+    }
+
+    private fun renderVisibleStores(scrollToTop: Boolean) {
+        storeAdapter.updateList(filteredStores.take(visibleStoreCount))
+
+        val totalCount = filteredStores.size
+        storeCountView?.text = if (visibleStoreCount < totalCount) {
+            "$visibleStoreCount of $totalCount"
+        } else {
+            totalCount.toString()
+        }
+
+        if (scrollToTop && visibleStoreCount > 0) {
+            recyclerView.scrollToPosition(0)
+        }
     }
 
     private fun styleSearchView(searchView: SearchView) {

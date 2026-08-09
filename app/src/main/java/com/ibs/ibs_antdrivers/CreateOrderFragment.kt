@@ -409,7 +409,7 @@ class CreateOrderFragment : Fragment() {
                 storeDisplayListAll.addAll(storeDisplayList)
 
                 // Custom adapter so search matches Store Name OR Store ID regardless of display formatting
-                storeAdapter = object : ArrayAdapter<String>(requireContext(), android.R.layout.simple_list_item_1, storeDisplayList) {
+                storeAdapter = object : ArrayAdapter<String>(requireContext(), R.layout.item_dropdown_white, storeDisplayList) {
                     override fun getFilter(): Filter {
                         return object : Filter() {
                             override fun performFiltering(constraint: CharSequence?): FilterResults {
@@ -469,7 +469,7 @@ class CreateOrderFragment : Fragment() {
                 priceListDisplayList.clear()
                 priceListDisplayList.addAll(priceListList.map { displayPriceList(it) })
 
-                priceListAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, priceListDisplayList)
+                priceListAdapter = ArrayAdapter(requireContext(), R.layout.item_dropdown_white, priceListDisplayList)
                 actvPriceList.setAdapter(priceListAdapter)
             } catch (_: Throwable) {
                 showSnack("Failed to load price lists")

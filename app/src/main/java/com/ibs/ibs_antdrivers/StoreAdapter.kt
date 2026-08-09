@@ -30,15 +30,15 @@ class StoreAdapter(
 
         init {
             itemView.setOnClickListener {
-                onItemClick(storeList[adapterPosition])
+                currentStore()?.let(onItemClick)
             }
 
             cameraButton.setOnClickListener {
-                onCameraCapture(storeList[adapterPosition])
+                currentStore()?.let(onCameraCapture)
             }
 
             galleryButton.setOnClickListener {
-                val store = storeList[adapterPosition]
+                val store = currentStore() ?: return@setOnClickListener
                 val bundle = Bundle().apply {
                     putString("storeId", store.StoreID)
                     putString("storeName", store.StoreName)
@@ -48,6 +48,11 @@ class StoreAdapter(
                     bundle
                 )
             }
+        }
+
+        private fun currentStore(): StoreData? {
+            val position = bindingAdapterPosition
+            return if (position == RecyclerView.NO_POSITION) null else storeList.getOrNull(position)
         }
     }
 

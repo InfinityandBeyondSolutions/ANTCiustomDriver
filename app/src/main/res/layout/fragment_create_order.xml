@@ -104,6 +104,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:hint="Search Store"
+                    app:boxBackgroundColor="@color/white"
                     app:boxStrokeColor="@color/weblightgold"
                     app:hintTextColor="#6B7280"
                     app:endIconMode="clear_text"
@@ -114,6 +115,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="text"
+                        android:popupBackground="@color/white"
                         android:singleLine="true"
                         android:completionThreshold="0"
                         android:textSize="14sp" />
@@ -186,6 +188,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:hint="Search Price List"
+                    app:boxBackgroundColor="@color/white"
                     app:boxStrokeColor="@color/weblightgold"
                     app:hintTextColor="#6B7280"
                     app:endIconMode="clear_text"
@@ -196,6 +199,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="text"
+                        android:popupBackground="@color/white"
                         android:singleLine="true"
                         android:completionThreshold="0"
                         android:textSize="14sp" />

@@ -106,6 +106,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:hint="Franchise"
+            app:boxBackgroundColor="@color/white"
             app:boxStrokeColor="@color/weblightgold"
             app:hintTextColor="#6B7280"
             app:endIconMode="none">
@@ -114,6 +115,7 @@
                 android:id="@+id/spinnerFranchise"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:popupBackground="@color/white"
                 android:spinnerMode="dropdown" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -128,6 +130,7 @@
             android:layout_weight="1"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:hint="Region"
+            app:boxBackgroundColor="@color/white"
             app:boxStrokeColor="@color/weblightgold"
             app:hintTextColor="#6B7280"
             app:endIconMode="none">
@@ -136,6 +139,7 @@
                 android:id="@+id/spinnerRegion"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:popupBackground="@color/white"
                 android:spinnerMode="dropdown" />
 
         </com.google.android.material.textfield.TextInputLayout>

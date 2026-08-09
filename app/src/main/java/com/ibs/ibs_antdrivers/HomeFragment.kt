@@ -240,7 +240,7 @@ class HomeFragment : Fragment() {
         clockSubtitle.text = if (active) {
             "End your shift to stop location tracking"
         } else {
-            "Start your shift to enable location tracking"
+            "Start your shift"
         }
         clockStatusBadge?.text = if (active) "Active" else "Ready"
     }
