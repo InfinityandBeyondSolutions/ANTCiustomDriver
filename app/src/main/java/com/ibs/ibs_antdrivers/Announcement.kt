@@ -18,6 +18,7 @@ data class Announcement(
     val Attachments: List<Attachment>? = null,
     val AdminName: String? = null,
     val DatePosted: String? = null,
-    val IsDraft: Boolean = false
+    val IsDraft: Boolean = false,
+    val ExpiresAtUnixMs: Long? = null
 )
 
