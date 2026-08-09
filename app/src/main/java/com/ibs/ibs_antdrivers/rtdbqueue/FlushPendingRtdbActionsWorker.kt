@@ -25,12 +25,23 @@ class FlushPendingRtdbActionsWorker(
         if (batch.isEmpty()) return Result.success()
 
         var anyTransientFailure = false
+        val firebaseRoot = FirebaseDatabase.getInstance().reference
 
         for (item in batch) {
             try {
                 dao.updateStatus(item.id, PendingStatus.RUNNING)
 
-                val ref = FirebaseDatabase.getInstance().reference.child(item.path)
+                val ref = firebaseRoot.child(item.path)
+
+                val queuedOrderId = queuedOrderIdOrNull(item.path, item.type)
+                if (queuedOrderId != null && orderAlreadyExistsOrIsArchived(firebaseRoot, queuedOrderId)) {
+                    // SET is a creation retry, not an update. Replaying it over an existing order
+                    // could reset Processing/Completed back to New; replaying it after archival
+                    // would recreate a completed order in the active Kanban table.
+                    Log.i("RtdbQueueWorker", "Discarded stale order create path=${item.path}")
+                    dao.updateResult(item.id, PendingStatus.DONE, item.retryCount, null)
+                    continue
+                }
 
                 when (item.type) {
                     RtdbActionType.SET -> {
@@ -80,4 +91,33 @@ class FlushPendingRtdbActionsWorker(
 
         return if (anyTransientFailure) Result.retry() else Result.success()
     }
+
+    private suspend fun orderAlreadyExistsOrIsArchived(
+        root: com.google.firebase.database.DatabaseReference,
+        orderId: String
+    ): Boolean {
+        if (root.child("orders").child(orderId).get().await().exists()) return true
+
+        // Current web versions archive under completedOrders/{originalOrderId}.
+        if (root.child("completedOrders").child(orderId).get().await().exists()) return true
+
+        // Legacy web versions used POST and generated a different archive child key, while
+        // retaining the source key in the payload's id field.
+        return root.child("completedOrders")
+            .orderByChild("id")
+            .equalTo(orderId)
+            .limitToFirst(1)
+            .get()
+            .await()
+            .exists()
+    }
+}
+
+internal fun queuedOrderIdOrNull(path: String, type: RtdbActionType): String? {
+    if (type != RtdbActionType.SET) return null
+
+    val segments = path.trim('/').split('/')
+    if (segments.size != 2 || segments[0] != "orders") return null
+
+    return segments[1].takeIf { it.isNotBlank() }
 }

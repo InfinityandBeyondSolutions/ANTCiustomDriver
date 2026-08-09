@@ -8,7 +8,7 @@
       }
     },
     "completedOrders": {
-      ".indexOn": ["driverId"],
+      ".indexOn": ["driverId", "id"],
       "$orderId": {
         ".read": "auth != null",
         ".write": "auth != null"

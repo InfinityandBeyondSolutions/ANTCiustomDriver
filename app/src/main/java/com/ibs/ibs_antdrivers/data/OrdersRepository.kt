@@ -99,19 +99,23 @@ class OrdersRepository(
 
         val map = orderToMap(orderWithId)
 
-        // 2) Try network write; if it fails, enqueue for later and return success.
+        // 2) Try network write; if acknowledgement is lost, verify whether Firebase
+        // already accepted it before adding a second durable retry.
         try {
             orderRef.setValue(map).await()
         } catch (_: Throwable) {
-            val path = RtdbPath.child("orders", orderId)
-            val dedupeKey = "order:$orderId"
-            RtdbWriteQueue.enqueueSetMap(
-                context = ctx,
-                path = path,
-                value = map.filterKeys { it != "id" } + ("id" to orderId),
-                priority = 1,
-                dedupeKey = dedupeKey
-            )
+            val wasAccepted = runCatching { orderRef.get().await().exists() }.getOrDefault(false)
+            if (!wasAccepted) {
+                val path = RtdbPath.child("orders", orderId)
+                val dedupeKey = "order:$orderId"
+                RtdbWriteQueue.enqueueSetMap(
+                    context = ctx,
+                    path = path,
+                    value = map.filterKeys { it != "id" } + ("id" to orderId),
+                    priority = 1,
+                    dedupeKey = dedupeKey
+                )
+            }
         }
 
         return orderId
