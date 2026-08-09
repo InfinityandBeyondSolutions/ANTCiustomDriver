@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
@@ -137,10 +138,6 @@ class MainActivity : AppCompatActivity() {
             createShiftAndStartTracking()
         }
     }
-
-    private val notificationsLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { /* nop */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applySavedMode(this)
@@ -275,13 +272,6 @@ class MainActivity : AppCompatActivity() {
                         try { FirebaseDatabase.getInstance().goOnline() } catch (_: Exception) { }
                     }
                 }
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
         cleanupOldShifts()
@@ -551,20 +541,31 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(this, LocationTrackingService::class.java).apply {
             action = LocationTrackingService.ACTION_START
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
+        try {
+            ContextCompat.startForegroundService(this, intent)
+            Toast.makeText(this, "Location tracking active", Toast.LENGTH_SHORT).show()
+        } catch (error: RuntimeException) {
+            // ColorOS and other OEMs can reject a foreground-service launch even when Android's
+            // normal permission checks pass. A restored active-shift flag must not crash startup.
+            Log.e("MainActivity", "Unable to start location tracking service", error)
+            Toast.makeText(
+                this,
+                "Location tracking could not start. Check location and battery settings.",
+                Toast.LENGTH_LONG
+            ).show()
         }
-        Toast.makeText(this, "Location tracking active", Toast.LENGTH_SHORT).show()
     }
 
     private fun stopLocationService() {
         val intent = Intent(this, LocationTrackingService::class.java).apply {
             action = LocationTrackingService.ACTION_STOP
         }
-        startService(intent)
-        Toast.makeText(this, "Location tracking stopped", Toast.LENGTH_SHORT).show()
+        try {
+            stopService(intent)
+            Toast.makeText(this, "Location tracking stopped", Toast.LENGTH_SHORT).show()
+        } catch (error: RuntimeException) {
+            Log.w("MainActivity", "Unable to stop location tracking service", error)
+        }
     }
 
     private fun handleIntent(intent: Intent?) {
