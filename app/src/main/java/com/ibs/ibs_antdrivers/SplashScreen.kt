@@ -20,7 +20,9 @@ class SplashActivity : Activity() {
         }
 
         Handler(Looper.getMainLooper()).postDelayed({
-            startActivity(Intent(this, SplashscreenTwo::class.java))
+            val nextIntent = Intent(this, SplashscreenTwo::class.java)
+            intent.extras?.let(nextIntent::putExtras)
+            startActivity(nextIntent)
             finish()
         }, 2500) // Delay to let the animation play
     }

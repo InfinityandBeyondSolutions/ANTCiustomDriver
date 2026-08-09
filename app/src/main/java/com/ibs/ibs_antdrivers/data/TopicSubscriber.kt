@@ -9,9 +9,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 object TopicSubscriber {
+    private const val APP_UPDATES_TOPIC = "all_drivers"
+
     fun subscribeToMyGroups(myUid: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                FirebaseMessaging.getInstance().subscribeToTopic(APP_UPDATES_TOPIC).await()
+
                 val db = Firebase.database.reference
                 val all = db.child("groupMembers").get().await()
                 if (!all.exists()) return@launch

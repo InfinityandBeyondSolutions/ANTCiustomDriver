@@ -10,8 +10,11 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -24,6 +27,7 @@ class AnnouncementsFragment : Fragment() {
     private lateinit var noText: TextView
     private lateinit var recyclerView: RecyclerView
     private val announcements = mutableListOf<Announcement>()
+    private var announcementsListener: ValueEventListener? = null
 
     // Parses DatePosted/UploadedAt to epoch millis so we can sort newest -> oldest.
     // Examples we expect from Firebase:
@@ -100,42 +104,61 @@ class AnnouncementsFragment : Fragment() {
     private fun fetchAnnouncements() {
         database = FirebaseDatabase.getInstance().getReference("announcements")
 
-        // Fetch without an ordered query so we don't depend on a Realtime Database index/rule.
-        // We sort in-memory to guarantee newest-first in the UI.
-        database.get().addOnSuccessListener { snapshot ->
-            announcements.clear()
-
-            if (snapshot.exists()) {
-                for (child in snapshot.children) {
-                    val ann = child.getValue(Announcement::class.java)
-                    if (ann != null && !ann.IsDraft) {
-                        announcements.add(ann)
-                    }
-                }
-
-                // Newest first (top of the list)
-                announcements.sortWith(
-                    compareByDescending<Announcement> { sortKeyMillis(it) }
-                        .thenByDescending { it.Id ?: "" }
-                )
-
-                if (announcements.isNotEmpty()) {
-                    noText.visibility = View.GONE
-                    recyclerView.adapter = AnnouncementsAdapter(announcements)
-                } else {
-                    noText.visibility = View.VISIBLE
-                }
-            } else {
-                noText.visibility = View.VISIBLE
+        announcementsListener?.let(database::removeEventListener)
+        announcementsListener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                renderAnnouncements(snapshot)
             }
-        }.addOnFailureListener { e ->
-            Toast.makeText(
-                requireContext(),
-                "Failed to load announcements: ${e.message ?: "unknown error"}",
-                Toast.LENGTH_LONG
-            ).show()
-            noText.visibility = View.VISIBLE
+
+            override fun onCancelled(error: DatabaseError) {
+                context?.let { context ->
+                    Toast.makeText(
+                        context,
+                        "Failed to load announcements: ${error.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                if (announcements.isEmpty()) {
+                    noText.visibility = View.VISIBLE
+                    recyclerView.visibility = View.GONE
+                }
+            }
         }
+        database.addValueEventListener(announcementsListener!!)
+    }
+
+    private fun renderAnnouncements(snapshot: DataSnapshot) {
+        announcements.clear()
+
+        if (snapshot.exists()) {
+            for (child in snapshot.children) {
+                val ann = child.getValue(Announcement::class.java)
+                if (ann != null && !ann.IsDraft) {
+                    announcements.add(
+                        if (ann.Id.isNullOrBlank()) ann.copy(Id = child.key) else ann
+                    )
+                }
+            }
+
+            // Newest first (top of the list)
+            announcements.sortWith(
+                compareByDescending<Announcement> { sortKeyMillis(it) }
+                    .thenByDescending { it.Id ?: "" }
+            )
+        }
+
+        val hasAnnouncements = announcements.isNotEmpty()
+        noText.visibility = if (hasAnnouncements) View.GONE else View.VISIBLE
+        recyclerView.visibility = if (hasAnnouncements) View.VISIBLE else View.GONE
+        recyclerView.adapter = AnnouncementsAdapter(announcements.toList())
+    }
+
+    override fun onDestroyView() {
+        announcementsListener?.let { listener ->
+            if (::database.isInitialized) database.removeEventListener(listener)
+        }
+        announcementsListener = null
+        super.onDestroyView()
     }
 
 }

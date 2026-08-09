@@ -28,10 +28,14 @@
             android:gravity="center_vertical"
             android:padding="16dp">
 
-            <View
+            <ImageView
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="@drawable/bg_action_icon_circle_gold" />
+                android:background="@drawable/bg_action_icon_circle_gold"
+                android:contentDescription="@null"
+                android:padding="12dp"
+                android:src="@drawable/ic_pricelist_table"
+                app:tint="@color/webnavy" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -59,12 +63,6 @@
                     android:textSize="13sp" />
             </LinearLayout>
 
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_pricelist_table"
-                app:tint="@color/webgold" />
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>

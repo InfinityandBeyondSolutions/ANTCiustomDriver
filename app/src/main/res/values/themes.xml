@@ -15,6 +15,10 @@
 <!--        <item name="colorBackground">@color/background</item>-->
         <item name="colorOnBackground">@color/onBackground</item>
 
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">@color/white</item>
+
         <!-- Navigation/BottomNav defaults -->
         <item name="bottomNavigationStyle">@style/Ant.BottomNavigation</item>
 
@@ -25,7 +29,13 @@
 
     <!-- Splash keeps your existing setup, inherits tokens -->
     <style name="Theme.ANTCustomAppDrivers.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/background</item>
+        <!-- Keep the launch screen white even when the device is using dark mode. -->
+        <item name="windowSplashScreenBackground">@color/white</item>
+        <item name="android:windowBackground">@color/white</item>
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowFullscreen">true</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/avd_acenutlogo</item>

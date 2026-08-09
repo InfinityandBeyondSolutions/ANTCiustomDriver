@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
@@ -22,6 +23,7 @@ import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.google.firebase.database.*
 import com.ibs.ibs_antdrivers.R
+import com.ibs.ibs_antdrivers.data.AdminsRepository
 import com.ibs.ibs_antdrivers.data.FirebaseRepo
 import com.ibs.ibs_antdrivers.data.Message
 import com.ibs.ibs_antdrivers.offline.Offline
@@ -37,11 +39,12 @@ import java.util.Date
 class ChatHomeFragment : Fragment() {
 
     private val repo = FirebaseRepo()
+    private val adminsRepo = AdminsRepository()
 
     private lateinit var title: TextView
     private lateinit var list: RecyclerView
     private lateinit var input: EditText
-    private lateinit var send: Button
+    private lateinit var send: ImageButton
     private lateinit var attach: ImageButton
     private lateinit var progress: ProgressBar
     private lateinit var btnBack: ImageView
@@ -151,8 +154,27 @@ class ChatHomeFragment : Fragment() {
             myUid = repo.uid(),
             onOpenUrl = { url -> openInAppViewer(url) } // change to openExternal(url) to use external apps
         )
-        list.layoutManager = LinearLayoutManager(requireContext()).apply { stackFromEnd = true }
+        // Keep short conversations anchored directly below the header. Historical messages are
+        // still streamed in order and longer conversations continue scrolling to the latest item.
+        list.layoutManager = LinearLayoutManager(requireContext()).apply { stackFromEnd = false }
         list.adapter = adapter
+
+        // Messages only store an admin UID. Resolve it through the shared admin directory so
+        // both existing and future messages can identify the administrator who sent them.
+        adminsRepo.startListening(
+            onUpdate = { admins ->
+                if (::adapter.isInitialized) {
+                    adapter.updateAdminNames(
+                        admins.associate { admin ->
+                            admin.id to admin.username.ifBlank {
+                                admin.email?.substringBefore('@').orEmpty().ifBlank { "Admin" }
+                            }
+                        }
+                    )
+                }
+            },
+            onError = { /* Keep the "Admin" fallback if the directory is temporarily unavailable. */ }
+        )
 
         btnBack = view.findViewById(R.id.btnBackToGroupPage)
         btnBack.setOnClickListener {
@@ -281,17 +303,41 @@ class ChatHomeFragment : Fragment() {
         val bottomNavGap = resources.getDimensionPixelSize(R.dimen.bottom_nav_bottom_gap)
         val composerGap = resources.getDimensionPixelSize(R.dimen.chat_composer_nav_gap)
 
-        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+        val applyBottomInset: (WindowInsetsCompat) -> Unit = { insets ->
             val navigationBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val keyboardVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
+
             composer.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                bottomMargin = navigationBars.bottom + bottomNavHeight + bottomNavGap + composerGap
+                bottomMargin = if (keyboardVisible) {
+                    ime.bottom + composerGap
+                } else {
+                    navigationBars.bottom + bottomNavHeight + bottomNavGap + composerGap
+                }
             }
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+            applyBottomInset(insets)
             insets
         }
+        ViewCompat.setWindowInsetsAnimationCallback(
+            root,
+            object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
+                override fun onProgress(
+                    insets: WindowInsetsCompat,
+                    runningAnimations: MutableList<WindowInsetsAnimationCompat>
+                ): WindowInsetsCompat {
+                    applyBottomInset(insets)
+                    return insets
+                }
+            }
+        )
         ViewCompat.requestApplyInsets(root)
     }
 
     override fun onDestroyView() {
+        adminsRepo.stopListening()
         super.onDestroyView()
         // Clean up listeners to avoid leaks/duplicates
         childListener?.let { repo.messagesRef(groupId).removeEventListener(it) }
@@ -534,6 +580,14 @@ class ChatHomeFragment : Fragment() {
         private val onOpenUrl: (String) -> Unit
     ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
+        private val adminNames = mutableMapOf<String, String>()
+
+        fun updateAdminNames(names: Map<String, String>) {
+            adminNames.clear()
+            adminNames.putAll(names)
+            notifyDataSetChanged()
+        }
+
         override fun getItemViewType(position: Int): Int {
             val m = data[position].second
             return if (m.senderId == myUid) 1 else 2
@@ -548,7 +602,8 @@ class ChatHomeFragment : Fragment() {
         override fun getItemCount() = data.size
 
         override fun onBindViewHolder(h: RecyclerView.ViewHolder, i: Int) {
-            (h as VH).bind(data[i].second, onOpenUrl)
+            val message = data[i].second
+            (h as VH).bind(message, adminNames[message.senderId], onOpenUrl)
         }
 
         private class VH(v: View) : RecyclerView.ViewHolder(v) {
@@ -557,7 +612,7 @@ class ChatHomeFragment : Fragment() {
             private val fileChip: TextView = v.findViewById(R.id.fileChip)
             private val meta: TextView = v.findViewById(R.id.meta)
 
-            fun bind(m: Message, onOpenUrl: (String) -> Unit) {
+            fun bind(m: Message, adminName: String?, onOpenUrl: (String) -> Unit) {
                 // --- IMAGE ---
                 val isImage = m.type == "image" && !m.attachment?.url.isNullOrBlank()
                 if (isImage) {
@@ -592,9 +647,16 @@ class ChatHomeFragment : Fragment() {
                 txt.visibility = if (hasText) View.VISIBLE else View.GONE
 
                 // --- META ---
-                meta.text = m.createdAt?.let {
+                val sentAt = m.createdAt?.let {
                     DateFormat.getDateTimeInstance().format(Date(it))
                 } ?: ""
+                meta.text = if (m.senderRole.equals("admin", ignoreCase = true)) {
+                    listOf(adminName?.takeIf { it.isNotBlank() } ?: "Admin", sentAt)
+                        .filter { it.isNotBlank() }
+                        .joinToString(" • ")
+                } else {
+                    sentAt
+                }
             }
         }
     }

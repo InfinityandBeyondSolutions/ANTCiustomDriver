@@ -13,13 +13,12 @@ import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
 import android.view.View
-import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationChannelCompat
@@ -58,7 +57,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var bottomNavItems: List<Pair<Int, ImageButton>>
     private lateinit var navController: NavController
-    private lateinit var btnDismissKeyboard: ImageButton
 
     private var authStateListener: FirebaseAuth.AuthStateListener? = null
    // private var tokenCheckRunnable: Runnable? = null
@@ -157,7 +155,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initializeApp() {
-        enableEdgeToEdge()
+        enableWhiteStatusBarEdgeToEdge()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
         }
@@ -172,6 +170,8 @@ class MainActivity : AppCompatActivity() {
             .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHost.navController
 
+        setupBackNavigation()
+
         setupBottomNavigation()
 
         // Keep bottom nav highlight in sync even when we navigate programmatically
@@ -179,11 +179,6 @@ class MainActivity : AppCompatActivity() {
             syncBottomNavSelection(destination)
         }
 
-        // ---- Keyboard dismiss button ----
-        btnDismissKeyboard = findViewById(R.id.btnDismissKeyboard)
-        btnDismissKeyboard.setOnClickListener { hideKeyboard() }
-
-        // ---- Insets: float the dismiss button just above the keyboard ----
         val navHostView = findViewById<View>(R.id.nav_host_fragment)
         val offlineBanner = findViewById<View>(R.id.offlineBanner)
         val bottomNavContainer = findViewById<View>(R.id.bottomNavContainer)
@@ -223,40 +218,9 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        ViewCompat.setOnApplyWindowInsetsListener(btnDismissKeyboard) { view, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            val margin = (16 * resources.displayMetrics.density).toInt()
-            val params = view.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
-            params.marginEnd = systemBars.right + margin
-            params.bottomMargin = systemBars.bottom + margin
-            view.layoutParams = params
-            insets
-        }
-
         ViewCompat.requestApplyInsets(navHostView)
         ViewCompat.requestApplyInsets(offlineBanner)
         ViewCompat.requestApplyInsets(bottomNavContainer)
-        ViewCompat.requestApplyInsets(btnDismissKeyboard)
-
-        // Animate the dismiss button so it always sits just above the keyboard.
-        // Use window.decorView for reliable keyboard height detection with adjustPan.
-        val decorView = window.decorView
-        decorView.viewTreeObserver.addOnGlobalLayoutListener {
-            val rect = android.graphics.Rect()
-            decorView.getWindowVisibleDisplayFrame(rect)
-            val screenHeight = decorView.height
-            val imeHeight = screenHeight - rect.bottom   // 0 when keyboard is hidden
-
-            if (imeHeight > screenHeight * 0.15) {
-                // Keyboard is open — show button, shift it up by keyboard height + small gap
-                btnDismissKeyboard.visibility = View.VISIBLE
-                btnDismissKeyboard.translationY = -(imeHeight.toFloat())
-            } else {
-                // Keyboard is closed — hide button, reset position
-                btnDismissKeyboard.visibility = View.GONE
-                btnDismissKeyboard.translationY = 0f
-            }
-        }
 
         // Deep link from FCM
         handleIntent(intent)
@@ -315,6 +279,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
+        setIntent(intent)
         handleIntent(intent)
     }
 
@@ -329,6 +294,9 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
 
         val user = auth.currentUser ?: return
+
+        // Keep the device subscribed to its chat groups and app-wide content updates.
+        TopicSubscriber.subscribeToMyGroups(user.uid)
 
         user.reload()
             .addOnFailureListener { e ->
@@ -355,6 +323,25 @@ class MainActivity : AppCompatActivity() {
 
     private fun hideActionBar() {
         supportActionBar?.hide()
+    }
+
+    private fun setupBackNavigation() {
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (!navController.popBackStack()) {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                        isEnabled = true
+                    }
+                }
+            }
+        )
+
+        findViewById<EdgeSwipeBackLayout>(R.id.main).onBackSwipe = {
+            onBackPressedDispatcher.onBackPressed()
+        }
     }
 
     private fun syncBottomNavSelection(destination: NavDestination) {
@@ -413,14 +400,19 @@ class MainActivity : AppCompatActivity() {
         bottomNavItems.forEach { (destinationId, button) ->
             button.setOnClickListener {
                 val currentDestination = navController.currentDestination
-                if (currentDestination != null && bottomNavItemForDestination(currentDestination) == destinationId) {
+                val isAlreadyOnDestination = currentDestination
+                    ?.hierarchy
+                    ?.any { it.id == destinationId } == true
+                if (isAlreadyOnDestination) {
                     return@setOnClickListener
                 }
 
                 val navOptions = NavOptions.Builder()
                     .setLaunchSingleTop(true)
-                    .setRestoreState(true)
-                    .setPopUpTo(navController.graph.findStartDestination().id, false, true)
+                    // An explicit tab selection must open that tab's root destination. Restoring
+                    // Home's saved nested stack would reopen Messages, Price Lists or Catalogue.
+                    .setRestoreState(false)
+                    .setPopUpTo(navController.graph.findStartDestination().id, false, false)
                     .build()
 
                 runCatching {
@@ -572,17 +564,53 @@ class MainActivity : AppCompatActivity() {
         val deeplink = intent?.getStringExtra("deeplink")
         val groupIdExtra = intent?.getStringExtra("groupId")
         val groupId = groupIdExtra ?: extractGroupIdFromUrl(deeplink)
+        val destination = intent?.getStringExtra("destination")
+            ?: when {
+                deeplink?.startsWith("/announcements") == true -> "announcements"
+                deeplink?.startsWith("/catalogues") == true -> "catalogues"
+                deeplink?.startsWith("/price-lists") == true -> "price_lists"
+                !groupId.isNullOrBlank() -> "chat"
+                else -> null
+            }
+
         if (!groupId.isNullOrBlank()) {
-            // NOTE: chat screens are currently implemented via manual fragment transactions.
-            // To keep navigation graph-only, those screens should be added as destinations.
-            // For now we route the user back to the Home destination.
-            navController.navigate(R.id.navHomeDriver)
+            val args = Bundle().apply {
+                putString("groupId", groupId)
+                putString("groupName", intent?.getStringExtra("groupName").orEmpty())
+            }
+            runCatching {
+                navController.navigate(
+                    R.id.chatHomeFragment,
+                    args,
+                    NavOptions.Builder().setLaunchSingleTop(true).build()
+                )
+            }
+            return
+        }
+
+        val destinationId = when (destination) {
+            "announcements" -> R.id.navAnnouncementsDriver
+            "catalogues" -> R.id.navCatalogue
+            "price_lists" -> R.id.navPriceLists
+            else -> null
+        }
+        if (destinationId != null && navController.currentDestination?.id != destinationId) {
+            runCatching {
+                navController.navigate(
+                    destinationId,
+                    null,
+                    NavOptions.Builder().setLaunchSingleTop(true).build()
+                )
+            }
         }
     }
 
     private fun extractGroupIdFromUrl(url: String?): String? {
         if (url.isNullOrBlank()) return null
-        return url.substringAfter("/chat/", missingDelimiterValue = "").takeIf { it.isNotBlank() }
+        return url.substringAfter("/chat/", missingDelimiterValue = "")
+            .substringBefore('?')
+            .trim('/')
+            .takeIf { it.isNotBlank() }
     }
 
     /* ---------- Notification Channel ---------- */
@@ -596,6 +624,15 @@ class MainActivity : AppCompatActivity() {
             .setDescription("Group chat notifications")
             .build()
         NotificationManagerCompat.from(this).createNotificationChannel(channel)
+
+        val updateChannel = NotificationChannelCompat.Builder(
+            "app_updates",
+            NotificationManagerCompat.IMPORTANCE_HIGH
+        )
+            .setName("Content Updates")
+            .setDescription("Announcements, catalogues and price list notifications")
+            .build()
+        NotificationManagerCompat.from(this).createNotificationChannel(updateChannel)
     }
 
     private fun requestPostNotificationIfNeeded() {
@@ -849,13 +886,6 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
     // --- Utilities ---
-
-    private fun hideKeyboard() {
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        val focused = currentFocus ?: window.decorView
-        imm.hideSoftInputFromWindow(focused.windowToken, 0)
-        focused.clearFocus()
-    }
 
     override fun onDestroy() {
         super.onDestroy()

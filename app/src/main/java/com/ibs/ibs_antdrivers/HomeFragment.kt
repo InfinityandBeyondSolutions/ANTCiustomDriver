@@ -38,7 +38,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -65,12 +64,13 @@ class HomeFragment : Fragment() {
     private lateinit var settingsBtn: ImageView
     private lateinit var btnPhonebook: ImageView
 
+    private var messagesCard: View? = null
+    private var phonebookCard: View? = null
     private var priceListsCard: View? = null
     private var catalogueCard: View? = null
 
     // New enhanced UI elements
     private lateinit var userName: TextView
-    private lateinit var greetingBadge: TextView
     private lateinit var currentDate: TextView
     private lateinit var currentTime: TextView
     private lateinit var userAvatar: ImageView
@@ -121,12 +121,13 @@ class HomeFragment : Fragment() {
         settingsBtn = view.findViewById(R.id.settingsIcon)
         btnPhonebook= view.findViewById(R.id.btnPhonebook)
 
+        messagesCard = view.findViewById(R.id.timesheetsCard)
+        phonebookCard = view.findViewById(R.id.supportCard)
         priceListsCard = view.findViewById(R.id.priceListsCard)
         catalogueCard = view.findViewById(R.id.catalogueCard)
 
         // New enhanced UI elements
         userName = view.findViewById(R.id.userName)
-        greetingBadge = view.findViewById(R.id.greetingBadge)
         currentDate = view.findViewById(R.id.currentDate)
         currentTime = view.findViewById(R.id.currentTime)
         userAvatar = view.findViewById(R.id.userAvatar)
@@ -139,7 +140,6 @@ class HomeFragment : Fragment() {
             ?: ContextCompat.getColor(requireContext(), R.color.antyellow)
 
         // Initialize enhanced UI
-        updateGreeting()
         updateDateTimeDisplay()
         loadUserProfile()
 
@@ -147,9 +147,11 @@ class HomeFragment : Fragment() {
             findNavController().navigate(R.id.action_home_to_settings)
         }
 
-        btnPhonebook.setOnClickListener {
+        val openPhonebook = View.OnClickListener {
             findNavController().navigate(R.id.action_home_to_adminPhonebook)
         }
+        phonebookCard?.setOnClickListener(openPhonebook)
+        btnPhonebook.setOnClickListener(openPhonebook)
 
         priceListsCard?.setOnClickListener {
             findNavController().navigate(R.id.action_home_to_priceLists)
@@ -159,10 +161,11 @@ class HomeFragment : Fragment() {
             findNavController().navigate(R.id.action_home_to_catalogue)
         }
 
-        //GOING TO CHAT NAVIGATION DOWN HERE
-        btnMsg.setOnClickListener {
+        val openMessages = View.OnClickListener {
             findNavController().navigate(R.id.action_home_to_groupList)
         }
+        messagesCard?.setOnClickListener(openMessages)
+        btnMsg.setOnClickListener(openMessages)
 
         btnClockIn.setOnClickListener { v ->
             v.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
@@ -207,7 +210,6 @@ class HomeFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         refreshUi()
-        updateGreeting()
         updateDateTimeDisplay()
 
         // Start ticker for time updates
@@ -406,18 +408,6 @@ class HomeFragment : Fragment() {
     // ═══════════════════════════════════════════════════════════════════════════
     // ENHANCED UI FUNCTIONS - Greeting, Date/Time, User Profile
     // ═══════════════════════════════════════════════════════════════════════════
-
-    private fun updateGreeting() {
-        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-        val (greeting, emoji) = when {
-            hour < 5 -> "Good Night" to "🌙"
-            hour < 12 -> "Good Morning" to "☀️"
-            hour < 17 -> "Good Afternoon" to "🌤️"
-            hour < 21 -> "Good Evening" to "🌆"
-            else -> "Good Night" to "🌙"
-        }
-        greetingBadge.text = "$greeting $emoji"
-    }
 
     private fun updateDateTimeDisplay() {
         val now = Date()

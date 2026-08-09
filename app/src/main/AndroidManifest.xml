@@ -80,7 +80,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:windowSoftInputMode="adjustPan|stateHidden">
+            android:windowSoftInputMode="adjustResize|stateHidden">
 
             <!-- Deep link from FCM: app opens and routes to Chat with groupId -->
             <intent-filter android:autoVerify="true">

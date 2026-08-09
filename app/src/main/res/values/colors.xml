@@ -37,9 +37,16 @@
     <!-- (optional) icon tint, etc. -->
     <color name="icon_tint">@color/navyblue</color>
 
-    <color name ="chattitlebg">#F2E5C9</color>
-    <color name ="chatmaintext">@color/black</color>
-    <color name ="chatbackicon">@color/black</color>
+    <color name ="chattitlebg">#FFFFFF</color>
+    <color name ="chatmaintext">@color/webnavy</color>
+    <color name ="chatbackicon">@color/webnavy</color>
+    <color name="chat_room_background">#F4F7FB</color>
+    <color name="chat_header_background">#FFFFFF</color>
+    <color name="chat_composer_background">#FFFFFF</color>
+    <color name="chat_input_background">#F1F5F9</color>
+    <color name="chat_composer_outline">#D7E0EC</color>
+    <color name="chat_hint_text">#6B778B</color>
+    <color name="chat_icon">@color/webnavy</color>
 
     <!-- these here are for the main group page (the heading + icon-->
     <color name ="groupname">@color/webnavy</color>

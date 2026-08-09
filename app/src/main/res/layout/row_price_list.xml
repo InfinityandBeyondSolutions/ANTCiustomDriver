@@ -7,12 +7,15 @@
     android:layout_marginTop="10dp"
     android:layout_marginBottom="2dp"
     app:cardCornerRadius="18dp"
-    app:cardElevation="6dp"
-    app:cardBackgroundColor="@color/white">
+    app:cardElevation="3dp"
+    app:cardBackgroundColor="@android:color/white"
+    app:strokeColor="#E2E8F0"
+    app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@android:color/white"
         android:padding="16dp">
 
         <TextView

@@ -118,53 +118,47 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Search Box with Gold Accent -->
-    <com.google.android.material.card.MaterialCardView
+    <!-- Clean, compact search field -->
+    <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/searchCard"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        app:cardBackgroundColor="@color/white"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:strokeColor="@color/weblightgold"
-        app:strokeWidth="1.5dp"
+        app:boxBackgroundColor="@color/white"
+        app:boxCornerRadiusBottomEnd="16dp"
+        app:boxCornerRadiusBottomStart="16dp"
+        app:boxCornerRadiusTopEnd="16dp"
+        app:boxCornerRadiusTopStart="16dp"
+        app:boxStrokeColor="@color/webgold"
+        app:boxStrokeWidth="1dp"
+        app:boxStrokeWidthFocused="2dp"
+        app:endIconMode="clear_text"
+        app:endIconTint="@color/webnavy"
+        app:hintEnabled="false"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headerCard">
+        app:layout_constraintTop_toBottomOf="@id/headerCard"
+        app:startIconDrawable="@drawable/vector_search"
+        app:startIconTint="@color/webnavy">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/searchBox"
-            style="@style/Widget.Material3.TextInputLayout.FilledBox.Dense"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/searchEdit"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:startIconDrawable="@drawable/vector_search"
-            app:startIconTint="@color/webgold"
-            app:endIconMode="clear_text"
-            app:endIconTint="@color/webnavy"
-            app:hintEnabled="true"
-            app:hintTextColor="@color/weblightnavy"
-            app:boxBackgroundMode="none"
-            app:boxStrokeWidth="0dp"
-            app:boxStrokeWidthFocused="0dp">
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:gravity="center_vertical"
+            android:hint="Search admins"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:singleLine="true"
+            android:textColor="@color/webnavy"
+            android:textColorHint="#6B7280"
+            android:textSize="15sp" />
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/searchEdit"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@android:color/transparent"
-                android:hint="Search admins (name, email, phone)"
-                android:imeOptions="actionDone"
-                android:textColor="@color/webnavy"
-                android:textColorHint="@color/weblightnavy"
-                android:singleLine="true"
-                android:paddingVertical="14dp"/>
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-    </com.google.android.material.card.MaterialCardView>
+    </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Empty State with Premium Style -->
     <LinearLayout

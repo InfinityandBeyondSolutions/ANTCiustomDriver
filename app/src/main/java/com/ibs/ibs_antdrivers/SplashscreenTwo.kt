@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -23,7 +22,7 @@ class SplashscreenTwo : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableWhiteStatusBarEdgeToEdge()
         setContentView(R.layout.activity_splashscreen_two)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { view, insets ->
@@ -90,6 +89,7 @@ class SplashscreenTwo : AppCompatActivity() {
 
         // Navigate directly without animation delay
         val intent = Intent(this, nextActivity)
+        this.intent.extras?.let(intent::putExtras)
         // Clear the back stack so user can't go back to splash screens
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
