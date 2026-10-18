@@ -1,12 +1,10 @@
 package com.ibs.ibs_antdrivers
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -25,6 +23,7 @@ class CatalogueCategoriesFragment : Fragment() {
     private lateinit var noText: TextView
     private lateinit var recyclerView: RecyclerView
     private val categories = mutableListOf<CatalogueCategory>()
+    private var catalogueDialog: AlertDialog? = null
 
     private val repo = CatalogueRepository()
 
@@ -88,6 +87,8 @@ class CatalogueCategoriesFragment : Fragment() {
     }
 
     private fun onCategoryClicked(category: CatalogueCategory) {
+        if (catalogueDialog?.isShowing == true ||
+            findNavController().currentDestination?.id != R.id.navCatalogue) return
         // Check if PDF is attached
         if (category.Catalogue == null || category.Catalogue.FileUrl.isNullOrEmpty()) {
             showNoPdfWarning(category)
@@ -117,7 +118,7 @@ class CatalogueCategoriesFragment : Fragment() {
             // Dialog dismisses, user stays on landing page
         }
 
-        dialog.show()
+        showCatalogueDialog(dialog)
     }
 
     private fun showCatalogueModal(category: CatalogueCategory) {
@@ -142,10 +143,20 @@ class CatalogueCategoriesFragment : Fragment() {
             dialog.dismiss()
         }
 
+        showCatalogueDialog(dialog)
+    }
+
+    private fun showCatalogueDialog(dialog: AlertDialog) {
+        catalogueDialog = dialog
+        dialog.setOnDismissListener {
+            if (catalogueDialog === dialog) catalogueDialog = null
+        }
         dialog.show()
     }
 
     private fun navigateToCatalogue(category: CatalogueCategory) {
+        val controller = findNavController()
+        if (controller.currentDestination?.id != R.id.navCatalogue) return
         val categoryName = category.Name ?: "Catalogue ${category.Id}"
 
         // Navigate to the existing CatalogueFragment with the category info
@@ -153,7 +164,15 @@ class CatalogueCategoriesFragment : Fragment() {
             putInt("categoryId", category.Id)
             putString("categoryName", categoryName)
             putString("fileUrl", category.Catalogue?.FileUrl)
+            putString("fileName", category.Catalogue?.FileName)
+            putLong("uploadedAtUnixMs", category.Catalogue?.UploadedAtUnixMs ?: 0)
         }
-        findNavController().navigate(R.id.action_catalogueCategories_to_catalogue, bundle)
+        controller.navigate(R.id.action_catalogueCategories_to_catalogue, bundle)
+    }
+
+    override fun onDestroyView() {
+        catalogueDialog?.dismiss()
+        catalogueDialog = null
+        super.onDestroyView()
     }
 }

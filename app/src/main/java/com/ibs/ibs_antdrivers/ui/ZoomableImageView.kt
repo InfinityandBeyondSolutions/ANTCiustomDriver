@@ -1,161 +1,132 @@
 package com.ibs.ibs_antdrivers.ui
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Matrix
-import android.graphics.PointF
 import android.util.AttributeSet
+import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import androidx.appcompat.widget.AppCompatImageView
-import kotlin.math.max
 import kotlin.math.min
 
-/**
- * A simple ImageView that supports pinch-to-zoom and pan gestures.
- * Zoom range: 1× – 5×.  Double-tap resets to fit.
- */
+/** Pinch, pan and button zoom from the fitted page size up to 5x. Double-tap zooms or fits. */
 class ZoomableImageView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
+    defStyleAttr: Int = 0,
 ) : AppCompatImageView(context, attrs, defStyleAttr) {
+    private val transform = Matrix()
+    var zoom = 1f
+        private set
+    var onZoomChanged: ((Float) -> Unit)? = null
 
-    private val matrix = Matrix()
-    private val savedMatrix = Matrix()
+    private val contentWidth get() = (width - paddingLeft - paddingRight).toFloat()
+    private val contentHeight get() = (height - paddingTop - paddingBottom).toFloat()
 
-    // Gesture tracking
-    private var mode = NONE
-    private val start = PointF()
-    private val mid = PointF()
-    private var dist = 1f
-    private var scale = 1f
-    private val minScale = 1f
-    private val maxScale = 5f
+    private val scaleDetector = ScaleGestureDetector(context,
+        object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                zoomTo(zoom * detector.scaleFactor, detector.focusX - paddingLeft, detector.focusY - paddingTop)
+                return true
+            }
+        }
+    )
+    private val gestureDetector = GestureDetector(context,
+        object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(event: MotionEvent) = true
 
-    private val scaleDetector = ScaleGestureDetector(context, ScaleListener())
+            override fun onScroll(
+                first: MotionEvent?, event: MotionEvent, distanceX: Float, distanceY: Float,
+            ): Boolean {
+                if (!scaleDetector.isInProgress && event.pointerCount == 1) {
+                    transform.postTranslate(-distanceX, -distanceY)
+                    constrainPan()
+                    imageMatrix = transform
+                }
+                return true
+            }
 
-    // Double-tap reset
-    private var lastTapTime = 0L
+            override fun onDoubleTap(event: MotionEvent): Boolean {
+                if (zoom > 1.01f) resetZoom()
+                else zoomTo(2f, event.x - paddingLeft, event.y - paddingTop)
+                return true
+            }
+
+            override fun onSingleTapConfirmed(event: MotionEvent) = performClick()
+        }
+    )
 
     init {
         scaleType = ScaleType.MATRIX
-        imageMatrix = matrix
+        imageMatrix = transform
+    }
+
+    fun zoomIn() = zoomTo(zoom * 1.25f)
+    fun zoomOut() = zoomTo(zoom / 1.25f)
+
+    private fun zoomTo(value: Float, focusX: Float = contentWidth / 2, focusY: Float = contentHeight / 2) {
+        if (drawable == null || contentWidth <= 0 || contentHeight <= 0) return
+        val next = value.coerceIn(1f, 5f)
+        val factor = next / zoom
+        transform.postScale(factor, factor, focusX, focusY)
+        zoom = next
+        constrainPan()
+        imageMatrix = transform
+        onZoomChanged?.invoke(zoom)
+    }
+
+    /** 100% means the whole page fits, even when the PDF is larger than the screen. */
+    fun resetZoom() {
+        val image = drawable ?: return
+        if (contentWidth <= 0 || contentHeight <= 0 || image.intrinsicWidth <= 0 || image.intrinsicHeight <= 0) return
+        val fit = min(contentWidth / image.intrinsicWidth, contentHeight / image.intrinsicHeight)
+        transform.setScale(fit, fit)
+        zoom = 1f
+        constrainPan()
+        imageMatrix = transform
+        onZoomChanged?.invoke(zoom)
+    }
+
+    private fun constrainPan() {
+        val image = drawable ?: return
+        val values = FloatArray(9)
+        transform.getValues(values)
+        val imageWidth = image.intrinsicWidth * values[Matrix.MSCALE_X]
+        val imageHeight = image.intrinsicHeight * values[Matrix.MSCALE_Y]
+        val x = if (imageWidth <= contentWidth) (contentWidth - imageWidth) / 2
+            else values[Matrix.MTRANS_X].coerceIn(contentWidth - imageWidth, 0f)
+        val y = if (imageHeight <= contentHeight) (contentHeight - imageHeight) / 2
+            else values[Matrix.MTRANS_Y].coerceIn(contentHeight - imageHeight, 0f)
+        transform.postTranslate(x - values[Matrix.MTRANS_X], y - values[Matrix.MTRANS_Y])
+    }
+
+    override fun setImageBitmap(bitmap: Bitmap?) {
+        super.setImageBitmap(bitmap)
+        resetZoom()
+    }
+
+    override fun onSizeChanged(width: Int, height: Int, oldWidth: Int, oldHeight: Int) {
+        super.onSizeChanged(width, height, oldWidth, oldHeight)
+        resetZoom()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        scaleDetector.onTouchEvent(event)
-
-        when (event.action and MotionEvent.ACTION_MASK) {
-            MotionEvent.ACTION_DOWN -> {
-                savedMatrix.set(matrix)
-                start.set(event.x, event.y)
-                mode = DRAG
-
-                // Double-tap detection
-                val now = System.currentTimeMillis()
-                if (now - lastTapTime < 300) {
-                    resetZoom()
-                }
-                lastTapTime = now
-            }
-
-            MotionEvent.ACTION_POINTER_DOWN -> {
-                dist = spacing(event)
-                if (dist > 10f) {
-                    savedMatrix.set(matrix)
-                    midPoint(mid, event)
-                    mode = ZOOM
-                }
-            }
-
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
-                mode = NONE
-                clampMatrix()
-            }
-
-            MotionEvent.ACTION_MOVE -> {
-                if (!scaleDetector.isInProgress && mode == DRAG) {
-                    matrix.set(savedMatrix)
-                    matrix.postTranslate(event.x - start.x, event.y - start.y)
-                    clampMatrix()
-                }
-            }
+        if (drawable == null) return super.onTouchEvent(event)
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            // A PDF pan must not trigger the activity's swipe-back gesture.
+            parent?.requestDisallowInterceptTouchEvent(true)
         }
-
-        imageMatrix = matrix
-        invalidate()
+        scaleDetector.onTouchEvent(event)
+        gestureDetector.onTouchEvent(event)
+        if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) {
+            parent?.requestDisallowInterceptTouchEvent(false)
+        }
         return true
     }
 
-    /** Reset zoom and pan to fit-centre. */
-    fun resetZoom() {
-        matrix.reset()
-        drawable?.let {
-            val vw = width.toFloat()
-            val vh = height.toFloat()
-            val dw = it.intrinsicWidth.toFloat()
-            val dh = it.intrinsicHeight.toFloat()
-            if (dw <= 0 || dh <= 0) return
-            val s = min(vw / dw, vh / dh)
-            matrix.postScale(s, s)
-            matrix.postTranslate((vw - dw * s) / 2f, (vh - dh * s) / 2f)
-        }
-        scale = 1f
-        imageMatrix = matrix
-        invalidate()
-    }
-
-    override fun setImageBitmap(bm: android.graphics.Bitmap?) {
-        super.setImageBitmap(bm)
-        post { resetZoom() }
-    }
-
-    // ── helpers ───────────────────────────────────────────────
-
-    private fun clampMatrix() {
-        val values = FloatArray(9)
-        matrix.getValues(values)
-        val currentScale = values[Matrix.MSCALE_X]
-
-        // Clamp scale
-        if (currentScale < minScale) {
-            matrix.setScale(minScale, minScale)
-        } else if (currentScale > maxScale) {
-            val px = values[Matrix.MTRANS_X]
-            val py = values[Matrix.MTRANS_Y]
-            matrix.setScale(maxScale, maxScale)
-            matrix.postTranslate(px, py)
-        }
-    }
-
-    private fun spacing(event: MotionEvent): Float {
-        val x = event.getX(0) - event.getX(1)
-        val y = event.getY(0) - event.getY(1)
-        return kotlin.math.sqrt((x * x + y * y).toDouble()).toFloat()
-    }
-
-    private fun midPoint(point: PointF, event: MotionEvent) {
-        point.set((event.getX(0) + event.getX(1)) / 2f, (event.getY(0) + event.getY(1)) / 2f)
-    }
-
-    private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-        override fun onScale(detector: ScaleGestureDetector): Boolean {
-            val scaleFactor = detector.scaleFactor
-            val values = FloatArray(9)
-            matrix.getValues(values)
-            val currentScale = values[Matrix.MSCALE_X]
-            val newScale = max(minScale, min(currentScale * scaleFactor, maxScale))
-            val ratio = newScale / currentScale
-            matrix.postScale(ratio, ratio, detector.focusX, detector.focusY)
-            imageMatrix = matrix
-            return true
-        }
-    }
-
-    companion object {
-        private const val NONE = 0
-        private const val DRAG = 1
-        private const val ZOOM = 2
+    override fun performClick(): Boolean {
+        super.performClick()
+        return true
     }
 }
-

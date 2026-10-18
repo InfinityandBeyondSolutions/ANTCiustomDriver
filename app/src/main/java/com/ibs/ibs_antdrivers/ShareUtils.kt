@@ -58,7 +58,12 @@ object ShareUtils {
         return Intent.createChooser(intent, chooserTitle)
     }
 
-    fun fileToContentUri(context: Context, file: File): Uri {
+    fun fileToContentUri(context: Context, file: File, displayName: String? = null): Uri {
+        if (displayName != null) {
+            return FileProvider.getUriForFile(
+                context, context.packageName + ".fileprovider", file, displayName
+            )
+        }
         return FileProvider.getUriForFile(
             context,
             context.packageName + ".fileprovider",
