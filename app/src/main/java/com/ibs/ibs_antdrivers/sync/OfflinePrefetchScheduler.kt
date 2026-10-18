@@ -10,8 +10,8 @@ import androidx.work.WorkManager
 /**
  * Schedules a best-effort offline prefetch pass.
  *
- * This downloads core reference data (stores, calling cycles, pricelists, orders) while online so it
- * becomes available from Firebase's disk persistence when the user goes offline.
+ * Downloads legacy calling-cycle paths while online. Dedicated cache refresh workers handle
+ * stores, price lists, orders and catalogue metadata without a duplicate download here.
  */
 object OfflinePrefetchScheduler {
 

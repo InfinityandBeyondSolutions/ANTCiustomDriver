@@ -312,7 +312,7 @@ class CallCycleViewModel(
         coroutineScope {
             val fetched = missing.map { id ->
                 async {
-                    id to runCatching { storesRepo.getStoreById(id) }.getOrNull()
+                    id to runCatching { storesRepo.getStoreById(id, context = app.applicationContext) }.getOrNull()
                 }
             }.awaitAll()
 
@@ -462,7 +462,7 @@ class CallCycleViewModel(
                 async {
                     val cached = storeCache[id]
                     if (cached != null) return@async id to cached
-                    val store = runCatching { storesRepo.getStoreById(id) }.getOrNull()
+                    val store = runCatching { storesRepo.getStoreById(id, context = app.applicationContext) }.getOrNull()
                     if (store != null) storeCache[id] = store
                     id to store
                 }
@@ -505,7 +505,7 @@ class CallCycleViewModel(
                 async {
                     val cached = storeCache[id]
                     if (cached != null) return@async id to cached
-                    val store = runCatching { storesRepo.getStoreById(id) }.getOrNull()
+                    val store = runCatching { storesRepo.getStoreById(id, context = app.applicationContext) }.getOrNull()
                     if (store != null) storeCache[id] = store
                     id to store
                 }

@@ -25,13 +25,13 @@ import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
 import com.ibs.ibs_antdrivers.data.OrdersRepository
 import com.ibs.ibs_antdrivers.data.PriceList
 import com.ibs.ibs_antdrivers.data.PriceListsRepository
+import com.ibs.ibs_antdrivers.data.StoresRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -116,12 +116,7 @@ class CreateOrderFragment : Fragment() {
 
         // Check for prefilled store from arguments (from Call Cycle)
         val prefillStoreId = arguments?.getString("prefillStoreId")
-        if (!prefillStoreId.isNullOrBlank()) {
-            // Wait for stores to load, then auto-select
-            view.postDelayed({
-                autoSelectStore(prefillStoreId)
-            }, 500)
-        } else {
+        if (prefillStoreId.isNullOrBlank()) {
             // Auto-focus on the first required field to guide the driver
             view.post {
                 actvStore.requestFocus()
@@ -386,20 +381,28 @@ class CreateOrderFragment : Fragment() {
     }
 
     private fun loadStores() {
-        val database = FirebaseDatabase.getInstance().getReference("Stores")
-        database.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (!isAdded) return
-
-                storeList.clear()
-                for (storeSnap in snapshot.children) {
-                    val store = storeSnap.getValue(StoreData::class.java)
-                    if (store != null) {
-                        store.StoreID = storeSnap.key ?: ""
-                        storeList.add(store)
+        val appContext = requireContext().applicationContext
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val repository = StoresRepository()
+                var stores = repository.observeAllStores(appContext).first()
+                if (stores.isEmpty()) {
+                    repository.refreshStoresIfNeeded(appContext)
+                    stores = repository.observeAllStores(appContext).first()
+                } else {
+                    // Display saved data immediately; share the same refresh window as the stores page.
+                    launch {
+                        try {
+                            repository.refreshStoresIfNeeded(appContext)
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            // Keep the offline store picker usable if refreshing fails.
+                        }
                     }
                 }
-
+                storeList.clear()
+                storeList.addAll(stores)
                 storeList.sortWith(compareBy({ it.StoreName.lowercase() }, { it.StoreID.lowercase() }))
 
                 storeDisplayList.clear()
@@ -447,14 +450,13 @@ class CreateOrderFragment : Fragment() {
                 }
 
                 actvStore.setAdapter(storeAdapter)
+                arguments?.getString("prefillStoreId")?.takeIf { it.isNotBlank() }?.let(::autoSelectStore)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                showSnack("Failed to load stores")
             }
-
-            override fun onCancelled(error: DatabaseError) {
-                if (isAdded) {
-                    showSnack("Failed to load stores")
-                }
-            }
-        })
+        }
     }
 
     private fun loadPriceLists() {

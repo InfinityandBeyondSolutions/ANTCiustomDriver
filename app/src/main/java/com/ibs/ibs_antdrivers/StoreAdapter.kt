@@ -8,16 +8,16 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
-import android.widget.Filter
-import android.widget.Filterable
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 
 class StoreAdapter(
-    private var storeList: List<StoreData>,
+    stores: List<StoreData>,
     private val onCameraCapture: (StoreData) -> Unit,
     private val onItemClick: (StoreData) -> Unit
-) : RecyclerView.Adapter<StoreAdapter.StoreViewHolder>(), Filterable {
+) : ListAdapter<StoreData, StoreAdapter.StoreViewHolder>(StoreDiff) {
 
-    private var storeListFull: List<StoreData> = ArrayList(storeList)
+    init { submitList(stores) }
 
     inner class StoreViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val storeName: TextView = itemView.findViewById(R.id.tvStoreName)
@@ -52,7 +52,7 @@ class StoreAdapter(
 
         private fun currentStore(): StoreData? {
             val position = bindingAdapterPosition
-            return if (position == RecyclerView.NO_POSITION) null else storeList.getOrNull(position)
+            return if (position == RecyclerView.NO_POSITION) null else currentList.getOrNull(position)
         }
     }
 
@@ -63,7 +63,7 @@ class StoreAdapter(
     }
 
     override fun onBindViewHolder(holder: StoreViewHolder, position: Int) {
-        val currentStore = storeList[position]
+        val currentStore = getItem(position)
         holder.storeName.text = currentStore.StoreName
         holder.storeID.text = "Store ID: ${currentStore.StoreID}"
         holder.storeAddress.text = "Address: ${currentStore.StoreAddress}"
@@ -71,37 +71,12 @@ class StoreAdapter(
         holder.monogram?.text = currentStore.StoreName.firstOrNull()?.uppercase() ?: "S"
     }
 
-    override fun getItemCount(): Int = storeList.size
-
-    override fun getFilter(): Filter = storeFilter
-
-    private val storeFilter = object : Filter() {
-        override fun performFiltering(constraint: CharSequence?): FilterResults {
-            val filteredList = ArrayList<StoreData>()
-            val filterPattern = constraint?.toString()?.lowercase()?.trim() ?: ""
-
-            if (filterPattern.isEmpty()) {
-                filteredList.addAll(storeListFull)
-            } else {
-                for (store in storeListFull) {
-                    if (store.StoreName.lowercase().contains(filterPattern)) {
-                        filteredList.add(store)
-                    }
-                }
-            }
-
-            return FilterResults().apply { values = filteredList }
-        }
-
-        override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
-            storeList = results?.values as List<StoreData>
-            notifyDataSetChanged()
-        }
+    fun updateList(newList: List<StoreData>, committed: () -> Unit = {}) {
+        submitList(newList) { committed() }
     }
 
-    fun updateList(newList: List<StoreData>) {
-        storeList = newList
-        storeListFull = ArrayList(newList)
-        notifyDataSetChanged()
+    private object StoreDiff : DiffUtil.ItemCallback<StoreData>() {
+        override fun areItemsTheSame(oldItem: StoreData, newItem: StoreData) = oldItem.StoreID == newItem.StoreID
+        override fun areContentsTheSame(oldItem: StoreData, newItem: StoreData) = oldItem == newItem
     }
 }

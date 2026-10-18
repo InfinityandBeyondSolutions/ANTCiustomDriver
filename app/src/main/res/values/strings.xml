@@ -54,6 +54,16 @@
     <string name="catalogue_share_unavailable">Download the catalogue first to share it</string>
 
     <!-- Orders -->
+    <string name="stores_refresh">Refresh stores</string>
+    <string name="stores_search_hint">Search by store name or ID</string>
+    <string name="stores_filter_all">All</string>
+    <string name="stores_visible_count">%1$d of %2$d</string>
+    <string name="stores_loading">Loading stores…</string>
+    <string name="stores_no_matches">No stores match your search or filters.</string>
+    <string name="stores_updated">Stores updated</string>
+    <string name="stores_cached_refresh_failed">Showing saved stores. Could not refresh. Tap Refresh to retry.</string>
+    <string name="stores_refresh_failed">Could not load stores. Check your connection and tap Refresh to retry.</string>
+
     <string name="orders_title">My Orders</string>
     <string name="orders_subtitle">View and manage your orders</string>
     <string name="orders_empty">No orders yet.\nTap the button below to create your first order.</string>

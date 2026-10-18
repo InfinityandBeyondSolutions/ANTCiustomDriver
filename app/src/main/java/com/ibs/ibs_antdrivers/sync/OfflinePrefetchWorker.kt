@@ -9,10 +9,9 @@ import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.tasks.await
 
 /**
- * Best-effort prefetch to warm Firebase RTDB disk cache.
- *
- * Note: This doesn't replace a proper Room cache, but it's a big step toward "it works offline"
- * without rewriting all screens.
+ * Warm legacy call-cycle paths in Firebase's disk cache.
+ * Stores, price lists, orders and catalogue metadata are already read by their dedicated Room
+ * refresh workers, which warm Firebase's cache too. Fetching them again here wastes bandwidth.
  */
 class OfflinePrefetchWorker(
     appContext: Context,
@@ -25,11 +24,10 @@ class OfflinePrefetchWorker(
         val ref = FirebaseDatabase.getInstance().reference
 
         return try {
-            // 1) Stores (all stores) — required for store details + order creation.
-            // Using .get() will warm the disk cache during this run.
-            ref.child("Stores").get().await()
+            // Stores are synchronized once by RefreshStoresWorker into both Room and Firebase's
+            // disk cache. Do not download the complete directory again in this prefetch pass.
 
-            // 2) Calling cycles for this driver — "today" screens depend on this.
+            // Calling cycles for this driver — "today" screens depend on these paths.
             ref.child("callingCycles").child("activeWeek").child(uid).get().await()
             ref.child("callingCycles").child("weeks").child(uid).get().await()
             ref.child("callingCycles").child("templates").child(uid).get().await()
@@ -37,16 +35,6 @@ class OfflinePrefetchWorker(
             ref.child("callingCycles").child("spontaneous").child(uid).get().await()
             // Visited state
             ref.child("callingCycles").child("visited").child(uid).get().await()
-
-            // 3) Pricelists — required for order creation when offline.
-            ref.child("priceLists").get().await()
-
-            // 4) Orders for this driver — warm cache so dashboard works offline.
-            // If there isn't an index on driverId, this can be slow but still works.
-            ref.child("orders").orderByChild("driverId").equalTo(uid).get().await()
-
-            // 5) Catalogue categories
-            ref.child("catalogueCategories").get().await()
 
             Result.success()
         } catch (t: Throwable) {
