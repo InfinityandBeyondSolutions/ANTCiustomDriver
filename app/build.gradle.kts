@@ -21,8 +21,8 @@ android {
         applicationId = "com.ibs.ibs_antdrivers"
         minSdk = 27
         targetSdk = 36
-        versionCode = 14
-        versionName = "9.0.0"
+        versionCode = 15
+        versionName = "10.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
